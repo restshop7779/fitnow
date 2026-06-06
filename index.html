@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>핏나우 | 감각적인 즉시배송</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="phone-frame" aria-label="핏나우 앱 프로토타입">
+        <header class="top-bar">
+          <button class="icon-button menu-icon" aria-label="메뉴"><span></span><span></span></button>
+          <div class="brand-lockup">
+            <p>FITNOW</p>
+            <button class="location-button">성수 쇼룸권</button>
+          </div>
+          <button class="icon-button search-icon" aria-label="검색"></button>
+        </header>
+
+        <section class="view active" id="home-view">
+          <section class="onboarding-card">
+            <div>
+              <p class="eyebrow">STYLE DELIVERY</p>
+              <h2>쇼룸 재고, 스타일러 검수, 라이더 픽업까지 한 번에.</h2>
+            </div>
+            <button id="show-track-demo">흐름 보기</button>
+          </section>
+
+          <section class="hero">
+            <img src="./assets/fashion-delivery-hero.png" alt="빠른 배송을 준비한 패션 아이템" />
+            <div class="hero-copy">
+              <p>CURATED IN 45 MIN</p>
+              <h1>룩의 온도를<br />지금 맞추세요</h1>
+              <span>근처 편집샵 재고만 모아, 오늘의 약속 전에 도착.</span>
+              <button class="primary-action" id="open-ai">AI 스타일러에게 묻기</button>
+            </div>
+          </section>
+
+          <section class="moment-panel" aria-label="오늘의 스타일 상황">
+            <button class="moment active"><strong>퇴근 후 약속</strong><span>18:30 전 도착</span></button>
+            <button class="moment"><strong>주말 전시</strong><span>미니멀 룩</span></button>
+            <button class="moment"><strong>비 오는 날</strong><span>방수 소재</span></button>
+          </section>
+
+          <section class="editor-pick">
+            <div>
+              <p class="eyebrow">EDITOR'S ROUTE</p>
+              <h2>성수에서 바로 출발하는 감도 높은 아이템</h2>
+            </div>
+            <span>LIVE STOCK</span>
+          </section>
+
+          <section class="store-card">
+            <div class="store-head">
+              <div>
+                <p class="eyebrow">NEARBY SHOWROOM</p>
+                <h2>어반클로젯 성수</h2>
+              </div>
+              <strong>32분</strong>
+            </div>
+            <div class="delivery-status"><span></span><p>스타일러가 상품 확인 중 · 예상 도착 18:42</p></div>
+          </section>
+
+          <section class="section-head">
+            <div><p class="eyebrow">READY TO WEAR</p><h2>지금 받을 수 있는 룩</h2></div>
+            <button id="filter-button">필터</button>
+          </section>
+
+          <section class="product-grid" aria-label="지금 배송 가능한 상품">
+            <article class="product-card" data-key="jacket" data-price="89000" data-name="라이트 크롭 재킷" data-meta="성수 · 1개 남음" data-tone="퇴근 후 약속에 가볍게 걸치기 좋은 실루엣" data-material="나일론 62%, 코튼 38%" data-fit="여유 있는 크롭 핏" data-match="92">
+              <button class="product-open" aria-label="라이트 크롭 재킷 상세 보기"><div class="product-visual jacket"></div><p>라이트 크롭 재킷</p><strong>89,000원</strong><small>성수 · 1개 남음</small></button>
+              <button class="add-button">담기</button>
+            </article>
+            <article class="product-card" data-key="shoes" data-price="129000" data-name="스웨이드 러너" data-meta="뚝섬 · 오늘 도착" data-tone="캐주얼 룩을 단정하게 잡아주는 낮은 채도의 슈즈" data-material="스웨이드, 러버 아웃솔" data-fit="정사이즈 추천" data-match="88">
+              <button class="product-open" aria-label="스웨이드 러너 상세 보기"><div class="product-visual shoes"></div><p>스웨이드 러너</p><strong>129,000원</strong><small>뚝섬 · 오늘 도착</small></button>
+              <button class="add-button">담기</button>
+            </article>
+            <article class="product-card" data-key="bag" data-price="54000" data-name="미니 호보백" data-meta="서울숲 · 인기" data-tone="가볍지만 스타일 포인트가 되는 데일리 백" data-material="비건 레더" data-fit="스마트폰, 지갑 수납" data-match="84">
+              <button class="product-open" aria-label="미니 호보백 상세 보기"><div class="product-visual bag"></div><p>미니 호보백</p><strong>54,000원</strong><small>서울숲 · 인기</small></button>
+              <button class="add-button">담기</button>
+            </article>
+            <article class="product-card" data-key="ring" data-price="26000" data-name="실버 링 세트" data-meta="왕십리 · 40분" data-tone="손끝에 정돈된 인상을 더하는 얇은 링 조합" data-material="서지컬 스틸" data-fit="프리 사이즈" data-match="79">
+              <button class="product-open" aria-label="실버 링 세트 상세 보기"><div class="product-visual ring"></div><p>실버 링 세트</p><strong>26,000원</strong><small>왕십리 · 40분</small></button>
+              <button class="add-button">담기</button>
+            </article>
+          </section>
+        </section>
+
+        <section class="view" id="showroom-view">
+          <section class="section-head page-title"><div><p class="eyebrow">SHOWROOMS</p><h2>오늘 바로 연결되는 편집샵</h2></div></section>
+          <section class="showroom-list">
+            <article class="showroom-card"><div class="showroom-cover cover-one"></div><div><p class="eyebrow">SEONGSU</p><h3>어반클로젯 성수</h3><span>아우터 12개 · 평균 32분</span></div><button>입장</button></article>
+            <article class="showroom-card"><div class="showroom-cover cover-two"></div><div><p class="eyebrow">TUKSEOM</p><h3>그레이룸</h3><span>슈즈 8개 · 평균 38분</span></div><button>입장</button></article>
+            <article class="showroom-card"><div class="showroom-cover cover-three"></div><div><p class="eyebrow">SEOUL FOREST</p><h3>노트 아카이브</h3><span>가방 6개 · 평균 41분</span></div><button>입장</button></article>
+          </section>
+        </section>
+
+        <section class="view" id="stylist-view">
+          <section class="section-head page-title"><div><p class="eyebrow">AI STYLIST</p><h2>상황을 말하면 즉시배송 룩으로 맞춰드려요</h2></div></section>
+          <section class="stylist-card">
+            <label for="stylist-input">오늘의 상황</label>
+            <textarea id="stylist-input">성수에서 저녁 약속이 있고, 지금 입은 검정 슬랙스에 어울리는 포인트가 필요해.</textarea>
+            <button id="stylist-run" class="primary-wide">룩 추천 받기</button>
+          </section>
+          <section class="ai-result" id="ai-result">
+            <p class="eyebrow">RECOMMENDATION</p>
+            <h3>라이트 크롭 재킷 + 실버 링 세트</h3>
+            <p>검정 슬랙스의 무게를 재킷의 짧은 기장으로 덜고, 링으로 손끝에 선명한 포인트를 더하세요. 두 아이템 모두 45분 안에 받을 수 있어요.</p>
+            <button class="primary-wide" id="ai-add">추천 조합 담기</button>
+          </section>
+        </section>
+
+        <aside class="cart-bar" aria-live="polite"><div><p id="cart-count">0개 선택</p><strong id="cart-total">0원</strong></div><button id="checkout-button" disabled>배송 예약</button></aside>
+        <nav class="bottom-tabs" aria-label="주요 메뉴">
+          <button class="tab-button active" data-view="home-view">홈</button>
+          <button class="tab-button" data-view="showroom-view">쇼룸</button>
+          <button id="track-tab">추적</button>
+          <button class="tab-button" data-view="stylist-view">AI</button>
+        </nav>
+      </section>
+    </main>
+
+    <section class="sheet" id="detail-sheet" aria-hidden="true">
+      <div class="sheet-panel">
+        <button class="sheet-close" data-close="detail-sheet" aria-label="닫기">×</button>
+        <div id="detail-visual" class="product-visual jacket"></div>
+        <p class="eyebrow">STYLE DETAIL</p>
+        <h2 id="detail-name">라이트 크롭 재킷</h2>
+        <p id="detail-tone">퇴근 후 약속에 가볍게 걸치기 좋은 실루엣</p>
+        <div class="size-row" aria-label="사이즈 선택"><button class="active">S</button><button>M</button><button>L</button></div>
+        <div class="detail-grid"><span>어울림</span><strong id="detail-match">92점</strong><span>소재</span><strong id="detail-material">나일론 62%, 코튼 38%</strong><span>핏</span><strong id="detail-fit">여유 있는 크롭 핏</strong><span>출고</span><strong id="detail-meta">성수 · 1개 남음</strong></div>
+        <button class="primary-wide" id="detail-add">이 아이템 담기</button>
+      </div>
+    </section>
+
+    <section class="sheet" id="checkout-sheet" aria-hidden="true">
+      <div class="sheet-panel">
+        <button class="sheet-close" data-close="checkout-sheet" aria-label="닫기">×</button>
+        <p class="eyebrow">DELIVERY RESERVATION</p>
+        <h2>오늘 18:42 도착으로 예약할까요?</h2>
+        <div class="checkout-list"><div><span>스타일러 검수</span><strong>무료</strong></div><div><span>쇼룸 픽업</span><strong>진행 가능</strong></div><div><span>즉시배송</span><strong>3,500원</strong></div></div>
+        <button class="primary-wide" id="confirm-order">결제하고 추적하기</button>
+      </div>
+    </section>
+
+    <section class="tracking-view" id="tracking-view" aria-hidden="true">
+      <div class="tracking-panel">
+        <header><button class="icon-button back-button" id="close-tracking" aria-label="돌아가기">‹</button><div><p class="eyebrow">LIVE DELIVERY</p><h2>도착까지 32분</h2></div></header>
+        <div class="route-card"><div class="route-map"><span class="pin showroom"></span><span class="route-line"></span><span class="pin home"></span></div><p>어반클로젯 성수에서 출발해 성수동 2가로 이동합니다.</p></div>
+        <ol class="timeline"><li class="done"><strong>쇼룸 재고 확보</strong><span>스타일러가 실물 상태를 확인했어요.</span></li><li class="done"><strong>코디 체크</strong><span>현재 룩과 어울리는 톤으로 검수 완료.</span></li><li class="active"><strong>라이더 픽업</strong><span>전용 파우치에 담아 이동을 시작합니다.</span></li><li><strong>도착 전 알림</strong><span>도착 5분 전에 착장 팁을 보내드려요.</span></li></ol>
+      </div>
+    </section>
+
+    <script src="./script.js"></script>
+  </body>
+</html>

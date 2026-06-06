@@ -1,0 +1,41 @@
+body {
+  margin: 0;
+  font-family: Inter, "Noto Sans KR", system-ui, sans-serif;
+  background: #eee8de;
+  color: #161616;
+}
+
+.react-bridge {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.react-bridge section {
+  max-width: 520px;
+  padding: 28px;
+  border-radius: 12px;
+  background: #fffdf8;
+  box-shadow: 0 24px 70px rgba(18, 18, 18, 0.16);
+}
+
+.react-bridge p {
+  margin: 0 0 8px;
+  color: #77736d;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.react-bridge h1 {
+  margin: 0 0 18px;
+  font-size: 28px;
+  line-height: 1.2;
+}
+
+.react-bridge span {
+  display: block;
+  padding: 12px 0;
+  border-top: 1px solid #e7e1d7;
+  font-weight: 800;
+}

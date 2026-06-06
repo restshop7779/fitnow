@@ -1,0 +1,18 @@
+{
+  "packageManager": "pnpm@11.5.0",
+  "scripts": {
+    "dev": "vite --open /index.react.html",
+    "dev:react": "vite --open /index.react.html",
+    "build": "vite build",
+    "build:local": "powershell -ExecutionPolicy Bypass -File ./scripts/build-local.ps1",
+    "dev:local": "powershell -ExecutionPolicy Bypass -File ./scripts/dev-local.ps1",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "latest",
+    "vite": "latest",
+    "react": "latest",
+    "react-dom": "latest"
+  },
+  "devDependencies": {}
+}

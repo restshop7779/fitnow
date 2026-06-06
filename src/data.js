@@ -1,0 +1,67 @@
+export const products = [
+  {
+    key: "jacket",
+    name: "라이트 셔링 재킷",
+    price: 89000,
+    meta: "성수 · 1개 남음",
+    tone: "퇴근 후 약속에 가볍게 걸치기 좋은 뉴트럴 재킷",
+    material: "나일론 62%, 코튼 38%",
+    fit: "여유 있는 세미 오버핏",
+    match: 92,
+    showroom: "어반클로젯 성수",
+    stockQuantity: 1,
+    deliveryMinutes: 32,
+  },
+  {
+    key: "shoes",
+    name: "스웨이드 러너",
+    price: 129000,
+    meta: "뚝섬 · 오늘 도착",
+    tone: "캐주얼 룩을 단정하게 잡아주는 낮은 채도의 슈즈",
+    material: "스웨이드, 러버 아웃솔",
+    fit: "정사이즈 추천",
+    match: 88,
+    showroom: "그레인룸",
+    stockQuantity: 4,
+    deliveryMinutes: 38,
+  },
+  {
+    key: "bag",
+    name: "미니 호보백",
+    price: 54000,
+    meta: "서울숲 · 인기",
+    tone: "가볍지만 스타일링 포인트가 되는 데일리 백",
+    material: "비건 레더",
+    fit: "스마트폰, 지갑 수납",
+    match: 84,
+    showroom: "비트 아카이브",
+    stockQuantity: 6,
+    deliveryMinutes: 41,
+  },
+  {
+    key: "ring",
+    name: "실버 매트 링",
+    price: 26000,
+    meta: "성수 · 40분",
+    tone: "마무리가 허전한 룩에 밀도를 더하는 매트 링 조합",
+    material: "써지컬 스틸",
+    fit: "프리 사이즈",
+    match: 79,
+    showroom: "어반클로젯 성수",
+    stockQuantity: 9,
+    deliveryMinutes: 32,
+  },
+];
+
+export const showrooms = [
+  { cover: "cover-one", area: "SEONGSU", name: "어반클로젯 성수", summary: "아우터 12개 · 평균 32분", averageDeliveryMinutes: 32 },
+  { cover: "cover-two", area: "TUKSEOM", name: "그레인룸", summary: "슈즈 8개 · 평균 38분", averageDeliveryMinutes: 38 },
+  { cover: "cover-three", area: "SEOUL FOREST", name: "비트 아카이브", summary: "가방 6개 · 평균 41분", averageDeliveryMinutes: 41 },
+];
+
+export const deliverySteps = [
+  { key: "stock", title: "쇼룸 재고 확인", body: "스타일러가 상품 상태와 사이즈를 확인했어요." },
+  { key: "style", title: "코디 체크", body: "현재 룩과 어울리는 톤으로 검수 완료." },
+  { key: "pickup", title: "라이더 픽업", body: "전용 파우치에 담아 이동을 시작합니다." },
+  { key: "arrival", title: "도착 전 알림", body: "도착 5분 전에 착장 팁을 보내드려요." },
+];

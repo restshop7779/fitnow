@@ -1,0 +1,3902 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FitNow Preview</title>
+    <style>
+      :root {
+        --paper: #fffaf0;
+        --surface: #f2eee6;
+        --ink: #171717;
+        --muted: #756f66;
+        --line: #e2dbcf;
+        --lime: #efff68;
+        --clay: #c86e4f;
+        --teal: #1ca891;
+        --blue: #2f5cff;
+        font-family: Inter, Arial, system-ui, sans-serif;
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at 20% 0%, rgba(239, 255, 104, .24), transparent 31%),
+          linear-gradient(135deg, #f8f1e4, #e5ecec);
+        color: var(--ink);
+      }
+      button, input { font: inherit; border: 0; }
+      button { cursor: pointer; }
+      .app-shell { min-height: 100vh; display: grid; place-items: center; padding: 22px; }
+      .phone-frame {
+        width: min(430px, 100%);
+        height: min(900px, calc(100vh - 44px));
+        overflow: auto;
+        border: 10px solid #111;
+        border-radius: 34px;
+        background: var(--paper);
+        box-shadow: 0 28px 70px rgba(0,0,0,.22);
+      }
+      .top-bar {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 18px;
+        background: rgba(255, 250, 240, .94);
+        backdrop-filter: blur(18px);
+      }
+      .brand { text-align: center; font-weight: 950; letter-spacing: 0; }
+      .brand small { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; }
+      .icon-button {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: #eee8de;
+        color: #171717;
+        font-weight: 950;
+      }
+      .status {
+        margin: 0 18px 12px;
+        padding: 9px 12px;
+        border-radius: 999px;
+        background: #eee8de;
+        color: var(--muted);
+        text-align: center;
+        font-size: 12px;
+        font-weight: 900;
+      }
+      .sync-check {
+        display: grid;
+        gap: 8px;
+        margin: 0 18px 14px;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+      }
+      .sync-check button {
+        min-height: 38px;
+        border-radius: 7px;
+        background: #171717;
+        color: #fff;
+        font-weight: 950;
+      }
+      .sync-check p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 850;
+        line-height: 1.45;
+      }
+      .vendor-session {
+        margin: 0 0 12px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        background: #171717;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 850;
+        line-height: 1.45;
+      }
+      .role-strip {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        margin: 0 0 12px;
+      }
+      .role-pill {
+        padding: 9px 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+      }
+      .role-pill strong {
+        display: block;
+        color: var(--ink);
+        font-size: 12px;
+        font-weight: 950;
+      }
+      .role-pill span {
+        display: block;
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 850;
+        line-height: 1.35;
+      }
+      .profile-card {
+        display: grid;
+        gap: 10px;
+        padding: 14px;
+        border-radius: 8px;
+        background: #171717;
+        color: #fff;
+      }
+      .profile-card strong {
+        display: block;
+        font-size: 18px;
+      }
+      .profile-card span {
+        display: block;
+        color: rgba(255,255,255,.72);
+        font-size: 12px;
+        font-weight: 850;
+      }
+      .social-login-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .social-login-grid button {
+        min-height: 44px;
+        border-radius: 8px;
+        font-weight: 950;
+      }
+      .kakao-login { background: #fee500; color: #181600; }
+      .naver-login { background: #03c75a; color: #fff; }
+      .oauth-note {
+        margin: 0 0 12px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 850;
+        line-height: 1.5;
+      }
+      .hero {
+        min-height: 292px;
+        margin: 6px 18px 16px;
+        border-radius: 8px;
+        position: relative;
+        overflow: hidden;
+        background: #171717;
+      }
+      .hero img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+      .hero:after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, rgba(0,0,0,.86), rgba(0,0,0,.12) 78%);
+      }
+      .hero-copy { position: relative; z-index: 1; width: 83%; padding: 28px 22px; color: #fff; }
+      .eyebrow { margin: 0 0 5px; color: var(--muted); font-size: 11px; font-weight: 950; text-transform: uppercase; }
+      .hero-copy .eyebrow { color: var(--lime); }
+      h1 { margin: 0 0 12px; font-size: 34px; line-height: 1.08; letter-spacing: 0; }
+      h2 { margin: 0; font-size: 18px; line-height: 1.35; letter-spacing: 0; }
+      .hero-copy span { display: block; margin-bottom: 22px; color: rgba(255,255,255,.82); font-size: 13px; font-weight: 800; line-height: 1.55; }
+      .primary {
+        min-height: 43px;
+        padding: 0 16px;
+        border-radius: 999px;
+        background: var(--lime);
+        color: #171c05;
+        font-weight: 950;
+      }
+      .panel, .store-card {
+        margin: 0 18px 14px;
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+      }
+      .panel.dark {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        color: #fff;
+        background: #171717;
+      }
+      .panel.dark h2 { font-size: 15px; }
+      .location-panel {
+        display: grid;
+        gap: 12px;
+      }
+      .location-panel input {
+        width: 100%;
+        min-height: 42px;
+        padding: 0 13px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        color: var(--ink);
+        font-weight: 850;
+      }
+      .region-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .region-button {
+        min-height: 48px;
+        padding: 8px 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        color: var(--ink);
+        text-align: left;
+        font-weight: 950;
+      }
+      .region-button span {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 850;
+      }
+      .region-button.active-control span { color: rgba(255,255,255,.72); }
+      .moments { display: flex; gap: 10px; padding: 0 18px 16px; overflow-x: auto; }
+      .moment {
+        flex: 0 0 138px;
+        min-height: 76px;
+        padding: 13px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: #fff;
+        text-align: left;
+      }
+      .moment.active { background: #171717; color: #fff; border-color: #171717; }
+      .moment strong, .moment span { display: block; }
+      .moment span { margin-top: 7px; color: var(--muted); font-size: 12px; font-weight: 800; }
+      .moment.active span { color: var(--lime); }
+      .section-head, .store-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 14px;
+        padding: 4px 18px 12px;
+      }
+      .store-head { padding: 0; }
+      .store-head strong { padding: 8px 10px; border-radius: 999px; background: #effbc2; }
+      .delivery-status { display: flex; align-items: center; gap: 10px; margin-top: 14px; color: var(--muted); font-size: 13px; font-weight: 800; }
+      .delivery-status i { width: 10px; height: 10px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 0 7px rgba(28,168,145,.16); }
+      .catalog-controls { display: grid; gap: 10px; padding: 0 18px 14px; }
+      .search input {
+        width: 100%;
+        min-height: 42px;
+        padding: 0 13px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        color: var(--ink);
+        font-weight: 850;
+      }
+      .chips, .sorts { display: flex; gap: 8px; overflow-x: auto; }
+      .sorts { display: grid; grid-template-columns: repeat(3, 1fr); }
+      .chip, .sort {
+        min-height: 34px;
+        padding: 0 11px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: #fff;
+        color: #3f4a54;
+        font-size: 12px;
+        font-weight: 900;
+      }
+      .sort { border-radius: 7px; }
+      .active-control { background: #171717; color: #fff; border-color: #171717; }
+      .result-summary { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; font-weight: 900; }
+      .product-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; padding: 0 18px 172px; }
+      .product-card {
+        padding: 11px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        text-align: left;
+      }
+      .visual { height: 124px; border-radius: 7px; margin-bottom: 11px; position: relative; overflow: hidden; }
+      .visual.has-photo { background: #111; }
+      .visual.has-photo:before { display: none; }
+      .visual img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .jacket { background: linear-gradient(145deg, #dfe5ea, #f7f3ec); }
+      .shoes { background: linear-gradient(145deg, #f2d2b7, #fbf7ee); }
+      .bag { background: linear-gradient(145deg, #d2efe7, #f7f3ec); }
+      .ring { background: linear-gradient(145deg, #e7e2d8, #fff); }
+      .visual:before { content: ""; position: absolute; inset: 30px 32px 20px; border-radius: 22px; background: #303845; opacity: .92; }
+      .detail-visual { height: 188px; margin-bottom: 14px; }
+      .badge { display: inline-flex; align-items: center; gap: 6px; min-height: 25px; margin-bottom: 9px; padding: 0 8px; border-radius: 999px; background: var(--lime); font-size: 11px; font-weight: 950; }
+      .badge i { width: 6px; height: 6px; border-radius: 50%; background: #171c05; }
+      .product-card h3 { min-height: 38px; margin: 0 0 6px; font-size: 14px; line-height: 1.35; }
+      .product-card strong { display: block; margin-bottom: 5px; }
+      .product-card small { display: block; min-height: 18px; margin-bottom: 8px; color: var(--muted); font-size: 11px; font-weight: 800; }
+      .price-stack {
+        display: grid;
+        gap: 2px;
+        margin-bottom: 7px;
+      }
+      .price-stack del {
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 850;
+      }
+      .price-stack strong {
+        margin: 0;
+        color: var(--red);
+      }
+      .discount-tag {
+        color: var(--red);
+        font-size: 11px;
+        font-weight: 950;
+      }
+      .stock-line { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 12px; color: #3f4a54; font-size: 11px; font-weight: 900; }
+      .add { width: 100%; min-height: 38px; border-radius: 7px; background: #181818; color: #fff; font-size: 13px; font-weight: 900; }
+      .add.added { background: var(--lime); color: #171c05; }
+      .look-list {
+        display: grid;
+        gap: 12px;
+      }
+      .look-card {
+        display: grid;
+        gap: 11px;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+      }
+      .look-visuals {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 7px;
+      }
+      .look-visuals .visual {
+        height: 76px;
+        margin: 0;
+      }
+      .look-card h3 {
+        margin: 0 0 4px;
+        font-size: 16px;
+        line-height: 1.25;
+      }
+      .look-card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 850;
+        line-height: 1.45;
+      }
+      .look-meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        color: #3f4a54;
+        font-size: 11px;
+        font-weight: 950;
+      }
+      .look-size-list {
+        display: grid;
+        gap: 8px;
+      }
+      .look-size-row {
+        display: grid;
+        grid-template-columns: 1fr minmax(88px, 116px);
+        gap: 8px;
+        align-items: center;
+        padding: 8px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fffdf8;
+      }
+      .look-size-row strong {
+        display: block;
+        font-size: 12px;
+      }
+      .look-size-row span {
+        display: block;
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 850;
+      }
+      .look-size-row select {
+        width: 100%;
+        min-height: 34px;
+        border-radius: 7px;
+        border: 1px solid var(--line);
+        background: #fff;
+        font-weight: 900;
+      }
+      .cart-bar {
+        position: sticky;
+        bottom: 64px;
+        z-index: 4;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 12px;
+        margin: 0 12px;
+        padding: 12px;
+        border-radius: 8px;
+        background: rgba(18,18,18,.95);
+        color: #fff;
+        cursor: pointer;
+        box-shadow: 0 14px 35px rgba(0,0,0,.22);
+      }
+      .cart-bar:focus-visible {
+        outline: 3px solid var(--lime);
+        outline-offset: 2px;
+      }
+      .cart-summary {
+        display: grid;
+        grid-template-columns: 36px 1fr;
+        gap: 10px;
+        align-items: center;
+        min-width: 0;
+      }
+      .cart-icon {
+        display: grid;
+        place-items: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: var(--lime);
+        color: #171717;
+        font-size: 18px;
+        font-weight: 950;
+      }
+      .cart-bar p { margin: 0 0 3px; color: #d6d6d6; font-size: 12px; font-weight: 800; }
+      .cart-bar small { display: block; margin-top: 3px; color: rgba(255,255,255,.72); font-size: 11px; font-weight: 850; }
+      .cart-bar button { min-height: 48px; min-width: 118px; border-radius: 7px; background: var(--lime); color: #171717; font-weight: 950; }
+      .bottom-tabs {
+        position: sticky;
+        bottom: 10px;
+        z-index: 4;
+        display: grid;
+        grid-template-columns: repeat(4,1fr);
+        gap: 4px;
+        margin: 0 12px;
+        padding: 7px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255,253,248,.94);
+      }
+      .bottom-tabs button { min-height: 42px; border-radius: 7px; background: transparent; color: var(--muted); font-size: 11px; font-weight: 950; }
+      .bottom-tabs .active { background: #171717; color: #fff; }
+      .vendor-form {
+        display: grid;
+        gap: 10px;
+      }
+      .vendor-form label {
+        display: grid;
+        gap: 6px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 900;
+      }
+      .vendor-form input,
+      .vendor-form select,
+      .vendor-form textarea {
+        width: 100%;
+        min-height: 42px;
+        padding: 0 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        color: var(--ink);
+        font: inherit;
+        font-weight: 850;
+      }
+      .vendor-form textarea {
+        min-height: 76px;
+        padding-top: 10px;
+        resize: vertical;
+      }
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .vendor-preview-list {
+        display: grid;
+        gap: 8px;
+        max-height: 160px;
+        overflow: auto;
+      }
+      .vendor-product-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        align-items: center;
+        padding: 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+      }
+      .vendor-product-row span {
+        display: block;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 850;
+      }
+      .mini-actions {
+        display: flex;
+        gap: 6px;
+      }
+      .mini-actions button {
+        min-height: 31px;
+        padding: 0 9px;
+        border-radius: 999px;
+        background: #eee8de;
+        color: #171717;
+        font-size: 11px;
+        font-weight: 950;
+      }
+      .mini-actions .danger { background: #ffe3dc; color: #9b321f; }
+      .store-list {
+        display: grid;
+        gap: 10px;
+      }
+      .store-admin-card {
+        display: grid;
+        gap: 9px;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+      }
+      .store-admin-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: flex-start;
+      }
+      .store-admin-head strong {
+        display: block;
+        font-size: 14px;
+      }
+      .store-admin-head span {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 850;
+      }
+      .store-toggle {
+        min-height: 32px;
+        padding: 0 10px;
+        border-radius: 999px;
+        background: #171717;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 950;
+      }
+      .store-toggle.paused { background: #eee8de; color: var(--muted); }
+      .image-upload {
+        display: grid;
+        grid-template-columns: 92px 1fr;
+        gap: 10px;
+        align-items: center;
+      }
+      .image-preview {
+        width: 92px;
+        height: 92px;
+        border-radius: 8px;
+        border: 1px dashed #c7beb0;
+        background: #fff;
+        overflow: hidden;
+        display: grid;
+        place-items: center;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 900;
+        text-align: center;
+      }
+      .image-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+      .empty { grid-column: 1 / -1; padding: 18px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--muted); text-align: center; font-weight: 800; }
+      .modal {
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        display: none;
+        place-items: center;
+        padding: 18px;
+        background: rgba(0,0,0,.45);
+      }
+      .modal.open { display: grid; }
+      .receipt {
+        width: min(390px, 100%);
+        max-height: calc(100vh - 36px);
+        overflow: auto;
+        border-radius: 10px;
+        background: #fffaf0;
+        border: 1px solid var(--line);
+        padding: 18px;
+        box-shadow: 0 22px 60px rgba(0,0,0,.26);
+      }
+      .receipt-head { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+      .receipt-head h2 { font-size: 22px; }
+      .close { width: 38px; height: 38px; border-radius: 50%; background: #eee8de; font-weight: 950; }
+      .detail-meta {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin: 12px 0;
+      }
+      .meta-box {
+        min-height: 62px;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: #fff;
+      }
+      .meta-box span { display: block; color: var(--muted); font-size: 11px; font-weight: 850; }
+      .meta-box strong { display: block; margin-top: 6px; font-size: 13px; line-height: 1.25; }
+      .fit-note {
+        margin: 10px 0 0;
+        padding: 12px;
+        border-radius: 8px;
+        background: #171717;
+        color: #fff;
+        font-size: 13px;
+        font-weight: 850;
+        line-height: 1.55;
+      }
+      .detail-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 14px;
+      }
+      .secondary {
+        min-height: 46px;
+        border-radius: 7px;
+        background: #eee8de;
+        color: #171717;
+        font-weight: 950;
+      }
+      .order-summary {
+        display: grid;
+        gap: 10px;
+        margin-top: 14px;
+      }
+      .summary-card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        padding: 12px;
+      }
+      .summary-card h3 {
+        margin: 0 0 10px;
+        font-size: 13px;
+        line-height: 1.3;
+      }
+      .line-item,
+      .price-row,
+      .pickup-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 850;
+      }
+      .line-item + .line-item,
+      .price-row + .price-row,
+      .pickup-row + .pickup-row { margin-top: 8px; }
+      .line-item strong,
+      .price-row strong,
+      .pickup-row strong { color: var(--ink); }
+      .total-row {
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid var(--line);
+        color: var(--ink);
+        font-size: 14px;
+      }
+      .pickup-status {
+        min-width: max-content;
+        color: var(--teal);
+        font-weight: 950;
+      }
+      .timeline { display: grid; gap: 10px; margin-top: 14px; }
+      .step {
+        display: grid;
+        grid-template-columns: 28px 1fr auto;
+        align-items: center;
+        gap: 10px;
+        padding: 10px;
+        border-radius: 8px;
+        background: #fff;
+        border: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 900;
+      }
+      .dot { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #c9c2b6; }
+      .step.done { color: #171717; border-color: #b8e9d8; background: #f1fff9; }
+      .step.done .dot { border-color: var(--teal); background: var(--teal); }
+      .track-hero {
+        min-height: 150px;
+        border-radius: 8px;
+        padding: 16px;
+        background:
+          linear-gradient(135deg, rgba(239,255,104,.92), rgba(28,168,145,.20)),
+          #171717;
+        color: #171717;
+        display: grid;
+        align-content: space-between;
+      }
+      .track-hero h2 {
+        font-size: 24px;
+        line-height: 1.15;
+      }
+      .route-map {
+        position: relative;
+        height: 92px;
+        margin-top: 12px;
+        border-radius: 8px;
+        background:
+          linear-gradient(90deg, rgba(255,255,255,.70), rgba(255,255,255,.28)),
+          repeating-linear-gradient(45deg, rgba(0,0,0,.08) 0 2px, transparent 2px 12px);
+        overflow: hidden;
+      }
+      .route-map:before {
+        content: "";
+        position: absolute;
+        left: 16px;
+        right: 16px;
+        top: 45px;
+        height: 4px;
+        border-radius: 999px;
+        background: #171717;
+      }
+      .route-pin {
+        position: absolute;
+        top: 31px;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: #fffaf0;
+        border: 3px solid #171717;
+        color: #171717;
+        font-size: 12px;
+        font-weight: 950;
+      }
+      .route-pin.start { left: 12px; }
+      .route-pin.rider { left: var(--progress, 35%); background: var(--lime); }
+      .route-pin.end { right: 12px; }
+      .track-actions {
+        display: grid;
+        grid-template-columns: 1fr 1.2fr 1.2fr;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .track-actions button {
+        min-width: 0;
+        padding: 0 10px;
+        font-size: 12px;
+        line-height: 1.2;
+      }
+      .track-actions button:disabled {
+        opacity: .55;
+        cursor: default;
+      }
+      .order-list {
+        display: grid;
+        gap: 10px;
+      }
+      .order-card {
+        display: grid;
+        gap: 10px;
+        padding: 13px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        text-align: left;
+      }
+      .order-card-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .order-card-head strong { display: block; font-size: 14px; }
+      .order-card-head span { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; font-weight: 850; }
+      .order-status {
+        min-width: max-content;
+        align-self: flex-start;
+        padding: 7px 9px;
+        border-radius: 999px;
+        background: #effbc2;
+        color: #171717;
+        font-size: 11px;
+        font-weight: 950;
+      }
+      .delivery-form {
+        display: grid;
+        gap: 10px;
+        margin: 10px 0 12px;
+      }
+      .delivery-form label {
+        display: grid;
+        gap: 6px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 900;
+      }
+      .delivery-form input,
+      .delivery-form select,
+      .delivery-form textarea {
+        width: 100%;
+        min-height: 39px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0 10px;
+        background: #fff;
+        font-weight: 850;
+      }
+      .delivery-form textarea {
+        min-height: 62px;
+        padding-top: 10px;
+        resize: vertical;
+      }
+      @media (max-width: 520px) {
+        .app-shell { padding: 0; }
+        .phone-frame { width: 100%; height: 100vh; border: 0; border-radius: 0; }
+        .role-strip { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="phone-frame">
+        <header class="top-bar">
+          <button class="icon-button" type="button">M</button>
+          <div class="brand">FITNOW<small>오산, 동탄 즉시배송</small></div>
+          <button class="icon-button" type="button">B</button>
+        </header>
+
+        <p class="status" id="syncStatus">FITNOW_STANDALONE_OK - Supabase 연결 준비 중</p>
+        <section class="sync-check">
+          <button type="button" onclick="checkSupabaseSetup()">DB 연결 확인</button>
+          <p id="setupCheckResult">SQL 실행 후 이 버튼을 누르면 테이블과 이미지 저장소를 확인합니다.</p>
+        </section>
+
+        <section class="panel dark">
+          <div>
+            <p class="eyebrow">STYLE DELIVERY</p>
+            <h2>근처 쇼룸 재고, 스타일 체크, 빠른 도착을 한 흐름으로.</h2>
+          </div>
+          <button class="primary" type="button" onclick="addSet()">자동 추천</button>
+        </section>
+
+        <section class="panel location-panel">
+          <div>
+            <p class="eyebrow">DELIVERY AREA</p>
+            <h2 id="areaTitle">동탄2 신도시로 받을게요</h2>
+          </div>
+          <input id="addressInput" type="text" value="동탄역 센트럴 상권 근처" oninput="updateAddress()" />
+          <div class="region-grid" id="regionGrid"></div>
+          <div class="delivery-status"><i></i><p id="areaCopy">동탄2 기준 쇼룸 픽업과 라이더 동선을 계산 중입니다.</p></div>
+        </section>
+
+        <section class="hero">
+          <img src="./assets/fashion-delivery-hero.png" alt="Fashion delivery preview" />
+          <div class="hero-copy">
+            <p class="eyebrow">45분 큐레이션</p>
+            <h1>오늘의 순간이 시작되기 전에 핏이 먼저 도착합니다.</h1>
+            <span>근처 부티크 재고를 보고 오늘 밤 바로 받을 아이템을 예약하세요.</span>
+            <button class="primary" type="button" onclick="addSet()">스타일리스트 추천</button>
+          </div>
+        </section>
+
+        <section class="moments">
+          <button class="moment active" type="button"><strong>퇴근 후 약속</strong><span>18:30 전 도착</span></button>
+          <button class="moment" type="button"><strong>주말 데이트</strong><span>부드러운 미니멀 룩</span></button>
+          <button class="moment" type="button"><strong>비 오는 날</strong><span>방수 소재 추천</span></button>
+        </section>
+
+        <section class="store-card">
+          <div class="store-head">
+            <div><p class="eyebrow">FASTEST SHOWROOM</p><h2 id="fastestShowroom">어반클로젯 동탄</h2></div>
+            <strong id="fastestMinutes">32 min</strong>
+          </div>
+          <div class="delivery-status"><i></i><p id="fastestCopy">재고 확인과 픽업 시간을 계산 중입니다.</p></div>
+        </section>
+
+        <section class="section-head">
+          <div><p class="eyebrow">READY TO WEAR</p><h2>지금 도착 가능한 룩</h2></div>
+          <button class="chip" id="fastToggle" type="button" onclick="toggleFast()">45분 이내</button>
+        </section>
+
+        <section class="catalog-controls">
+          <label class="search"><input id="search" type="search" placeholder="상품, 쇼룸, 소재 검색" oninput="renderProducts()" /></label>
+          <div class="chips" id="showroomFilters"></div>
+          <div class="sorts">
+            <button class="sort active-control" data-sort="fastest" type="button" onclick="setSort('fastest')">빠른 도착</button>
+            <button class="sort" data-sort="match" type="button" onclick="setSort('match')">매칭률</button>
+            <button class="sort" data-sort="stock" type="button" onclick="setSort('stock')">재고순</button>
+          </div>
+          <div class="result-summary"><span id="resultCount">0개 아이템</span><button class="chip" type="button" onclick="resetControls()">초기화</button></div>
+        </section>
+
+        <section class="product-grid" id="productGrid"></section>
+
+        <aside class="cart-bar" role="button" tabindex="0" onclick="openCartDetail()" onkeydown="if(event.key === 'Enter') openCartDetail()">
+          <div class="cart-summary">
+            <span class="cart-icon">B</span>
+            <div>
+              <p id="cartCount">0개 선택됨</p>
+              <strong id="cartTotal">KRW 0</strong>
+              <small id="cartHint">눌러서 장바구니 상세 확인</small>
+            </div>
+          </div>
+          <button type="button" onclick="event.stopPropagation(); checkout()">배송 예약</button>
+        </aside>
+
+        <nav class="bottom-tabs">
+          <button class="active" type="button">홈</button>
+          <button type="button" onclick="openLooks()">룩</button>
+          <button type="button" onclick="openManagement()">관리</button>
+          <button type="button" onclick="openMyPage()">마이</button>
+        </nav>
+      </section>
+    </main>
+
+    <section class="modal" id="orderModal" aria-hidden="true">
+      <div class="receipt">
+        <div class="receipt-head">
+          <div>
+            <p class="eyebrow">ORDER TRACKING</p>
+            <h2>배송 예약 완료</h2>
+          </div>
+          <button class="close" type="button" onclick="closeModal()">X</button>
+        </div>
+        <p id="receiptCopy">즉시배송 흐름이 준비되었습니다.</p>
+        <div id="deliveryFormWrap"></div>
+        <div class="order-summary" id="orderSummary"></div>
+        <div class="timeline" id="timeline"></div>
+      </div>
+    </section>
+
+    <section class="modal" id="cartModal" aria-hidden="true">
+      <div class="receipt">
+        <div class="receipt-head">
+          <div>
+            <p class="eyebrow">CART CHECK</p>
+            <h2>장바구니 상세</h2>
+          </div>
+          <button class="close" type="button" onclick="closeCartDetail()">X</button>
+        </div>
+        <div id="cartDetailBody"></div>
+      </div>
+    </section>
+
+    <section class="modal" id="detailModal" aria-hidden="true">
+      <div class="receipt">
+        <div class="receipt-head">
+          <div>
+            <p class="eyebrow">ITEM DETAIL</p>
+            <h2 id="detailName">상품 상세</h2>
+          </div>
+          <button class="close" type="button" onclick="closeDetail()">X</button>
+        </div>
+        <div id="detailBody"></div>
+      </div>
+    </section>
+
+    <section class="modal" id="lookModal" aria-hidden="true">
+      <div class="receipt">
+        <div class="receipt-head">
+          <div>
+            <p class="eyebrow">STYLE SETS</p>
+            <h2>바로 입는 룩</h2>
+          </div>
+          <button class="close" type="button" onclick="closeLooks()">X</button>
+        </div>
+        <div class="vendor-session">입점업체가 직접 선택한 상품 세트입니다. 세트마다 원하는 상품 사이즈를 고를 수 있어요.</div>
+        <div class="look-list" id="lookList"></div>
+      </div>
+    </section>
+
+    <section class="modal" id="vendorModal" aria-hidden="true">
+      <div class="receipt">
+        <div class="receipt-head">
+          <div>
+            <p class="eyebrow">PARTNER STUDIO</p>
+            <h2>업체 상품등록</h2>
+          </div>
+          <button class="close" type="button" onclick="closeVendor()">X</button>
+        </div>
+        <div class="vendor-session" id="vendorSession">로그인한 업체만 이 화면을 관리할 수 있습니다.</div>
+        <div class="role-strip" id="vendorRoleStrip">
+          <div class="role-pill">
+            <strong>상품 권한</strong>
+            <span>로그인한 매장의 상품만 등록, 수정, 삭제</span>
+          </div>
+          <div class="role-pill">
+            <strong>주문 권한</strong>
+            <span>재고 확인과 픽업 준비까지만 처리</span>
+          </div>
+        </div>
+        <form class="vendor-form" onsubmit="submitVendorProduct(event)">
+          <label>입점 매장
+            <select id="vendorStore"></select>
+          </label>
+          <label>상품명
+            <input id="vendorName" type="text" value="크롭 니트 베스트" required />
+          </label>
+          <label>상품 이미지
+            <div class="image-upload">
+              <div class="image-preview" id="vendorImagePreview">이미지 미리보기</div>
+              <input id="vendorImage" type="file" accept="image/*" onchange="previewVendorImage()" />
+            </div>
+          </label>
+          <div class="form-grid">
+            <label>가격
+              <input id="vendorPrice" type="number" min="1000" step="1000" value="69000" required />
+            </label>
+            <label>할인율
+              <input id="vendorDiscount" type="number" min="0" max="90" value="10" required />
+            </label>
+          </div>
+          <div class="form-grid">
+            <label>재고
+              <input id="vendorStock" type="number" min="1" value="3" required />
+            </label>
+            <label>도착 기준
+              <input id="vendorMinutes" type="number" min="15" value="36" required />
+            </label>
+            <label>매칭률
+              <input id="vendorMatch" type="number" min="50" max="99" value="86" required />
+            </label>
+          </div>
+          <div class="form-grid">
+            <label>소재
+              <input id="vendorMaterial" type="text" value="코튼 니트" required />
+            </label>
+            <label>사이즈
+              <input id="vendorSize" type="text" value="Free / 44-66" required />
+            </label>
+          </div>
+          <label>상품 설명
+            <textarea id="vendorNote" required>동탄, 오산 퇴근길에 바로 받기 좋은 레이어드 아이템이에요.</textarea>
+          </label>
+          <button class="primary" id="vendorSubmitButton" type="submit">상품 등록</button>
+        </form>
+        <section class="summary-card" style="margin-top: 12px;">
+          <h3>룩 세트 구성</h3>
+          <form class="vendor-form" onsubmit="submitVendorLook(event)">
+            <label>세트 이름
+              <input id="vendorLookTitle" type="text" value="오늘 바로 입는 세트" required />
+            </label>
+            <label>세트 설명
+              <textarea id="vendorLookNote" required>입점 매장이 직접 고른 즉시배송 세트입니다.</textarea>
+            </label>
+            <label>세트 할인율
+              <input id="vendorLookDiscount" type="number" min="0" max="90" value="5" required />
+            </label>
+            <div class="vendor-preview-list" id="vendorLookProductPicker"></div>
+            <button class="primary" id="vendorLookSubmitButton" type="submit">선택 상품으로 세트 등록</button>
+            <p class="hint">한 개 이상 선택하면 세트로 등록됩니다. 같은 매장 상품만 선택할 수 있어요.</p>
+          </form>
+        </section>
+        <section class="summary-card" style="margin-top: 12px;">
+          <h3>등록된 룩 세트</h3>
+          <div class="vendor-preview-list" id="vendorLookList"></div>
+        </section>
+        <section class="summary-card" style="margin-top: 12px;">
+          <h3>들어온 주문</h3>
+          <div class="vendor-preview-list" id="vendorOrderList"></div>
+        </section>
+        <section class="summary-card" style="margin-top: 12px;">
+          <h3>등록된 업체 상품</h3>
+          <div class="vendor-preview-list" id="vendorProductList"></div>
+        </section>
+        <section class="summary-card" style="margin-top: 12px;">
+          <h3 id="partnerStoreTitle">내 매장 운영 설정</h3>
+          <div class="store-list" id="partnerStoreList"></div>
+        </section>
+      </div>
+    </section>
+
+    <section class="modal" id="vendorLoginModal" aria-hidden="true">
+      <div class="receipt">
+        <div class="receipt-head">
+          <div>
+            <p class="eyebrow">PARTNER LOGIN</p>
+            <h2>업체 로그인</h2>
+          </div>
+          <button class="close" type="button" onclick="closeVendorLogin()">X</button>
+        </div>
+        <form class="vendor-form" onsubmit="loginVendor(event)">
+          <label>입점 매장
+            <select id="loginStore"></select>
+          </label>
+          <label>관리 PIN
+            <input id="loginPin" type="password" inputmode="numeric" value="1111" />
+          </label>
+          <button class="primary" type="submit">로그인</button>
+          <p class="status" id="loginHint">데모 PIN: 어반클로젯 1111, 그레인룸 2222, 비트 아카이브 3333</p>
+        </form>
+      </div>
+    </section>
+
+    <section class="modal" id="managementModal" aria-hidden="true">
+      <div class="receipt">
+        <div class="receipt-head">
+          <div>
+            <p class="eyebrow">FITNOW MANAGER</p>
+            <h2>관리 센터</h2>
+          </div>
+          <button class="close" type="button" onclick="closeManagement()">X</button>
+        </div>
+        <div class="vendor-session" id="managementSession">업체와 배송 운영을 한곳에서 관리합니다.</div>
+        <div class="role-strip">
+          <div class="role-pill">
+            <strong>입점 관리</strong>
+            <span id="managementVendorState">업체 로그인 필요</span>
+          </div>
+          <div class="role-pill">
+            <strong>배송 관리</strong>
+            <span id="managementAdminState">운영자 로그인 필요</span>
+          </div>
+        </div>
+        <section class="summary-card">
+          <h3>관리 메뉴</h3>
+          <div class="vendor-preview-list">
+            <div class="vendor-product-row">
+              <div>
+                <strong>업체 상품/주문 관리</strong>
+                <span>상품 등록, 이미지 관리, 재고 확인, 픽업 준비</span>
+              </div>
+              <div class="mini-actions">
+                <button type="button" onclick="openVendorFromManagement()">열기</button>
+              </div>
+            </div>
+            <div class="vendor-product-row">
+              <div>
+                <strong>배송 운영 관리</strong>
+                <span>전체 주문 필터, 배송 중 처리, 배송 완료</span>
+              </div>
+              <div class="mini-actions">
+                <button type="button" onclick="openAdminFromManagement()">열기</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section class="modal" id="trackingModal" aria-hidden="true">
+      <div class="receipt">
+        <div class="receipt-head">
+          <div>
+            <p class="eyebrow">LIVE DELIVERY</p>
+            <h2>배송 추적</h2>
+          </div>
+          <button class="close" type="button" onclick="closeTracking()">X</button>
+        </div>
+        <div class="track-hero">
+          <div>
+            <p class="eyebrow">OSAN DONGTAN ROUTE</p>
+            <h2 id="trackTitle">아직 예약된 배송이 없습니다</h2>
+          </div>
+          <div class="route-map">
+            <span class="route-pin start">S</span>
+            <span class="route-pin rider" id="riderPin">R</span>
+            <span class="route-pin end">M</span>
+          </div>
+        </div>
+        <div class="order-list" id="trackingOrderList"></div>
+        <div class="order-summary" id="trackingSummary"></div>
+        <div class="timeline" id="trackingTimeline"></div>
+        <div class="track-actions" id="trackingActions"></div>
+      </div>
+    </section>
+
+    <section class="modal" id="ordersModal" aria-hidden="true">
+      <div class="receipt">
+        <div class="receipt-head">
+          <div>
+            <p class="eyebrow">ORDER HISTORY</p>
+            <h2>내 주문</h2>
+          </div>
+          <button class="close" type="button" onclick="closeOrders()">X</button>
+        </div>
+        <div class="order-list" id="orderList"></div>
+      </div>
+    </section>
+
+    <section class="modal" id="adminLoginModal" aria-hidden="true">
+      <div class="receipt">
+        <div class="receipt-head">
+          <div>
+            <p class="eyebrow">OPERATOR LOGIN</p>
+            <h2>운영자 로그인</h2>
+          </div>
+          <button class="close" type="button" onclick="closeAdminLogin()">X</button>
+        </div>
+        <form class="vendor-form" onsubmit="loginAdmin(event)">
+          <label>운영 PIN
+            <input id="adminPin" type="password" inputmode="numeric" value="0000" required />
+          </label>
+          <button class="primary" type="submit">운영 관리 열기</button>
+          <p class="hint" id="adminLoginHint">데모 운영자 PIN은 0000입니다.</p>
+        </form>
+      </div>
+    </section>
+
+    <section class="modal" id="adminModal" aria-hidden="true">
+      <div class="receipt">
+        <div class="receipt-head">
+          <div>
+            <p class="eyebrow">FITNOW CONTROL</p>
+            <h2>운영 배송 관리</h2>
+          </div>
+          <button class="close" type="button" onclick="closeAdmin()">X</button>
+        </div>
+        <div class="vendor-session" id="adminSession">운영자 로그인 후 배송을 관리할 수 있습니다.</div>
+        <div class="role-strip">
+          <div class="role-pill">
+            <strong>배송 권한</strong>
+            <span>전체 주문의 배송 중, 배송 완료 처리</span>
+          </div>
+          <div class="role-pill">
+            <strong>상품 권한 없음</strong>
+            <span>상품 등록과 재고 확인은 업체 화면에서만 처리</span>
+          </div>
+        </div>
+        <section class="summary-card">
+          <h3>배송 대시보드</h3>
+          <div class="line-item"><span>전체 주문</span><strong id="adminTotalOrders">0건</strong></div>
+          <div class="line-item"><span>픽업 준비</span><strong id="adminPickupOrders">0건</strong></div>
+          <div class="line-item"><span>배송 중</span><strong id="adminActiveOrders">0건</strong></div>
+        </section>
+        <section class="summary-card" style="margin-top: 12px;">
+          <h3>전체 주문 처리</h3>
+          <div class="chips" id="adminStatusFilters" style="margin-bottom: 10px;"></div>
+          <div class="vendor-preview-list" id="adminOrderList"></div>
+        </section>
+      </div>
+    </section>
+
+    <section class="modal" id="myModal" aria-hidden="true">
+      <div class="receipt">
+        <div class="receipt-head">
+          <div>
+            <p class="eyebrow">MY FITNOW</p>
+            <h2>마이페이지</h2>
+          </div>
+          <button class="close" type="button" onclick="closeMyPage()">X</button>
+        </div>
+        <div id="myContent"></div>
+      </div>
+    </section>
+
+    <section class="modal" id="customerLoginModal" aria-hidden="true">
+      <div class="receipt">
+        <div class="receipt-head">
+          <div>
+            <p class="eyebrow">CUSTOMER LOGIN</p>
+            <h2>고객 로그인</h2>
+          </div>
+          <button class="close" type="button" onclick="closeCustomerLogin()">X</button>
+        </div>
+        <div class="social-login-grid">
+          <button class="kakao-login" type="button" onclick="loginWithOAuth('kakao')">카카오 로그인</button>
+          <button class="naver-login" type="button" onclick="loginWithOAuth('custom:naver')">네이버 로그인</button>
+        </div>
+        <p class="oauth-note" id="oauthNote">카카오 설정: Supabase Kakao Provider에 REST API 키와 Kakao Login Client Secret을 넣고, 카카오 동의항목 설정값을 그대로 사용합니다.</p>
+        <form class="vendor-form" onsubmit="loginCustomer(event)">
+          <label>이름
+            <input id="customerName" type="text" value="김동탄" required />
+          </label>
+          <label>휴대폰 번호
+            <input id="customerPhone" type="tel" value="01012345678" required />
+          </label>
+          <button class="primary" type="submit">로그인</button>
+        </form>
+      </div>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      const SUPABASE_URL = "__SUPABASE_URL__";
+      const SUPABASE_ANON_KEY = "__SUPABASE_ANON_KEY__";
+      const regions = [
+        { key: "dongtan2", name: "동탄2", label: "동탄2 신도시", copy: "동탄2 기준 쇼룸 픽업과 라이더 동선을 계산 중입니다.", address: "동탄역 센트럴 상권 근처", offset: 0 },
+        { key: "dongtan1", name: "동탄1", label: "동탄1 생활권", copy: "동탄1은 북광장과 메타폴리스 주변을 우선 배차합니다.", address: "동탄 북광장 근처", offset: 5 },
+        { key: "osan", name: "오산", label: "오산 도심", copy: "오산은 오산역, 운암, 세교 방향을 묶어 배차합니다.", address: "오산역 로데오거리 근처", offset: 8 },
+        { key: "segyeo", name: "세교", label: "오산 세교", copy: "세교는 아파트 단지 입구 픽업존 기준으로 안내합니다.", address: "세교 중심상가 근처", offset: 11 },
+      ];
+      const partnerStores = [
+        { name: "어반클로젯 동탄", area: "동탄2", address: "동탄역 센트럴 상권", pickup: true, open: true, prep: 4 },
+        { name: "동탄 그레인룸", area: "동탄1", address: "동탄 북광장", pickup: true, open: true, prep: 6 },
+        { name: "오산 비트 아카이브", area: "오산", address: "오산역 로데오거리", pickup: true, open: true, prep: 8 },
+      ];
+      const vendorAccounts = [
+        { store: "어반클로젯 동탄", pin: "1111", manager: "어반클로젯 매니저" },
+        { store: "동탄 그레인룸", pin: "2222", manager: "그레인룸 매니저" },
+        { store: "오산 비트 아카이브", pin: "3333", manager: "비트 아카이브 매니저" },
+      ];
+      const products = [
+        { key: "jacket", name: "라이트 셔링 재킷", price: 89000, discountRate: 12, showroom: "어반클로젯 동탄", stock: 1, minutes: 32, match: 92, material: "나일론 코튼", visual: "jacket", category: "의류", fit: "살짝 여유 있는 숏 기장", size: "Free / 44-66", note: "퇴근 후 약속에 바로 입기 좋은 가벼운 아우터예요. 링과 함께 담으면 깔끔한 원마일 룩으로 완성됩니다." },
+        { key: "shoes", name: "스웨이드 러너 슈즈", price: 129000, discountRate: 8, showroom: "동탄 그레인룸", stock: 4, minutes: 38, match: 88, material: "스웨이드 러버", visual: "shoes", category: "신발", fit: "정사이즈 추천", size: "230-280", note: "부드러운 스웨이드 톤이라 재킷, 데님, 와이드 팬츠에 모두 잘 붙는 데일리 슈즈예요." },
+        { key: "bag", name: "미니 호보백", price: 54000, discountRate: 15, showroom: "오산 비트 아카이브", stock: 6, minutes: 41, match: 84, material: "비건 레더", visual: "bag", category: "잡화", fit: "가벼운 데일리 수납", size: "One size", note: "핸드폰, 카드지갑, 립 제품 정도를 넣기 좋은 사이즈예요. 룩에 곡선 포인트를 더해줍니다." },
+        { key: "ring", name: "실버 매트 링", price: 26000, discountRate: 5, showroom: "어반클로젯 동탄", stock: 9, minutes: 32, match: 79, material: "스테인리스 스틸", visual: "ring", category: "잡화", fit: "오픈 링 타입", size: "One size", note: "손이 허전해 보일 때 가장 빠르게 룩의 완성도를 올려주는 작은 포인트 아이템이에요." },
+      ];
+      const lookSets = [
+        { key: "afterwork", title: "퇴근 후 약속룩", store: "어반클로젯 동탄", discountRate: 7, keys: ["jacket", "ring"], note: "입점 매장이 고른 의류와 잡화 조합으로 바로 약속 장소에 갈 수 있는 세트예요." },
+        { key: "commute", title: "동탄 출근룩", store: "동탄 그레인룸", discountRate: 5, keys: ["shoes"], note: "출근길에 바로 받을 수 있는 신발 중심 세트예요. 업체가 상품을 더 추가하면 함께 구성됩니다." },
+        { key: "one-mile", title: "오산 원마일룩", store: "오산 비트 아카이브", discountRate: 10, keys: ["bag"], note: "잠깐 외출, 카페, 장보기까지 부담 없이 들 수 있는 잡화 세트예요." },
+      ];
+      const steps = ["예약 접수", "재고 확인", "픽업 요청", "배송 중", "배송 완료"];
+      let selectedShowroom = "전체";
+      let selectedLookKeys = [];
+      let selectedRegion = "dongtan2";
+      let sortMode = "fastest";
+      let onlyFast = false;
+      let cart = [];
+      let vendorProductCount = 0;
+      let vendorImageData = "";
+      let vendorImageFile = null;
+      let editingProductKey = "";
+      let editingLookKey = "";
+      let activeStep = 0;
+      let trackingTimer;
+      let lastOrder = null;
+      let orderHistory = [];
+      let supabaseClient = null;
+      let dbConnected = false;
+      let currentVendor = null;
+      let currentAdmin = null;
+      let adminStatusFilter = "all";
+      let currentCustomer = { name: "게스트", phone: "guest-preview", id: "guest-preview" };
+      const adminAccount = { name: "핏나우 운영자", pin: "0000" };
+      const CUSTOMER_STORAGE_KEY = "fitnow-current-customer";
+      const VENDOR_STORAGE_KEY = "fitnow-current-vendor";
+      const ADMIN_STORAGE_KEY = "fitnow-current-admin";
+      const ORDER_STATUS_STORAGE_KEY = "fitnow-order-status";
+
+      function formatKRW(value) {
+        return "KRW " + value.toLocaleString("ko-KR");
+      }
+
+      function normalizedDiscount(value) {
+        return Math.max(0, Math.min(90, Number(value) || 0));
+      }
+
+      function discountedPrice(price, discountRate) {
+        const discounted = Math.round((Number(price) || 0) * (100 - normalizedDiscount(discountRate)) / 100);
+        return Math.max(0, Math.round(discounted / 100) * 100);
+      }
+
+      function itemSalePrice(item) {
+        return item.salePrice || discountedPrice(item.price, item.discountRate);
+      }
+
+      function itemNormalPrice(item) {
+        return item.normalPrice || item.price || itemSalePrice(item);
+      }
+
+      function priceMarkup(normalPrice, discountRate, salePrice) {
+        const rate = normalizedDiscount(discountRate);
+        const sale = salePrice != null ? salePrice : discountedPrice(normalPrice, rate);
+        return `
+          <div class="price-stack">
+            <del>정상가 ${formatKRW(normalPrice)}</del>
+            <span class="discount-tag">${rate}% 할인</span>
+            <strong>할인가 ${formatKRW(sale)}</strong>
+          </div>
+        `;
+      }
+
+      function slugify(value) {
+        return encodeURIComponent(value.trim().toLowerCase()).replace(/%/g, "").slice(0, 48) || "item";
+      }
+
+      function setSyncStatus(message) {
+        document.getElementById("syncStatus").textContent = message;
+      }
+
+      function customerId() {
+        return currentCustomer ? currentCustomer.id : "guest-preview";
+      }
+
+      function providerLabel(provider) {
+        const labels = {
+          kakao: "카카오",
+          "custom:naver": "네이버",
+          naver: "네이버",
+          oauth: "소셜",
+        };
+        return labels[provider] || provider || "일반";
+      }
+
+      function customerContactLabel() {
+        if (!currentCustomer || currentCustomer.phone === "guest-preview") return "게스트 주문 모드";
+        return currentCustomer.email || currentCustomer.phone || currentCustomer.id;
+      }
+
+      function riderForRegion(regionLabel) {
+        if ((regionLabel || "").includes("오산")) return "오산 즉시배송 라이더 02";
+        if ((regionLabel || "").includes("동탄")) return "동탄 즉시배송 라이더 01";
+        return "핏나우 즉시배송 라이더";
+      }
+
+      function stepFromStatus(status) {
+        const stepsByStatus = {
+          reserved: 0,
+          stock_checked: 1,
+          styled: 1,
+          pickup: 2,
+          arriving: 3,
+          delivered: 4,
+          cancelled: 0,
+        };
+        return stepsByStatus[status] || 0;
+      }
+
+      function statusFromStep(step) {
+        if (step >= 4) return "delivered";
+        if (step >= 3) return "arriving";
+        if (step >= 2) return "pickup";
+        if (step >= 1) return "stock_checked";
+        return "reserved";
+      }
+
+      function labelFromStep(step) {
+        const labels = ["예약 완료", "재고 확인", "픽업 요청", "배송 중", "배송 완료"];
+        return labels[Math.max(0, Math.min(step, labels.length - 1))];
+      }
+
+      function paymentLabelFromStep(step) {
+        return step >= 1 ? "결제 완료" : "결제 대기";
+      }
+
+      function paymentLabelForOrder(order) {
+        if (!order || !order.paid) return "결제 대기";
+        return order.paymentMethod ? order.paymentMethod + " 결제 완료" : "결제 완료";
+      }
+
+      function readOrderStatusStore() {
+        try {
+          return JSON.parse(localStorage.getItem(ORDER_STATUS_STORAGE_KEY) || "{}");
+        } catch (error) {
+          localStorage.removeItem(ORDER_STATUS_STORAGE_KEY);
+          return {};
+        }
+      }
+
+      function saveOrderStatusOverride(order) {
+        if (!order || !order.id) return;
+        const store = readOrderStatusStore();
+        const currentStep = Math.max(0, order.progressStep || 0);
+        const savedStep = store[order.id] ? store[order.id].progressStep || 0 : 0;
+        if (currentStep < savedStep) return;
+        store[order.id] = {
+          progressStep: currentStep,
+          statusCode: statusFromStep(currentStep),
+          paid: !!order.paid,
+          updatedAt: new Date().toISOString(),
+        };
+        localStorage.setItem(ORDER_STATUS_STORAGE_KEY, JSON.stringify(store));
+      }
+
+      function applyStoredOrderStatus(order) {
+        const stored = readOrderStatusStore()[order.id];
+        if (!stored) return order;
+        const storedStep = stored.progressStep || stepFromStatus(stored.statusCode);
+        if (storedStep > (order.progressStep || 0)) {
+          order.progressStep = storedStep;
+          order.statusCode = statusFromStep(storedStep);
+          order.statusLabel = labelFromStep(storedStep);
+        }
+        if (stored.paid) order.paid = true;
+        order.paymentLabel = paymentLabelForOrder(order);
+        return order;
+      }
+
+      function mergeOrderLists(primary, secondary) {
+        const merged = [];
+        [...primary, ...secondary].forEach((order) => {
+          if (!order || !order.id) return;
+          const existing = merged.find((item) => item.id === order.id);
+          if (!existing) {
+            merged.push(applyStoredOrderStatus(order));
+            return;
+          }
+          const stronger = (order.progressStep || 0) > (existing.progressStep || 0) ? order : existing;
+          Object.assign(existing, applyStoredOrderStatus({ ...existing, ...stronger }));
+        });
+        return merged
+          .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+          .slice(0, 10);
+      }
+
+      function saveCurrentCustomer() {
+        localStorage.setItem(CUSTOMER_STORAGE_KEY, JSON.stringify(currentCustomer));
+      }
+
+      function restoreSavedCustomer() {
+        const saved = localStorage.getItem(CUSTOMER_STORAGE_KEY);
+        if (!saved) return;
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.id && parsed.id !== "guest-preview") {
+            currentCustomer = parsed;
+          }
+        } catch (error) {
+          localStorage.removeItem(CUSTOMER_STORAGE_KEY);
+        }
+      }
+
+      function saveCurrentVendor() {
+        if (!currentVendor) {
+          localStorage.removeItem(VENDOR_STORAGE_KEY);
+          return;
+        }
+        localStorage.setItem(VENDOR_STORAGE_KEY, JSON.stringify({ store: currentVendor.store }));
+      }
+
+      function restoreSavedVendor() {
+        const saved = localStorage.getItem(VENDOR_STORAGE_KEY);
+        if (!saved) return;
+        try {
+          const parsed = JSON.parse(saved);
+          const account = vendorAccounts.find((item) => item.store === parsed.store);
+          if (account) currentVendor = account;
+        } catch (error) {
+          localStorage.removeItem(VENDOR_STORAGE_KEY);
+        }
+      }
+
+      function saveCurrentAdmin() {
+        if (!currentAdmin) {
+          localStorage.removeItem(ADMIN_STORAGE_KEY);
+          return;
+        }
+        localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify({ name: currentAdmin.name }));
+      }
+
+      function restoreSavedAdmin() {
+        const saved = localStorage.getItem(ADMIN_STORAGE_KEY);
+        if (!saved) return;
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.name === adminAccount.name) currentAdmin = { name: adminAccount.name };
+        } catch (error) {
+          localStorage.removeItem(ADMIN_STORAGE_KEY);
+        }
+      }
+
+      function getOAuthRedirectUrl() {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("code");
+        url.searchParams.delete("error");
+        url.searchParams.delete("error_code");
+        url.searchParams.delete("error_description");
+        url.hash = "";
+        return url.toString();
+      }
+
+      function getAuthReturnParams() {
+        const params = new URLSearchParams(window.location.search);
+        const hash = window.location.hash.replace(/^#/, "");
+        if (hash) {
+          const hashParams = new URLSearchParams(hash);
+          hashParams.forEach((value, key) => {
+            if (!params.has(key)) params.set(key, value);
+          });
+        }
+        return params;
+      }
+
+      function canUseSupabase() {
+        return window.supabase && SUPABASE_URL.indexOf("__") !== 0 && SUPABASE_ANON_KEY.indexOf("__") !== 0;
+      }
+
+      function setupClientIfNeeded() {
+        if (!canUseSupabase()) return false;
+        if (!supabaseClient) {
+          supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+          supabaseClient.auth.onAuthStateChange((event, session) => {
+            if (session && session.user) {
+              applyAuthSession(session);
+            }
+          });
+        }
+        return true;
+      }
+
+      async function syncAuthSession() {
+        if (!setupClientIfNeeded()) return;
+        const params = getAuthReturnParams();
+        const authError = params.get("error_description") || params.get("error");
+        if (authError) {
+          const decoded = decodeURIComponent(authError.replace(/\+/g, " "));
+          setSyncStatus("카카오 설정 확인: REST API 키, Client Secret, account_email 동의항목을 확인해 주세요");
+          const note = document.getElementById("oauthNote");
+          if (note) {
+            note.textContent = "실패 원인: " + decoded + " / 카카오 account_email 선택동의, REST API 키, Client Secret이 Supabase와 같은지 확인해 주세요.";
+          }
+          window.history.replaceState({}, document.title, getOAuthRedirectUrl());
+          return;
+        }
+        const code = params.get("code");
+        if (code) {
+          const exchange = await supabaseClient.auth.exchangeCodeForSession(code);
+          if (exchange.error) {
+            setSyncStatus("카카오 로그인 완료 정보를 앱에 적용하지 못했습니다: " + exchange.error.message);
+          } else if (exchange.data && exchange.data.session) {
+            applyAuthSession(exchange.data.session);
+          }
+          window.history.replaceState({}, document.title, getOAuthRedirectUrl());
+        }
+        const result = await supabaseClient.auth.getSession();
+        if (result.data && result.data.session) {
+          applyAuthSession(result.data.session);
+        }
+      }
+
+      function applyAuthSession(session) {
+        const user = session.user;
+        const meta = user.user_metadata || {};
+        currentCustomer = {
+          name: meta.full_name || meta.name || meta.nickname || user.email || "소셜 로그인 고객",
+          phone: user.email || user.id,
+          email: user.email || "",
+          id: "auth-" + user.id,
+          provider: user.app_metadata && user.app_metadata.provider ? user.app_metadata.provider : "oauth",
+        };
+        orderHistory = [];
+        lastOrder = null;
+        saveCurrentCustomer();
+        closeCustomerLogin();
+        if (supabaseClient) {
+          loadSupabaseOrders().catch(() => setSyncStatus("고객 주문 내역 불러오기 실패"));
+        }
+        if (document.getElementById("myModal").classList.contains("open")) {
+          renderMyPage();
+        }
+        setSyncStatus(currentCustomer.name + " 소셜 로그인 완료");
+      }
+
+      async function checkSupabaseSetup() {
+        const resultNode = document.getElementById("setupCheckResult");
+        resultNode.textContent = "Supabase 설정을 확인 중입니다...";
+        if (!setupClientIfNeeded()) {
+          resultNode.textContent = "Supabase URL 또는 anon key가 앱에 주입되지 않았습니다.";
+          return;
+        }
+        const checks = [];
+        for (const table of ["showrooms", "products", "orders", "order_items", "look_sets", "look_set_items"]) {
+          const result = await supabaseClient.from(table).select("*").limit(1);
+          checks.push({ name: table, ok: !result.error, error: result.error ? result.error.message : "" });
+        }
+        let storageOk = false;
+        let storageError = "";
+        try {
+          const blob = new Blob(["fitnow storage check"], { type: "text/plain" });
+          const upload = await supabaseClient.storage.from("product-images").upload("health-check.txt", blob, { upsert: true });
+          storageOk = !upload.error;
+          storageError = upload.error ? upload.error.message : "";
+        } catch (error) {
+          storageError = error.message;
+        }
+        const failed = checks.filter((item) => !item.ok);
+        if (!failed.length && storageOk) {
+          resultNode.textContent = "정상입니다. 테이블 6개와 product-images 이미지 저장소가 준비됐습니다.";
+          setSyncStatus("Supabase SQL 확인 완료");
+        } else {
+          const tableText = failed.length ? "실패 테이블: " + failed.map((item) => item.name).join(", ") + ". " : "";
+          const storageText = storageOk ? "" : "이미지 저장소 실패: " + storageError;
+          resultNode.textContent = tableText + storageText;
+          setSyncStatus("Supabase SQL 확인 필요");
+        }
+      }
+
+      function showroomToStore(row) {
+        return {
+          dbId: row.id,
+          slug: row.slug,
+          name: row.name,
+          area: row.area,
+          address: row.address || "",
+          pickup: row.pickup_enabled !== false,
+          open: row.is_open !== false,
+          prep: row.prep_minutes || 0,
+        };
+      }
+
+      function productToItem(row) {
+        return {
+          dbId: row.id,
+          key: row.slug,
+          name: row.name,
+          price: row.price,
+          discountRate: row.discount_rate || 0,
+          showroom: row.showrooms ? row.showrooms.name : "입점 매장",
+          showroomId: row.showroom_id,
+          stock: row.stock_quantity,
+          minutes: row.delivery_minutes,
+          match: row.match_score || 80,
+          material: row.material || "소재 미입력",
+          visual: row.visual_key || "jacket",
+          image: row.image_url || "",
+          fit: row.fit || "업체 등록 상품",
+          size: row.size_label || "Free",
+          note: row.description || row.meta || "입점업체가 등록한 상품입니다.",
+          vendorAdded: true,
+        };
+      }
+
+      function lookSetRowToItem(row) {
+        return {
+          dbId: row.id,
+          key: row.slug,
+          title: row.title,
+          store: row.showrooms ? row.showrooms.name : "입점 매장",
+          showroomId: row.showroom_id,
+          discountRate: row.discount_rate || 0,
+          keys: (row.look_set_items || []).sort((a, b) => (a.display_order || 0) - (b.display_order || 0)).map((item) => item.product_slug),
+          note: row.description || "입점 매장이 직접 구성한 세트입니다.",
+        };
+      }
+
+      function encodeDeliveryRequest(order) {
+        return JSON.stringify({
+          address: order.address || "",
+          receiveType: order.receiveType || "문앞 수령",
+          paymentMethod: order.paymentMethod || "",
+          riderRequest: order.riderRequest || "",
+        });
+      }
+
+      function decodeDeliveryRequest(value, fallbackRegion = "") {
+        try {
+          const parsed = JSON.parse(value || "{}");
+          if (parsed && typeof parsed === "object") {
+            return {
+              address: parsed.address || fallbackRegion || "",
+              receiveType: parsed.receiveType || "문앞 수령",
+              paymentMethod: parsed.paymentMethod || "",
+              riderRequest: parsed.riderRequest || "",
+            };
+          }
+        } catch (error) {
+          return { address: value || fallbackRegion || "", receiveType: "문앞 수령", paymentMethod: "", riderRequest: "" };
+        }
+        return { address: value || fallbackRegion || "", receiveType: "문앞 수령", paymentMethod: "", riderRequest: "" };
+      }
+
+      async function initSupabase() {
+        if (!canUseSupabase()) {
+          setSyncStatus("Supabase 설정 없음 - 임시 데이터로 실행 중");
+          return;
+        }
+        try {
+          setupClientIfNeeded();
+          await syncAuthSession();
+          await loadSupabaseData();
+          dbConnected = true;
+          setSyncStatus("Supabase 연결됨 - DB 상품/매장 동기화 중");
+        } catch (error) {
+          dbConnected = false;
+          setSyncStatus("Supabase 연결 실패 - 임시 데이터로 실행 중");
+        }
+      }
+
+      async function loadSupabaseData() {
+        const showroomResult = await supabaseClient.from("showrooms").select("*").order("created_at", { ascending: true });
+        if (showroomResult.error) throw showroomResult.error;
+        const productResult = await supabaseClient
+          .from("products")
+          .select("*, showrooms(name)")
+          .order("created_at", { ascending: false });
+        if (productResult.error) throw productResult.error;
+
+        if (showroomResult.data && showroomResult.data.length) {
+          partnerStores.splice(0, partnerStores.length, ...showroomResult.data.map(showroomToStore));
+        }
+        if (productResult.data && productResult.data.length) {
+          products.splice(0, products.length, ...productResult.data.map(productToItem));
+        }
+        await loadSupabaseLookSets();
+        await loadSupabaseOrders();
+      }
+
+      async function loadSupabaseLookSets() {
+        if (!supabaseClient) return;
+        const result = await supabaseClient
+          .from("look_sets")
+          .select("*, showrooms(name), look_set_items(*)")
+          .eq("is_active", true)
+          .order("created_at", { ascending: false });
+        if (result.error) {
+          if (String(result.error.message || "").includes("look_sets")) return;
+          throw result.error;
+        }
+        if (result.data && result.data.length) {
+          lookSets.splice(0, lookSets.length, ...result.data.map(lookSetRowToItem).filter((look) => look.keys.length));
+        }
+      }
+
+      async function loadSupabaseOrders() {
+        const orderResult = await supabaseClient
+          .from("orders")
+          .select("*, order_items(*)")
+          .eq("user_id", customerId())
+          .order("created_at", { ascending: false })
+          .limit(10);
+        if (orderResult.error) throw orderResult.error;
+        orderHistory = mergeOrderLists((orderResult.data || []).map(orderRowToHistory), orderHistory);
+        if (orderHistory.length) {
+          lastOrder = lastOrder ? orderHistory.find((order) => order.id === lastOrder.id) || orderHistory[0] : orderHistory[0];
+        }
+      }
+
+      async function loadVendorOrders() {
+        if (!supabaseClient || !currentVendor) return [];
+        const orderResult = await supabaseClient
+          .from("orders")
+          .select("*, order_items(*)")
+          .order("created_at", { ascending: false })
+          .limit(30);
+        if (orderResult.error) throw orderResult.error;
+        return (orderResult.data || [])
+          .map(orderRowToHistory)
+          .filter((order) => order.items.some((item) => item.showroom === currentVendor.store));
+      }
+
+      async function loadAdminOrders() {
+        if (!supabaseClient) return orderHistory;
+        const orderResult = await supabaseClient
+          .from("orders")
+          .select("*, order_items(*)")
+          .order("created_at", { ascending: false })
+          .limit(50);
+        if (orderResult.error) throw orderResult.error;
+        return (orderResult.data || []).map(orderRowToHistory);
+      }
+
+      function orderRowToHistory(row) {
+        const items = (row.order_items || []).map((item) => {
+          const product = products.find((candidate) => candidate.key === item.product_slug);
+          return product ? { ...product, quantity: item.quantity } : {
+            key: item.product_slug,
+            name: item.product_name,
+            price: item.unit_price,
+            quantity: item.quantity,
+            showroom: "저장된 주문",
+            stock: 0,
+            minutes: row.eta_minutes || 32,
+            match: 80,
+            material: "",
+            visual: "bag",
+            fit: "",
+            size: item.size || "FREE",
+            note: "",
+          };
+        });
+        const step = stepFromStatus(row.status);
+        const deliveryRequest = decodeDeliveryRequest(row.request_note, row.destination_label);
+        return applyStoredOrderStatus({
+          id: row.order_code,
+          dbId: row.id,
+          statusCode: row.status,
+          progressStep: step,
+          region: row.destination_label || "오산, 동탄",
+          address: deliveryRequest.address,
+          receiveType: deliveryRequest.receiveType,
+          paymentMethod: deliveryRequest.paymentMethod || "카카오페이",
+          riderRequest: deliveryRequest.riderRequest,
+          items,
+          subtotal: row.item_total,
+          deliveryFee: row.delivery_fee,
+          total: row.total,
+          fastest: row.eta_minutes || 32,
+          statusLabel: labelFromStep(step),
+          paid: step >= 1 || (deliveryRequest.paymentMethod && deliveryRequest.paymentMethod !== "현장결제"),
+          paymentLabel: step >= 1 || (deliveryRequest.paymentMethod && deliveryRequest.paymentMethod !== "현장결제") ? paymentLabelForOrder({ paid: true, paymentMethod: deliveryRequest.paymentMethod || "카카오페이" }) : "결제 대기",
+          riderName: riderForRegion(row.destination_label),
+          createdAt: row.created_at,
+          createdLabel: new Date(row.created_at).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }),
+        });
+      }
+
+      function orderStatusLabel(status) {
+        const labels = {
+          reserved: "예약 완료",
+          stock_checked: "재고 확인",
+          styled: "스타일 체크",
+          pickup: "픽업 준비",
+          arriving: "배송 중",
+          delivered: "배송 완료",
+          cancelled: "취소됨",
+        };
+        return labels[status] || "배송 진행 중";
+      }
+
+      function currentRegion() {
+        return regions.find((region) => region.key === selectedRegion) || regions[0];
+      }
+
+      function eta(item) {
+        const store = storeByName(item.showroom);
+        const prep = store ? store.prep : 0;
+        return item.minutes + currentRegion().offset + prep;
+      }
+
+      function storeByName(name) {
+        return partnerStores.find((store) => store.name === name);
+      }
+
+      function storeIsVisible(item) {
+        const store = storeByName(item.showroom);
+        return !store || (store.open && store.pickup);
+      }
+
+      function renderRegions() {
+        const region = currentRegion();
+        document.querySelector(".brand small").textContent = "오산, 동탄 즉시배송";
+        document.getElementById("areaTitle").textContent = region.label + "로 받을게요";
+        document.getElementById("areaCopy").textContent = region.copy;
+        document.getElementById("regionGrid").innerHTML = regions.map((item) => `
+          <button class="region-button ${item.key === selectedRegion ? "active-control" : ""}" type="button" onclick="setRegion('${item.key}')">
+            ${item.name}
+            <span>예상 +${item.offset}분</span>
+          </button>
+        `).join("");
+      }
+
+      function vendorStores() {
+        return currentVendor ? [currentVendor.store] : partnerStores.map((store) => store.name);
+      }
+
+      function renderVendorStores() {
+        document.getElementById("vendorStore").innerHTML = vendorStores().map((store) =>
+          '<option value="' + store + '">' + store + '</option>'
+        ).join("");
+      }
+
+      function renderVendorProducts() {
+        const vendorItems = products.filter((item) => !currentVendor || item.showroom === currentVendor.store);
+        document.getElementById("vendorProductList").innerHTML = vendorItems.length ? vendorItems.map((item) => `
+          <div class="vendor-product-row">
+            <div>
+              <strong>${item.name}</strong>
+              <span>${item.showroom} - 할인가 ${formatKRW(itemSalePrice(item))} - 재고 ${item.stock}개</span>
+            </div>
+            <div class="mini-actions">
+              <button type="button" onclick="editVendorProduct('${item.key}')">수정</button>
+              <button class="danger" type="button" onclick="deleteVendorProduct('${item.key}')">삭제</button>
+            </div>
+          </div>
+        `).join("") : '<div class="line-item"><span>아직 등록된 상품이 없습니다</span><strong>등록 대기</strong></div>';
+      }
+
+      function renderVendorLookPicker() {
+        const picker = document.getElementById("vendorLookProductPicker");
+        if (!picker || !currentVendor) return;
+        const vendorItems = products.filter((item) => item.showroom === currentVendor.store);
+        const editingLook = lookSets.find((look) => look.key === editingLookKey && look.store === currentVendor.store);
+        const selectedKeys = editingLook ? editingLook.keys : [];
+        picker.innerHTML = vendorItems.length ? vendorItems.map((item) => `
+          <label class="look-size-row">
+            <div>
+              <strong>${item.category || "상품"} · ${item.name}</strong>
+              <span>${formatKRW(itemSalePrice(item))} · ${item.stock}개 재고</span>
+            </div>
+            <input type="checkbox" name="vendorLookItem" value="${item.key}" ${selectedKeys.includes(item.key) ? "checked" : ""} />
+          </label>
+        `).join("") : '<div class="line-item"><span>세트로 묶을 상품이 없습니다</span><strong>상품 등록 필요</strong></div>';
+      }
+
+      function renderVendorLooks() {
+        const list = document.getElementById("vendorLookList");
+        if (!list || !currentVendor) return;
+        const vendorLooks = lookSets.filter((look) => look.store === currentVendor.store);
+        list.innerHTML = vendorLooks.length ? vendorLooks.map((look) => {
+          const items = lookItems(look);
+          return `
+            <div class="vendor-product-row">
+              <div>
+                <strong>${look.title}</strong>
+                <span>${items.map((item) => (item.category || "상품") + " · " + item.name).join(", ")}</span>
+                <span>${look.note}</span>
+              </div>
+              <div class="mini-actions">
+                <button type="button" onclick="editVendorLook('${look.key}')">수정</button>
+                <button class="danger" type="button" onclick="deleteVendorLook('${look.key}')">삭제</button>
+              </div>
+            </div>
+          `;
+        }).join("") : '<div class="line-item"><span>아직 등록된 세트가 없습니다</span><strong>세트 대기</strong></div>';
+      }
+
+      function renderVendorRoleSummary() {
+        if (!currentVendor) return;
+        const productCount = products.filter((item) => item.showroom === currentVendor.store).length;
+        const pendingOrderCount = orderHistory.filter((order) =>
+          order.items.some((item) => item.showroom === currentVendor.store) && (order.progressStep || 0) < 2
+        ).length;
+        const strip = document.getElementById("vendorRoleStrip");
+        if (strip) {
+          strip.innerHTML = `
+            <div class="role-pill">
+              <strong>${currentVendor.store}</strong>
+              <span>상품 ${productCount}개 관리 중 · 다른 매장 상품 접근 차단</span>
+            </div>
+            <div class="role-pill">
+              <strong>업체 처리 범위</strong>
+              <span>재고 확인, 픽업 준비 · 대기 주문 ${pendingOrderCount}건</span>
+            </div>
+          `;
+        }
+        const title = document.getElementById("partnerStoreTitle");
+        if (title) title.textContent = currentVendor.store + " 운영 설정";
+      }
+
+      async function renderVendorOrders(ordersOverride) {
+        const list = document.getElementById("vendorOrderList");
+        if (!list) return;
+        if (!currentVendor) {
+          list.innerHTML = '<div class="line-item"><span>업체 로그인 후 확인할 수 있습니다</span><strong>로그인 필요</strong></div>';
+          return;
+        }
+        let orders = ordersOverride || orderHistory.filter((order) => order.items.some((item) => item.showroom === currentVendor.store));
+        if (!ordersOverride && supabaseClient) {
+          try {
+            orders = await loadVendorOrders();
+          } catch (error) {
+            setSyncStatus("업체 주문은 화면 기록 기준으로 표시됨 - DB 불러오기 실패");
+          }
+        }
+        list.innerHTML = orders.length ? orders.map((order) => {
+          const vendorItems = order.items.filter((item) => item.showroom === currentVendor.store);
+          const vendorTotal = vendorItems.reduce((sum, item) => sum + itemSalePrice(item) * item.quantity, 0);
+          return `
+            <div class="vendor-product-row">
+              <div>
+                <strong>${order.id} · ${labelFromStep(order.progressStep || 0)}</strong>
+                <span>${vendorItems.map((item) => item.name + " " + (item.size || "FREE") + " x " + item.quantity).join(", ")}</span>
+                <span>${order.address} · ${formatKRW(vendorTotal)}</span>
+                <span>${order.receiveType || "문앞 수령"} · 요청: ${order.riderRequest || "없음"}</span>
+                <span>결제수단: ${order.paymentMethod || "카카오페이"}</span>
+                <span>처리 상태: ${paymentLabelForOrder(order)} · ${order.riderName || riderForRegion(order.region)}</span>
+              </div>
+              <div class="mini-actions">
+                <button type="button" ${order.paid ? "" : "disabled"} onclick="vendorAdvanceOrder('${order.id}', 1)">${!order.paid ? "결제 대기" : (order.progressStep || 0) >= 1 ? "재고 확인됨" : "재고 확인"}</button>
+                <button type="button" ${order.paid ? "" : "disabled"} onclick="vendorAdvanceOrder('${order.id}', 2)">${!order.paid ? "결제 대기" : (order.progressStep || 0) >= 2 ? "픽업 준비됨" : "픽업 준비"}</button>
+              </div>
+            </div>
+          `;
+        }).join("") : '<div class="line-item"><span>아직 이 매장 주문이 없습니다</span><strong>주문 대기</strong></div>';
+      }
+
+      function resetVendorForm() {
+        editingProductKey = "";
+        document.getElementById("vendorSubmitButton").textContent = "상품 등록";
+        document.getElementById("vendorName").value = "신규 등록 상품 " + (vendorProductCount + 1);
+        document.getElementById("vendorPrice").value = 69000;
+        document.getElementById("vendorDiscount").value = 10;
+        document.getElementById("vendorStock").value = 3;
+        document.getElementById("vendorMinutes").value = 36;
+        document.getElementById("vendorMatch").value = 86;
+        document.getElementById("vendorMaterial").value = "코튼 니트";
+        document.getElementById("vendorSize").value = "Free / 44-66";
+        document.getElementById("vendorNote").value = "동탄, 오산 퇴근길에 바로 받기 좋은 레이어드 아이템이에요.";
+        document.getElementById("vendorImage").value = "";
+        vendorImageData = "";
+        vendorImageFile = null;
+        document.getElementById("vendorImagePreview").textContent = "이미지 미리보기";
+      }
+
+      function editVendorProduct(key) {
+        const item = products.find((product) => product.key === key);
+        if (!item) return;
+        if (currentVendor && item.showroom !== currentVendor.store) {
+          setSyncStatus("다른 매장의 상품은 수정할 수 없습니다");
+          return;
+        }
+        editingProductKey = key;
+        document.getElementById("vendorSubmitButton").textContent = "상품 수정 저장";
+        document.getElementById("vendorStore").value = item.showroom;
+        document.getElementById("vendorName").value = item.name;
+        document.getElementById("vendorPrice").value = item.price;
+        document.getElementById("vendorDiscount").value = normalizedDiscount(item.discountRate);
+        document.getElementById("vendorStock").value = item.stock;
+        document.getElementById("vendorMinutes").value = item.minutes;
+        document.getElementById("vendorMatch").value = item.match;
+        document.getElementById("vendorMaterial").value = item.material;
+        document.getElementById("vendorSize").value = item.size;
+        document.getElementById("vendorNote").value = item.note;
+        vendorImageData = item.image || "";
+        vendorImageFile = null;
+        document.getElementById("vendorImagePreview").innerHTML = item.image ? '<img src="' + item.image + '" alt="상품 이미지" />' : "이미지 미리보기";
+      }
+
+      async function deleteVendorProduct(key) {
+        const index = products.findIndex((product) => product.key === key);
+        if (index < 0) return;
+        const item = products[index];
+        if (currentVendor && item.showroom !== currentVendor.store) {
+          setSyncStatus("다른 매장의 상품은 삭제할 수 없습니다");
+          return;
+        }
+        products.splice(index, 1);
+        cart = cart.filter((line) => line.key !== key);
+        if (editingProductKey === key) resetVendorForm();
+        renderProducts();
+        renderCart();
+        renderVendorProducts();
+        renderVendorLookPicker();
+        renderVendorLooks();
+        renderVendorRoleSummary();
+        try {
+          await deleteProductFromSupabase(item);
+          setSyncStatus("상품이 삭제됨 - " + item.name);
+        } catch (error) {
+          setSyncStatus("상품은 화면에서 삭제됨 - DB 삭제 실패");
+        }
+      }
+
+      function resetVendorLookForm() {
+        editingLookKey = "";
+        document.getElementById("vendorLookSubmitButton").textContent = "선택 상품으로 세트 등록";
+        document.getElementById("vendorLookTitle").value = currentVendor ? currentVendor.store + " 추천 세트" : "오늘 바로 입는 세트";
+        document.getElementById("vendorLookNote").value = "입점 매장이 직접 고른 즉시배송 세트입니다.";
+        document.getElementById("vendorLookDiscount").value = 5;
+        document.querySelectorAll('input[name="vendorLookItem"]').forEach((input) => input.checked = false);
+        renderVendorLookPicker();
+      }
+
+      function editVendorLook(key) {
+        const look = lookSets.find((item) => item.key === key);
+        if (!look) return;
+        if (currentVendor && look.store !== currentVendor.store) {
+          setSyncStatus("로그인한 매장의 세트만 수정할 수 있습니다");
+          return;
+        }
+        editingLookKey = key;
+        document.getElementById("vendorLookTitle").value = look.title;
+        document.getElementById("vendorLookNote").value = look.note;
+        document.getElementById("vendorLookDiscount").value = normalizedDiscount(look.discountRate);
+        document.getElementById("vendorLookSubmitButton").textContent = "세트 수정 저장";
+        renderVendorLookPicker();
+        setSyncStatus("세트 수정 중 - " + look.title);
+      }
+
+      async function submitVendorLook(event) {
+        event.preventDefault();
+        if (!currentVendor) {
+          openVendorLogin();
+          return;
+        }
+        const selectedKeys = [...document.querySelectorAll('input[name="vendorLookItem"]:checked')].map((input) => input.value);
+        if (!selectedKeys.length) {
+          setSyncStatus("세트로 묶을 상품을 하나 이상 선택해 주세요");
+          return;
+        }
+        const validKeys = selectedKeys.filter((key) => {
+          const item = products.find((product) => product.key === key);
+          return item && item.showroom === currentVendor.store;
+        });
+        if (!validKeys.length) {
+          setSyncStatus("로그인한 매장의 상품만 세트로 구성할 수 있습니다");
+          return;
+        }
+        let look = lookSets.find((item) => item.key === editingLookKey && item.store === currentVendor.store);
+        if (look) {
+          look.title = document.getElementById("vendorLookTitle").value.trim() || currentVendor.store + " 세트";
+          look.keys = validKeys;
+          look.note = document.getElementById("vendorLookNote").value.trim() || "입점 매장이 직접 구성한 세트입니다.";
+          look.discountRate = normalizedDiscount(document.getElementById("vendorLookDiscount").value);
+        } else {
+          look = {
+            key: "look-" + Date.now(),
+            title: document.getElementById("vendorLookTitle").value.trim() || currentVendor.store + " 세트",
+            store: currentVendor.store,
+            discountRate: normalizedDiscount(document.getElementById("vendorLookDiscount").value),
+            keys: validKeys,
+            note: document.getElementById("vendorLookNote").value.trim() || "입점 매장이 직접 구성한 세트입니다.",
+          };
+          lookSets.unshift(look);
+        }
+        resetVendorLookForm();
+        renderVendorLooks();
+        renderLooks();
+        try {
+          await syncLookToSupabase(look);
+          setSyncStatus("룩 세트가 Supabase에 저장됨 - " + look.title);
+        } catch (error) {
+          setSyncStatus("룩 세트는 화면에 등록됨 - DB 저장 실패, SQL 테이블 확인 필요");
+        }
+      }
+
+      async function deleteVendorLook(key) {
+        const index = lookSets.findIndex((look) => look.key === key);
+        if (index < 0) return;
+        if (currentVendor && lookSets[index].store !== currentVendor.store) {
+          setSyncStatus("로그인한 매장의 세트만 삭제할 수 있습니다");
+          return;
+        }
+        const removed = lookSets.splice(index, 1)[0];
+        if (editingLookKey === removed.key) resetVendorLookForm();
+        renderVendorLooks();
+        renderLooks();
+        try {
+          await deleteLookFromSupabase(removed);
+          setSyncStatus("룩 세트가 Supabase에서 삭제됨 - " + removed.title);
+        } catch (error) {
+          setSyncStatus("룩 세트는 화면에서 삭제됨 - DB 삭제 실패");
+        }
+      }
+
+      function renderPartnerStores() {
+        const stores = currentVendor ? partnerStores.filter((store) => store.name === currentVendor.store) : partnerStores;
+        document.getElementById("partnerStoreList").innerHTML = stores.map((store) => `
+          <div class="store-admin-card">
+            <div class="store-admin-head">
+              <div>
+                <strong>${store.name}</strong>
+                <span>${store.area} - ${store.address}</span>
+              </div>
+              <button class="store-toggle ${store.open && store.pickup ? "" : "paused"}" type="button" onclick="toggleStore('${store.name}')">
+                ${store.open && store.pickup ? "픽업 가능" : "픽업 중지"}
+              </button>
+            </div>
+            <div class="form-grid">
+              <label>준비시간
+                <input type="number" min="0" value="${store.prep}" onchange="updateStorePrep('${store.name}', this.value)" />
+              </label>
+              <label>운영지역
+                <input type="text" value="${store.area}" onchange="updateStoreArea('${store.name}', this.value)" />
+              </label>
+            </div>
+          </div>
+        `).join("");
+      }
+
+      async function vendorAdvanceOrder(orderId, step) {
+        if (!currentVendor) {
+          openVendorLogin();
+          return;
+        }
+        let order = orderHistory.find((item) => item.id === orderId);
+        if (supabaseClient) {
+          const orders = await loadVendorOrders().catch(() => []);
+          const dbOrder = orders.find((item) => item.id === orderId);
+          if (dbOrder) {
+            order = { ...dbOrder, progressStep: Math.max(order ? (order.progressStep || 0) : 0, dbOrder.progressStep || 0) };
+          }
+        }
+        if (!order) {
+          setSyncStatus("업체 주문을 찾을 수 없습니다");
+          return;
+        }
+        if (!order.items.some((item) => item.showroom === currentVendor.store)) {
+          setSyncStatus("로그인한 매장의 주문만 처리할 수 있습니다");
+          return;
+        }
+        if (!order.paid) {
+          setSyncStatus("결제 완료 후 재고 확인이 가능합니다");
+          renderVendorOrders();
+          return;
+        }
+        lastOrder = order;
+        lastOrder.progressStep = Math.max(lastOrder.progressStep || 0, step);
+        lastOrder.statusCode = statusFromStep(lastOrder.progressStep);
+        lastOrder.statusLabel = labelFromStep(lastOrder.progressStep);
+        lastOrder.paymentLabel = paymentLabelForOrder(lastOrder);
+        saveOrderStatusOverride(lastOrder);
+        saveOrderHistory(lastOrder);
+        const visibleOrders = orderHistory.filter((item) => item.items.some((line) => line.showroom === currentVendor.store));
+        renderVendorRoleSummary();
+        renderVendorOrders(visibleOrders);
+        renderTracking();
+        if (document.getElementById("ordersModal").classList.contains("open")) renderOrders();
+        if (document.getElementById("myModal").classList.contains("open")) renderMyPage();
+        try {
+          await syncOrderStatusToSupabase(lastOrder);
+          setSyncStatus((step >= 2 ? "픽업 준비 완료" : "재고 확인 완료") + " - Supabase 주문 상태 업데이트 완료");
+        } catch (error) {
+          setSyncStatus((step >= 2 ? "픽업 준비 완료" : "재고 확인 완료") + " - 화면에 먼저 반영됨, DB 업데이트 권한 확인 필요");
+        }
+      }
+
+      async function renderAdminOrders(ordersOverride) {
+        const list = document.getElementById("adminOrderList");
+        if (!list) return;
+        let orders = ordersOverride || orderHistory;
+        if (!ordersOverride && supabaseClient) {
+          try {
+            orders = await loadAdminOrders();
+          } catch (error) {
+            setSyncStatus("운영 주문은 화면 기록 기준으로 표시됨 - DB 불러오기 실패");
+          }
+        }
+        document.getElementById("adminTotalOrders").textContent = orders.length + "건";
+        document.getElementById("adminPickupOrders").textContent = orders.filter((order) => (order.progressStep || 0) >= 2 && (order.progressStep || 0) < 3).length + "건";
+        document.getElementById("adminActiveOrders").textContent = orders.filter((order) => (order.progressStep || 0) === 3).length + "건";
+        renderAdminStatusFilters(orders);
+        const visibleOrders = filteredAdminOrders(orders);
+        list.innerHTML = visibleOrders.length ? visibleOrders.map((order) => {
+          const step = order.progressStep || 0;
+          const readyForDelivery = step >= 2;
+          return `
+            <div class="vendor-product-row">
+              <div>
+                <strong>${order.id} · ${labelFromStep(step)}</strong>
+                <span>${order.items.map((item) => item.showroom).filter((store, index, stores) => stores.indexOf(store) === index).join(", ")}</span>
+                <span>${order.address} · ${order.riderName || riderForRegion(order.region)}</span>
+                <span>${order.receiveType || "문앞 수령"} · 요청: ${order.riderRequest || "없음"}</span>
+                <span>결제수단: ${order.paymentMethod || "카카오페이"}</span>
+                <span>운영 상태: ${readyForDelivery ? "배송 처리 가능" : "업체 픽업 준비 대기"} · ${order.statusLabel || labelFromStep(step)}</span>
+              </div>
+              <div class="mini-actions">
+                <button type="button" ${readyForDelivery ? "" : "disabled"} onclick="adminAdvanceOrder('${order.id}', 3)">${!readyForDelivery ? "픽업 대기" : step >= 3 ? "배송 중 처리됨" : "배송 중"}</button>
+                <button type="button" ${step >= 3 ? "" : "disabled"} onclick="adminAdvanceOrder('${order.id}', 4)">${step < 3 ? "배송 대기" : step >= 4 ? "배송 완료됨" : "배송 완료"}</button>
+              </div>
+            </div>
+          `;
+        }).join("") : '<div class="line-item"><span>이 조건에 맞는 주문이 없습니다</span><strong>필터 변경</strong></div>';
+      }
+
+      function adminFilterMatches(order, filter) {
+        const step = order.progressStep || 0;
+        if (filter === "waiting") return step < 2;
+        if (filter === "ready") return step >= 2 && step < 3;
+        if (filter === "active") return step === 3;
+        if (filter === "done") return step >= 4;
+        return true;
+      }
+
+      function filteredAdminOrders(orders) {
+        return orders.filter((order) => adminFilterMatches(order, adminStatusFilter));
+      }
+
+      function renderAdminStatusFilters(orders) {
+        const node = document.getElementById("adminStatusFilters");
+        if (!node) return;
+        const filters = [
+          { key: "all", label: "전체" },
+          { key: "waiting", label: "픽업 대기" },
+          { key: "ready", label: "배송 가능" },
+          { key: "active", label: "배송 중" },
+          { key: "done", label: "완료" },
+        ];
+        node.innerHTML = filters.map((filter) => {
+          const count = orders.filter((order) => adminFilterMatches(order, filter.key)).length;
+          return '<button class="chip ' + (adminStatusFilter === filter.key ? 'active-control' : '') + '" type="button" onclick="setAdminStatusFilter(\'' + filter.key + '\')">' + filter.label + ' ' + count + '</button>';
+        }).join("");
+      }
+
+      async function setAdminStatusFilter(filter) {
+        adminStatusFilter = filter;
+        await renderAdminOrders();
+      }
+
+      async function adminAdvanceOrder(orderId, step) {
+        if (!currentAdmin) {
+          openAdminLogin();
+          return;
+        }
+        let order = orderHistory.find((item) => item.id === orderId);
+        if (supabaseClient) {
+          const orders = await loadAdminOrders().catch(() => []);
+          const dbOrder = orders.find((item) => item.id === orderId);
+          if (dbOrder) {
+            order = { ...dbOrder, progressStep: Math.max(order ? (order.progressStep || 0) : 0, dbOrder.progressStep || 0) };
+          }
+        }
+        if (!order) {
+          setSyncStatus("운영 주문을 찾을 수 없습니다");
+          return;
+        }
+        if (step >= 3 && (order.progressStep || 0) < 2) {
+          setSyncStatus("업체가 픽업 준비를 완료한 주문만 배송 처리할 수 있습니다");
+          renderAdminOrders(orderHistory);
+          return;
+        }
+        lastOrder = order;
+        lastOrder.progressStep = Math.max(lastOrder.progressStep || 0, step);
+        lastOrder.statusCode = statusFromStep(lastOrder.progressStep);
+        lastOrder.statusLabel = labelFromStep(lastOrder.progressStep);
+        lastOrder.paymentLabel = paymentLabelForOrder(lastOrder);
+        saveOrderStatusOverride(lastOrder);
+        saveOrderHistory(lastOrder);
+        renderAdminOrders(orderHistory);
+        renderTracking();
+        if (document.getElementById("ordersModal").classList.contains("open")) renderOrders();
+        if (document.getElementById("myModal").classList.contains("open")) renderMyPage();
+        try {
+          await syncOrderStatusToSupabase(lastOrder);
+          setSyncStatus((step >= 4 ? "배송 완료" : "배송 중") + " - Supabase 주문 상태 업데이트 완료");
+        } catch (error) {
+          setSyncStatus((step >= 4 ? "배송 완료" : "배송 중") + " - 화면에 먼저 반영됨, DB 업데이트 권한 확인 필요");
+        }
+      }
+
+      async function toggleStore(name) {
+        if (currentVendor && name !== currentVendor.store) {
+          setSyncStatus("로그인한 매장만 관리할 수 있습니다");
+          return;
+        }
+        const store = storeByName(name);
+        if (!store) return;
+        store.pickup = !store.pickup;
+        renderPartnerStores();
+        renderProducts();
+        try {
+          await syncStoreToSupabase(store);
+          setSyncStatus("매장 상태가 Supabase에 저장됨");
+        } catch (error) {
+          setSyncStatus("매장 상태는 화면에만 반영됨 - DB 저장 실패");
+        }
+      }
+
+      async function updateStorePrep(name, value) {
+        if (currentVendor && name !== currentVendor.store) {
+          setSyncStatus("로그인한 매장만 관리할 수 있습니다");
+          return;
+        }
+        const store = storeByName(name);
+        if (!store) return;
+        store.prep = Math.max(0, Number(value) || 0);
+        renderPartnerStores();
+        renderProducts();
+        try {
+          await syncStoreToSupabase(store);
+          setSyncStatus("매장 준비시간이 Supabase에 저장됨");
+        } catch (error) {
+          setSyncStatus("준비시간은 화면에만 반영됨 - DB 저장 실패");
+        }
+      }
+
+      async function updateStoreArea(name, value) {
+        if (currentVendor && name !== currentVendor.store) {
+          setSyncStatus("로그인한 매장만 관리할 수 있습니다");
+          return;
+        }
+        const store = storeByName(name);
+        if (!store) return;
+        store.area = value.trim() || store.area;
+        renderPartnerStores();
+        try {
+          await syncStoreToSupabase(store);
+          setSyncStatus("매장 지역이 Supabase에 저장됨");
+        } catch (error) {
+          setSyncStatus("매장 지역은 화면에만 반영됨 - DB 저장 실패");
+        }
+      }
+
+      async function syncStoreToSupabase(store) {
+        if (!supabaseClient) return;
+        const payload = {
+          slug: store.slug || slugify(store.name),
+          name: store.name,
+          area: store.area,
+          address: store.address || "",
+          average_delivery_minutes: 40,
+          prep_minutes: store.prep,
+          pickup_enabled: store.pickup,
+          is_open: store.open,
+        };
+        const result = await supabaseClient.from("showrooms").upsert(payload, { onConflict: "slug" }).select("id").single();
+        if (result.error) throw result.error;
+        store.dbId = result.data.id;
+        store.slug = payload.slug;
+        return store.dbId;
+      }
+
+      async function syncProductToSupabase(item) {
+        if (!supabaseClient) return;
+        const store = storeByName(item.showroom);
+        const showroomId = store ? (store.dbId || await syncStoreToSupabase(store)) : null;
+        const imageUrl = await uploadProductImage(item);
+        const payload = {
+          showroom_id: showroomId,
+          slug: item.key,
+          name: item.name,
+          price: item.price,
+          category: "fashion",
+          meta: item.note,
+          discount_rate: normalizedDiscount(item.discountRate),
+          material: item.material,
+          fit: item.fit,
+          size_label: item.size,
+          description: item.note,
+          match_score: item.match,
+          stock_quantity: item.stock,
+          delivery_minutes: item.minutes,
+          visual_key: item.visual,
+          image_url: imageUrl || item.image || null,
+        };
+        const result = await supabaseClient.from("products").upsert(payload, { onConflict: "slug" }).select("id").single();
+        if (result.error) throw result.error;
+        item.dbId = result.data.id;
+      }
+
+      async function deleteProductFromSupabase(item) {
+        if (!supabaseClient || !item) return;
+        if (item.dbId) {
+          const result = await supabaseClient.from("products").delete().eq("id", item.dbId);
+          if (result.error) throw result.error;
+          return;
+        }
+        const result = await supabaseClient.from("products").delete().eq("slug", item.key);
+        if (result.error) throw result.error;
+      }
+
+      async function syncLookToSupabase(look) {
+        if (!supabaseClient || !look) return;
+        const store = storeByName(look.store);
+        const showroomId = store ? (store.dbId || await syncStoreToSupabase(store)) : null;
+        const setResult = await supabaseClient.from("look_sets").upsert({
+          showroom_id: showroomId,
+          slug: look.key,
+          title: look.title,
+          description: look.note || "",
+          discount_rate: normalizedDiscount(look.discountRate),
+          is_active: true,
+        }, { onConflict: "slug" }).select("id").single();
+        if (setResult.error) throw setResult.error;
+        look.dbId = setResult.data.id;
+        const deleteResult = await supabaseClient.from("look_set_items").delete().eq("look_set_id", look.dbId);
+        if (deleteResult.error) throw deleteResult.error;
+        const rows = [];
+        for (const [index, key] of look.keys.entries()) {
+          const item = products.find((product) => product.key === key);
+          if (!item) continue;
+          rows.push({
+            look_set_id: look.dbId,
+            product_id: await ensureProductInSupabase(item),
+            product_slug: item.key,
+            display_order: index,
+          });
+        }
+        if (rows.length) {
+          const itemResult = await supabaseClient.from("look_set_items").insert(rows);
+          if (itemResult.error) throw itemResult.error;
+        }
+      }
+
+      async function deleteLookFromSupabase(look) {
+        if (!supabaseClient || !look) return;
+        const result = look.dbId
+          ? await supabaseClient.from("look_sets").delete().eq("id", look.dbId)
+          : await supabaseClient.from("look_sets").delete().eq("slug", look.key);
+        if (result.error) throw result.error;
+      }
+
+      async function ensureProductInSupabase(item) {
+        if (!supabaseClient) return null;
+        if (item.dbId) return item.dbId;
+        await syncProductToSupabase(item);
+        return item.dbId || null;
+      }
+
+      async function syncOrderToSupabase(order) {
+        if (!supabaseClient || !order || !order.items.length) return;
+        const firstStore = storeByName(order.items[0].showroom);
+        const showroomId = firstStore ? (firstStore.dbId || await syncStoreToSupabase(firstStore)) : null;
+        const orderResult = await supabaseClient.from("orders").insert({
+          order_code: order.id,
+          user_id: customerId(),
+          showroom_id: showroomId,
+          status: "reserved",
+          item_total: order.subtotal,
+          delivery_fee: order.deliveryFee,
+          total: order.total,
+          eta_minutes: order.fastest,
+          destination_label: order.region,
+          request_note: encodeDeliveryRequest(order),
+        }).select("id").single();
+        if (orderResult.error) throw orderResult.error;
+        order.dbId = orderResult.data.id;
+
+        const rows = [];
+        for (const item of order.items) {
+          rows.push({
+            order_id: order.dbId,
+            product_id: await ensureProductInSupabase(item),
+            product_slug: item.key,
+            product_name: item.name,
+            size: item.size || "FREE",
+            quantity: item.quantity,
+            unit_price: itemSalePrice(item),
+            selected_at: new Date().toISOString(),
+          });
+        }
+        const itemResult = await supabaseClient.from("order_items").insert(rows);
+        if (itemResult.error) throw itemResult.error;
+      }
+
+      async function syncOrderStatusToSupabase(order) {
+        if (!supabaseClient || !order) return;
+        let query = supabaseClient
+          .from("orders")
+          .update({ status: order.statusCode })
+          .select("id, status");
+        query = order.dbId ? query.eq("id", order.dbId) : query.eq("order_code", order.id);
+        const result = await query.single();
+        if (result.error) throw result.error;
+        order.dbId = result.data.id;
+        order.statusCode = result.data.status;
+      }
+
+      async function uploadProductImage(item) {
+        if (!supabaseClient || !item.imageFile) return item.image || "";
+        const extension = (item.imageFile.name.split(".").pop() || "jpg").toLowerCase();
+        const path = item.key + "." + extension;
+        const uploadResult = await supabaseClient.storage
+          .from("product-images")
+          .upload(path, item.imageFile, { cacheControl: "3600", upsert: true });
+        if (uploadResult.error) throw uploadResult.error;
+        const publicResult = supabaseClient.storage.from("product-images").getPublicUrl(path);
+        item.image = publicResult.data.publicUrl;
+        item.imageFile = null;
+        return item.image;
+      }
+
+      function openVendor() {
+        if (!currentVendor) {
+          openVendorLogin();
+          return;
+        }
+        renderVendorStores();
+        renderVendorProducts();
+        resetVendorLookForm();
+        renderVendorLooks();
+        renderPartnerStores();
+        renderVendorOrders();
+        renderVendorRoleSummary();
+        document.getElementById("vendorSession").innerHTML = currentVendor.manager + " 로그인 중 - " + currentVendor.store + '만 관리 가능 <button class="secondary" type="button" onclick="logoutVendor()" style="min-height:30px;margin-top:8px;">로그아웃</button>';
+        document.getElementById("vendorModal").classList.add("open");
+        document.getElementById("vendorModal").setAttribute("aria-hidden", "false");
+      }
+
+      function renderLoginStores() {
+        document.getElementById("loginStore").innerHTML = vendorAccounts.map((account) =>
+          '<option value="' + account.store + '">' + account.store + '</option>'
+        ).join("");
+      }
+
+      function openVendorLogin() {
+        renderLoginStores();
+        document.getElementById("vendorLoginModal").classList.add("open");
+        document.getElementById("vendorLoginModal").setAttribute("aria-hidden", "false");
+      }
+
+      function closeVendorLogin() {
+        document.getElementById("vendorLoginModal").classList.remove("open");
+        document.getElementById("vendorLoginModal").setAttribute("aria-hidden", "true");
+      }
+
+      function loginVendor(event) {
+        event.preventDefault();
+        const store = document.getElementById("loginStore").value;
+        const pin = document.getElementById("loginPin").value.trim();
+        const account = vendorAccounts.find((item) => item.store === store && item.pin === pin);
+        if (!account) {
+          document.getElementById("loginHint").textContent = "PIN이 맞지 않습니다. 매장별 데모 PIN을 확인해 주세요.";
+          return;
+        }
+        currentVendor = account;
+        saveCurrentVendor();
+        closeVendorLogin();
+        setSyncStatus(account.store + " 업체 로그인 완료");
+        openVendor();
+      }
+
+      function logoutVendor() {
+        currentVendor = null;
+        saveCurrentVendor();
+        closeVendor();
+        resetVendorForm();
+        setSyncStatus("업체 로그아웃 완료");
+      }
+
+      function renderManagementHub() {
+        const vendorState = document.getElementById("managementVendorState");
+        const adminState = document.getElementById("managementAdminState");
+        const session = document.getElementById("managementSession");
+        if (vendorState) vendorState.textContent = currentVendor ? currentVendor.store + " 로그인 중" : "업체 로그인 필요";
+        if (adminState) adminState.textContent = currentAdmin ? currentAdmin.name + " 로그인 중" : "운영자 로그인 필요";
+        if (session) {
+          session.textContent = currentVendor || currentAdmin
+            ? "현재 로그인된 관리 권한으로 필요한 메뉴를 열 수 있습니다."
+            : "입점 업체와 배송 운영은 각각 로그인 후 관리할 수 있습니다.";
+        }
+      }
+
+      function openManagement() {
+        renderManagementHub();
+        document.getElementById("managementModal").classList.add("open");
+        document.getElementById("managementModal").setAttribute("aria-hidden", "false");
+      }
+
+      function closeManagement() {
+        document.getElementById("managementModal").classList.remove("open");
+        document.getElementById("managementModal").setAttribute("aria-hidden", "true");
+      }
+
+      function openVendorFromManagement() {
+        closeManagement();
+        openVendor();
+      }
+
+      function openAdminFromManagement() {
+        closeManagement();
+        openAdmin();
+      }
+
+      function openCustomerLogin() {
+        const note = document.getElementById("oauthNote");
+        if (note) {
+          note.textContent = "카카오는 연동 완료. 네이버는 Supabase Custom OAuth Provider와 네이버 개발자센터 Redirect URI 설정 후 연결합니다.";
+        }
+        document.getElementById("customerLoginModal").classList.add("open");
+        document.getElementById("customerLoginModal").setAttribute("aria-hidden", "false");
+      }
+
+      function closeCustomerLogin() {
+        document.getElementById("customerLoginModal").classList.remove("open");
+        document.getElementById("customerLoginModal").setAttribute("aria-hidden", "true");
+      }
+
+      async function loginCustomer(event) {
+        event.preventDefault();
+        const name = document.getElementById("customerName").value.trim();
+        const phone = document.getElementById("customerPhone").value.replace(/\D/g, "");
+        currentCustomer = {
+          name: name || "고객",
+          phone: phone || "guest-preview",
+          id: phone ? "customer-" + phone : "guest-preview",
+          email: "",
+        };
+        orderHistory = [];
+        lastOrder = null;
+        saveCurrentCustomer();
+        closeCustomerLogin();
+        if (supabaseClient) {
+          try {
+            await loadSupabaseOrders();
+          } catch (error) {
+            setSyncStatus("고객 주문 내역 불러오기 실패");
+          }
+        }
+        setSyncStatus(currentCustomer.name + " 고객 로그인 완료");
+        openMyPage();
+      }
+
+      async function loginWithOAuth(provider) {
+        if (!setupClientIfNeeded()) {
+          setSyncStatus("Supabase 설정이 없어 소셜 로그인을 시작할 수 없습니다");
+          return;
+        }
+        if (window.location.protocol === "file:") {
+          const localUrl = "http://127.0.0.1:4173/index.react.html";
+          document.getElementById("oauthNote").textContent = "소셜 로그인 테스트는 " + localUrl + " 로 열어 진행해 주세요.";
+          setSyncStatus("소셜 로그인은 localhost 또는 배포 URL에서 테스트해 주세요");
+          return;
+        }
+        const options = {
+          redirectTo: getOAuthRedirectUrl(),
+        };
+        const result = await supabaseClient.auth.signInWithOAuth({
+          provider,
+          options,
+        });
+        if (result.error) {
+          const label = provider === "kakao" ? "카카오" : "네이버";
+          const note = document.getElementById("oauthNote");
+          if (note) {
+            note.textContent = label + " 로그인 설정을 확인해 주세요. 네이버는 Supabase Custom OAuth Provider 설정 후 동작합니다.";
+          }
+          setSyncStatus(label + " 로그인 설정을 확인해 주세요");
+        }
+      }
+
+      async function logoutCustomer() {
+        if (supabaseClient) {
+          await supabaseClient.auth.signOut().catch(() => null);
+        }
+        currentCustomer = { name: "게스트", phone: "guest-preview", id: "guest-preview" };
+        orderHistory = [];
+        lastOrder = null;
+        localStorage.removeItem(CUSTOMER_STORAGE_KEY);
+        setSyncStatus("고객 로그아웃 완료");
+        if (document.getElementById("ordersModal").classList.contains("open")) renderOrders();
+        renderMyPage();
+      }
+
+      function renderMyPage() {
+        const orderCount = orderHistory.length;
+        const totalSpend = orderHistory.reduce((sum, order) => sum + (order.total || 0), 0);
+        const latestOrder = orderHistory[0];
+        document.getElementById("myContent").innerHTML = `
+          <section class="profile-card">
+            <div>
+              <strong>${currentCustomer.name}</strong>
+              <span>${customerContactLabel()}</span>
+            </div>
+            <span>${currentCustomer.provider ? providerLabel(currentCustomer.provider) + " 연동 계정" : "오산, 동탄 즉시배송 고객 계정"}</span>
+          </section>
+          <section class="summary-card" style="margin-top: 12px;">
+            <h3>이용 요약</h3>
+            <div class="line-item"><span>최근 주문</span><strong>${orderCount}건</strong></div>
+            <div class="line-item"><span>주문 금액</span><strong>${formatKRW(totalSpend)}</strong></div>
+            <div class="line-item"><span>고객 ID</span><strong>${customerId().replace("auth-", "소셜-").slice(0, 18)}</strong></div>
+          </section>
+          <section class="summary-card" style="margin-top: 12px;">
+            <h3>최근 배송</h3>
+            <div class="line-item"><span>${latestOrder ? latestOrder.id : "주문 대기"}</span><strong>${latestOrder ? latestOrder.statusLabel : "아직 없음"}</strong></div>
+            <div class="line-item"><span>결제 상태</span><strong>${latestOrder ? paymentLabelForOrder(latestOrder) : "결제 대기"}</strong></div>
+            <div class="line-item"><span>담당 기사</span><strong>${latestOrder ? latestOrder.riderName : "배정 대기"}</strong></div>
+          </section>
+          <section class="summary-card" style="margin-top: 12px;">
+            <h3>내 쇼핑 관리</h3>
+            <div class="vendor-preview-list">
+              <div class="vendor-product-row">
+                <div>
+                  <strong>배송 추적</strong>
+                  <span>현재 주문 위치, 진행 단계, 라이더 배정 확인</span>
+                </div>
+                <div class="mini-actions">
+                  <button type="button" onclick="openTrackingFromMy()">열기</button>
+                </div>
+              </div>
+              <div class="vendor-product-row">
+                <div>
+                  <strong>주문 내역</strong>
+                  <span>최근 주문, 결제 상태, 주문별 추적 이동</span>
+                </div>
+                <div class="mini-actions">
+                  <button type="button" onclick="openOrdersFromMy()">열기</button>
+                </div>
+              </div>
+            </div>
+          </section>
+          <div class="detail-actions">
+            <button class="secondary" type="button" onclick="openCustomerLogin()">고객 변경</button>
+            <button class="primary" type="button" onclick="openTrackingFromMy()">배송 추적</button>
+          </div>
+          <button class="secondary" type="button" onclick="logoutCustomer()" style="width:100%;margin-top:8px;">로그아웃</button>
+        `;
+      }
+
+      async function openMyPage() {
+        if (supabaseClient) {
+          try {
+            await loadSupabaseOrders();
+          } catch (error) {
+            setSyncStatus("마이페이지 주문 내역 불러오기 실패");
+          }
+        }
+        renderMyPage();
+        document.getElementById("myModal").classList.add("open");
+        document.getElementById("myModal").setAttribute("aria-hidden", "false");
+      }
+
+      function closeMyPage() {
+        document.getElementById("myModal").classList.remove("open");
+        document.getElementById("myModal").setAttribute("aria-hidden", "true");
+      }
+
+      function openTrackingFromMy() {
+        closeMyPage();
+        openTracking();
+      }
+
+      function openOrdersFromMy() {
+        closeMyPage();
+        openOrders();
+      }
+
+      function previewVendorImage() {
+        const input = document.getElementById("vendorImage");
+        const preview = document.getElementById("vendorImagePreview");
+        const file = input.files && input.files[0];
+        if (!file) {
+          vendorImageData = "";
+          vendorImageFile = null;
+          preview.textContent = "이미지 미리보기";
+          return;
+        }
+        vendorImageFile = file;
+        const reader = new FileReader();
+        reader.onload = () => {
+          vendorImageData = reader.result;
+          preview.innerHTML = '<img src="' + vendorImageData + '" alt="등록 이미지 미리보기" />';
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function closeVendor() {
+        document.getElementById("vendorModal").classList.remove("open");
+        document.getElementById("vendorModal").setAttribute("aria-hidden", "true");
+      }
+
+      async function submitVendorProduct(event) {
+        event.preventDefault();
+        if (!currentVendor) {
+          openVendorLogin();
+          return;
+        }
+        const store = document.getElementById("vendorStore").value;
+        if (store !== currentVendor.store) {
+          setSyncStatus("로그인한 매장에만 상품을 등록할 수 있습니다");
+          return;
+        }
+        const existing = editingProductKey ? products.find((product) => product.key === editingProductKey) : null;
+        if (!existing) vendorProductCount += 1;
+        const productData = {
+          key: existing ? existing.key : "vendor-" + Date.now() + "-" + vendorProductCount,
+          name: document.getElementById("vendorName").value.trim(),
+          price: Number(document.getElementById("vendorPrice").value),
+          discountRate: normalizedDiscount(document.getElementById("vendorDiscount").value),
+          showroom: store,
+          stock: Number(document.getElementById("vendorStock").value),
+          minutes: Number(document.getElementById("vendorMinutes").value),
+          match: Number(document.getElementById("vendorMatch").value),
+          material: document.getElementById("vendorMaterial").value.trim(),
+          visual: existing ? existing.visual : ["jacket", "shoes", "bag", "ring"][vendorProductCount % 4],
+          image: vendorImageData || (existing ? existing.image : ""),
+          imageFile: vendorImageFile,
+          fit: existing ? existing.fit : "업체 등록 상품",
+          size: document.getElementById("vendorSize").value.trim(),
+          note: document.getElementById("vendorNote").value.trim(),
+          vendorAdded: true,
+          dbId: existing ? existing.dbId : undefined,
+        };
+        if (existing) {
+          Object.assign(existing, productData);
+        } else {
+          products.unshift(productData);
+        }
+        selectedShowroom = store;
+        document.getElementById("search").value = "";
+        renderProducts();
+        renderVendorStores();
+        renderVendorProducts();
+        renderVendorLookPicker();
+        renderVendorLooks();
+        renderVendorRoleSummary();
+        try {
+          await syncProductToSupabase(existing || productData);
+          renderProducts();
+          renderVendorProducts();
+          renderVendorLookPicker();
+          renderVendorLooks();
+          renderVendorRoleSummary();
+          setSyncStatus((existing ? "상품 수정이" : "상품과 이미지가") + " Supabase에 저장됨");
+        } catch (error) {
+          setSyncStatus((existing ? "상품 수정은" : "상품은") + " 화면에만 반영됨 - DB 저장 실패");
+        }
+        resetVendorForm();
+      }
+
+      function setRegion(key) {
+        selectedRegion = key;
+        document.getElementById("addressInput").value = currentRegion().address;
+        renderProducts();
+      }
+
+      function updateAddress() {
+        const value = document.getElementById("addressInput").value.trim();
+        document.getElementById("areaCopy").textContent = value ? value + " 기준으로 도착 시간을 다시 계산 중입니다." : currentRegion().copy;
+      }
+
+      function setupFilters() {
+        const names = ["전체"].concat([...new Set(products.map((item) => item.showroom))]);
+        document.getElementById("showroomFilters").innerHTML = names.map((name) =>
+          '<button class="chip ' + (name === selectedShowroom ? 'active-control' : '') + '" type="button" onclick="setShowroom(\'' + name + '\')">' + name + '</button>'
+        ).join("");
+      }
+
+      function setShowroom(name) {
+        selectedLookKeys = [];
+        selectedShowroom = name;
+        renderProducts();
+      }
+
+      function setSort(mode) {
+        sortMode = mode;
+        document.querySelectorAll(".sort").forEach((button) => {
+          button.classList.toggle("active-control", button.dataset.sort === mode);
+        });
+        renderProducts();
+      }
+
+      function toggleFast() {
+        onlyFast = !onlyFast;
+        document.getElementById("fastToggle").textContent = onlyFast ? "전체 보기" : "45분 이내";
+        renderProducts();
+      }
+
+      function resetControls() {
+        selectedShowroom = "전체";
+        selectedLookKeys = [];
+        sortMode = "fastest";
+        onlyFast = false;
+        document.getElementById("search").value = "";
+        document.getElementById("fastToggle").textContent = "45분 이내";
+        setSort("fastest");
+      }
+
+      function visibleProducts() {
+        const query = document.getElementById("search").value.trim().toLowerCase();
+        return products.filter((item) => {
+          const text = (item.name + " " + item.showroom + " " + item.material).toLowerCase();
+          return storeIsVisible(item) && (!selectedLookKeys.length || selectedLookKeys.includes(item.key)) && (!query || text.includes(query)) && (selectedShowroom === "전체" || item.showroom === selectedShowroom) && (!onlyFast || eta(item) <= 45);
+        }).sort((a, b) => {
+          if (sortMode === "match") return b.match - a.match;
+          if (sortMode === "stock") return b.stock - a.stock;
+          return eta(a) - eta(b);
+        });
+      }
+
+      function visualMarkup(item, extraClass = "") {
+        if (item.image) {
+          return `<div class="visual has-photo ${extraClass}"><img src="${item.image}" alt="${item.name}" /></div>`;
+        }
+        return `<div class="visual ${extraClass} ${item.visual}"></div>`;
+      }
+
+      function lookItems(look) {
+        return look.keys.map((key) => products.find((item) => item.key === key)).filter(Boolean);
+      }
+
+      function lookSummary(look) {
+        const items = lookItems(look).filter(storeIsVisible);
+        const normalTotal = items.reduce((sum, item) => sum + itemNormalPrice(item), 0);
+        const itemSaleTotal = items.reduce((sum, item) => sum + itemSalePrice(item), 0);
+        const saleTotal = discountedPrice(itemSaleTotal, look.discountRate);
+        const fastest = items.length ? Math.max(...items.map((item) => eta(item))) : 0;
+        const lowStock = items.filter((item) => item.stock <= 2).length;
+        return { items, total: saleTotal, normalTotal, itemSaleTotal, saleTotal, fastest, lowStock };
+      }
+
+      function sizeOptions(item) {
+        const label = (item.size || "FREE").trim();
+        const singleSizeLabels = ["adjustable", "free", "one", "onesize", "one size", "one-size"];
+        if (singleSizeLabels.includes(label.toLowerCase().replace(/\s+/g, " "))) return ["One size"];
+        const numericRange = label.match(/^(\d{3})-(\d{3})$/);
+        if (numericRange) {
+          const start = Number(numericRange[1]);
+          const end = Number(numericRange[2]);
+          const options = [];
+          for (let size = start; size <= end; size += 10) options.push(String(size));
+          return options;
+        }
+        const parts = label.split(/[\/,]/).map((part) => part.trim()).filter(Boolean);
+        return parts.length ? parts : [label];
+      }
+
+      function selectedLookSize(lookKey, item) {
+        const select = document.getElementById("lookSize-" + lookKey + "-" + item.key);
+        return select ? select.value : sizeOptions(item)[0];
+      }
+
+      function addCartItem(item, size, salePriceOverride, discountRateOverride) {
+        const selectedSize = size || sizeOptions(item)[0] || item.size || "FREE";
+        const finalSalePrice = salePriceOverride != null ? salePriceOverride : itemSalePrice(item);
+        const finalDiscountRate = discountRateOverride != null ? discountRateOverride : normalizedDiscount(item.discountRate);
+        const existing = cart.find((line) => line.key === item.key && line.size === selectedSize);
+        if (existing) existing.quantity += 1;
+        else cart.push({ ...item, normalPrice: itemNormalPrice(item), salePrice: finalSalePrice, discountRate: finalDiscountRate, size: selectedSize, quantity: 1 });
+      }
+
+      function renderLooks() {
+        const list = document.getElementById("lookList");
+        if (!list) return;
+        list.innerHTML = lookSets.map((look) => {
+          const summary = lookSummary(look);
+          const itemNames = summary.items.map((item) => item.name).join(", ");
+          const sizeRows = summary.items.map((item) => `
+            <div class="look-size-row">
+              <div>
+                <strong>${item.category || "상품"} · ${item.name}</strong>
+                <span>${item.showroom} · ${item.stock}개 재고</span>
+              </div>
+              <select id="lookSize-${look.key}-${item.key}" aria-label="${item.name} 사이즈">
+                ${sizeOptions(item).map((size) => '<option value="' + size + '">' + size + '</option>').join("")}
+              </select>
+            </div>
+          `).join("");
+          return `
+            <article class="look-card">
+              <div class="look-visuals">${summary.items.map((item) => visualMarkup(item)).join("")}</div>
+              <div>
+                <div class="badge"><i></i>${summary.fastest || "-"}분 안팎 도착</div>
+                <h3>${look.title}</h3>
+                <p>${look.store || "입점 매장"} · ${look.note}</p>
+              </div>
+              <div class="look-meta">
+                <span>${itemNames || "입점 상품 대기"}</span>
+                <strong>${formatKRW(summary.total)}</strong>
+              </div>
+              ${priceMarkup(summary.itemSaleTotal, look.discountRate, summary.saleTotal)}
+              <div class="look-size-list">${sizeRows}</div>
+              <div class="detail-actions">
+                <button class="secondary" type="button" onclick="filterLookItems('${look.key}')">상품 보기</button>
+                <button class="primary" type="button" ${summary.items.length ? "" : "disabled"} onclick="addLookToCart('${look.key}')">세트 담기</button>
+              </div>
+              <p>${summary.lowStock ? "재고 임박 상품 " + summary.lowStock + "개 포함" : "즉시 픽업 가능 재고로 구성"}</p>
+            </article>
+          `;
+        }).join("");
+      }
+
+      function openLooks() {
+        renderLooks();
+        document.getElementById("lookModal").classList.add("open");
+        document.getElementById("lookModal").setAttribute("aria-hidden", "false");
+      }
+
+      function closeLooks() {
+        document.getElementById("lookModal").classList.remove("open");
+        document.getElementById("lookModal").setAttribute("aria-hidden", "true");
+      }
+
+      function addLookToCart(lookKey) {
+        const look = lookSets.find((item) => item.key === lookKey);
+        if (!look) return;
+        const summary = lookSummary(look);
+        const setRate = normalizedDiscount(look.discountRate);
+        summary.items.forEach((item) => addCartItem(item, selectedLookSize(look.key, item), discountedPrice(itemSalePrice(item), setRate), setRate));
+        const selectedSizes = summary.items.map((item) => item.name + " " + selectedLookSize(look.key, item)).join(", ");
+        setSyncStatus(look.title + " 세트 담김 - " + selectedSizes);
+        renderCart();
+      }
+
+      function filterLookItems(lookKey) {
+        const look = lookSets.find((item) => item.key === lookKey);
+        if (!look) return;
+        closeLooks();
+        selectedLookKeys = look.keys.slice();
+        selectedShowroom = "전체";
+        onlyFast = false;
+        document.getElementById("fastToggle").textContent = "45분 이내";
+        document.getElementById("search").value = "";
+        setSyncStatus(look.title + " 구성 상품만 보여주는 중");
+        renderProducts();
+      }
+
+      function renderProducts() {
+        renderRegions();
+        setupFilters();
+        const items = visibleProducts();
+        const first = items[0] || products[0];
+        document.getElementById("fastestShowroom").textContent = items.length ? first.showroom : "픽업 가능 매장 없음";
+        document.getElementById("fastestMinutes").textContent = items.length ? eta(first) + "분" : "-";
+        document.getElementById("fastestCopy").textContent = items.length ? currentRegion().name + " 도착 기준, " + first.name + " 재고 " + first.stock + "개 확인 중. 예상 도착 " + eta(first) + "분." : "입점 화면에서 매장 픽업 상태를 다시 켜면 상품이 노출됩니다.";
+        document.getElementById("resultCount").textContent = selectedLookKeys.length ? "룩 구성 " + items.length + "개" : items.length + "개 아이템";
+        document.getElementById("productGrid").innerHTML = items.length ? items.map((item) => `
+          <article class="product-card" role="button" tabindex="0" onclick="openDetail('${item.key}')" onkeydown="if(event.key === 'Enter') openDetail('${item.key}')">
+            ${visualMarkup(item)}
+            <div class="badge"><i></i>${eta(item)}분 도착</div>
+            <h3>${item.name}</h3>
+            ${priceMarkup(itemNormalPrice(item), item.discountRate, itemSalePrice(item))}
+            <small>${item.showroom}</small>
+            <div class="stock-line"><span>${item.stock <= 2 ? item.stock + "개 남음" : "재고 " + item.stock + "개"}</span><span>${item.match}% 매칭</span></div>
+            <button class="add" type="button" onclick="event.stopPropagation(); addToCart('${item.key}', this)">담기</button>
+          </article>
+        `).join("") : '<p class="empty">조건에 맞는 아이템이 없습니다.</p>';
+      }
+
+      function addToCart(key, button) {
+        const item = products.find((product) => product.key === key);
+        addCartItem(item);
+        button.textContent = "담김";
+        button.classList.add("added");
+        setTimeout(() => {
+          button.textContent = "담기";
+          button.classList.remove("added");
+        }, 900);
+        renderCart();
+      }
+
+      function addSet() {
+        ["jacket", "ring"].forEach((key) => {
+          const item = products.find((product) => product.key === key);
+          addCartItem(item);
+        });
+        renderCart();
+        checkout();
+      }
+
+      function addItemByKey(key) {
+        const item = products.find((product) => product.key === key);
+        addCartItem(item);
+        renderCart();
+      }
+
+      function openDetail(key) {
+        const item = products.find((product) => product.key === key);
+        if (!item) return;
+        document.getElementById("detailName").textContent = item.name;
+        document.getElementById("detailBody").innerHTML = `
+          ${visualMarkup(item, "detail-visual")}
+          <div class="badge"><i></i>${eta(item)}분 도착 가능</div>
+          ${priceMarkup(itemNormalPrice(item), item.discountRate, itemSalePrice(item))}
+          <small>${item.showroom}</small>
+          <div class="detail-meta">
+            <div class="meta-box"><span>핏</span><strong>${item.fit}</strong></div>
+            <div class="meta-box"><span>사이즈</span><strong>${item.size}</strong></div>
+            <div class="meta-box"><span>재고</span><strong>${item.stock}개</strong></div>
+          </div>
+          <div class="summary-card">
+            <h3>소재와 매칭</h3>
+            <div class="line-item"><span>${item.material}</span><strong>${item.match}% 매칭</strong></div>
+          </div>
+          <p class="fit-note">${item.note}</p>
+          <div class="detail-actions">
+            <button class="secondary" type="button" onclick="addDetailToCart('${item.key}')">담기</button>
+            <button class="primary" type="button" onclick="reserveFromDetail('${item.key}')">바로 예약</button>
+          </div>
+        `;
+        document.getElementById("detailModal").classList.add("open");
+        document.getElementById("detailModal").setAttribute("aria-hidden", "false");
+      }
+
+      function addDetailToCart(key) {
+        addItemByKey(key);
+        closeDetail();
+      }
+
+      function reserveFromDetail(key) {
+        addItemByKey(key);
+        closeDetail();
+        checkout();
+      }
+
+      function renderCart() {
+        const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+        const total = cart.reduce((sum, item) => sum + itemSalePrice(item) * item.quantity, 0);
+        document.getElementById("cartCount").textContent = count + "개 선택됨";
+        document.getElementById("cartTotal").textContent = formatKRW(total);
+        document.getElementById("cartHint").textContent = count ? "눌러서 수량, 사이즈, 할인 확인" : "눌러서 장바구니 상세 확인";
+        if (document.getElementById("cartModal").classList.contains("open")) renderCartDetail();
+      }
+
+      function cartTotals() {
+        const normalSubtotal = cart.reduce((sum, item) => sum + itemNormalPrice(item) * item.quantity, 0);
+        const saleSubtotal = cart.reduce((sum, item) => sum + itemSalePrice(item) * item.quantity, 0);
+        const discountAmount = Math.max(0, normalSubtotal - saleSubtotal);
+        const deliveryFee = saleSubtotal >= 120000 ? 0 : 3500;
+        return { normalSubtotal, saleSubtotal, discountAmount, deliveryFee, total: saleSubtotal + deliveryFee };
+      }
+
+      function renderCartDetail() {
+        const body = document.getElementById("cartDetailBody");
+        if (!body) return;
+        if (!cart.length) {
+          body.innerHTML = `
+            <section class="summary-card">
+              <h3>장바구니가 비어 있습니다</h3>
+              <div class="line-item"><span>룩이나 상품을 담으면</span><strong>여기서 확인 가능</strong></div>
+            </section>
+          `;
+          return;
+        }
+        const totals = cartTotals();
+        const rows = cart.map((item, index) => `
+          <div class="vendor-product-row">
+            <div>
+              <strong>${item.name}</strong>
+              <span>${item.showroom} · ${item.size || "FREE"} · ${item.quantity}개</span>
+              <span>정상가 ${formatKRW(itemNormalPrice(item))} · ${normalizedDiscount(item.discountRate)}% 할인 · 할인가 ${formatKRW(itemSalePrice(item))}</span>
+            </div>
+            <div class="mini-actions">
+              <button type="button" onclick="updateCartQuantity(${index}, -1)">-</button>
+              <button type="button" onclick="updateCartQuantity(${index}, 1)">+</button>
+              <button class="danger" type="button" onclick="removeCartItem(${index})">삭제</button>
+            </div>
+          </div>
+        `).join("");
+        body.innerHTML = `
+          <section class="summary-card">
+            <h3>담긴 상품</h3>
+            <div class="vendor-preview-list">${rows}</div>
+          </section>
+          <section class="summary-card" style="margin-top: 12px;">
+            <h3>결제 예정 금액</h3>
+            <div class="price-row"><span>정상가 합계</span><strong>${formatKRW(totals.normalSubtotal)}</strong></div>
+            <div class="price-row"><span>할인 금액</span><strong>${totals.discountAmount ? "-" + formatKRW(totals.discountAmount) : "KRW 0"}</strong></div>
+            <div class="price-row"><span>상품 할인가</span><strong>${formatKRW(totals.saleSubtotal)}</strong></div>
+            <div class="price-row"><span>즉시배송비</span><strong>${totals.deliveryFee ? formatKRW(totals.deliveryFee) : "무료"}</strong></div>
+            <div class="price-row total-row"><span>총 결제 예정</span><strong>${formatKRW(totals.total)}</strong></div>
+          </section>
+          <div class="detail-actions" style="margin-top: 12px;">
+            <button class="secondary" type="button" onclick="closeCartDetail()">계속 담기</button>
+            <button class="primary" type="button" onclick="checkoutFromCart()">배송 예약</button>
+          </div>
+        `;
+      }
+
+      function openCartDetail() {
+        renderCartDetail();
+        document.getElementById("cartModal").classList.add("open");
+        document.getElementById("cartModal").setAttribute("aria-hidden", "false");
+      }
+
+      function closeCartDetail() {
+        document.getElementById("cartModal").classList.remove("open");
+        document.getElementById("cartModal").setAttribute("aria-hidden", "true");
+      }
+
+      function updateCartQuantity(index, delta) {
+        const item = cart[index];
+        if (!item) return;
+        item.quantity += delta;
+        if (item.quantity <= 0) cart.splice(index, 1);
+        renderCart();
+      }
+
+      function removeCartItem(index) {
+        cart.splice(index, 1);
+        renderCart();
+      }
+
+      function checkoutFromCart() {
+        closeCartDetail();
+        checkout();
+      }
+
+      function groupedPickups() {
+        return cart.reduce((groups, item) => {
+          if (!groups[item.showroom]) groups[item.showroom] = { count: 0, minutes: eta(item) };
+          groups[item.showroom].count += item.quantity;
+          groups[item.showroom].minutes = Math.min(groups[item.showroom].minutes, eta(item));
+          return groups;
+        }, {});
+      }
+
+      function renderOrderSummary() {
+        const summary = document.getElementById("orderSummary");
+        if (!cart.length) {
+          summary.innerHTML = `
+            <section class="summary-card">
+              <h3>예약할 상품이 없습니다</h3>
+              <div class="line-item"><span>상품을 먼저 담으면</span><strong>배송 흐름을 볼 수 있어요</strong></div>
+            </section>
+          `;
+          return;
+        }
+
+        const orderForSummary = lastOrder && lastOrder.items.length ? lastOrder : null;
+        const summaryItems = orderForSummary ? orderForSummary.items : cart;
+        const normalSubtotal = summaryItems.reduce((sum, item) => sum + itemNormalPrice(item) * item.quantity, 0);
+        const subtotal = orderForSummary ? orderForSummary.subtotal : cart.reduce((sum, item) => sum + itemSalePrice(item) * item.quantity, 0);
+        const discountAmount = Math.max(0, normalSubtotal - subtotal);
+        const deliveryFee = orderForSummary ? orderForSummary.deliveryFee : subtotal >= 120000 ? 0 : 3500;
+        const total = orderForSummary ? orderForSummary.total : subtotal + deliveryFee;
+        const itemRows = summaryItems.map((item) => `
+          <div class="line-item">
+            <span>${item.name} · ${item.size || "FREE"} x ${item.quantity}</span>
+            <strong>${formatKRW(itemSalePrice(item) * item.quantity)}</strong>
+          </div>
+        `).join("");
+        const pickupGroups = summaryItems.reduce((groups, item) => {
+          if (!groups[item.showroom]) groups[item.showroom] = { count: 0, minutes: eta(item) };
+          groups[item.showroom].count += item.quantity;
+          groups[item.showroom].minutes = Math.min(groups[item.showroom].minutes, eta(item));
+          return groups;
+        }, {});
+        const pickupRows = Object.entries(pickupGroups).map(([showroom, info]) => `
+          <div class="pickup-row">
+            <span>${showroom} - ${info.count}개 픽업</span>
+            <strong class="pickup-status">${info.minutes}분 준비</strong>
+          </div>
+        `).join("");
+        const deliveryInfoRows = orderForSummary ? `
+          <section class="summary-card">
+            <h3>배송 요청</h3>
+            <div class="line-item"><span>수령 방식</span><strong>${orderForSummary.receiveType || "문앞 수령"}</strong></div>
+            <div class="line-item"><span>결제수단</span><strong>${orderForSummary.paymentMethod || "카카오페이"}</strong></div>
+            <div class="line-item"><span>요청사항</span><strong>${orderForSummary.riderRequest || "없음"}</strong></div>
+          </section>
+        ` : "";
+
+        summary.innerHTML = `
+          <section class="summary-card">
+            <h3>선택한 아이템</h3>
+            ${itemRows}
+          </section>
+          <section class="summary-card">
+            <h3>쇼룸 픽업 상태</h3>
+            ${pickupRows}
+          </section>
+          ${deliveryInfoRows}
+          <section class="summary-card">
+            <h3>결제 예정 금액</h3>
+            <div class="price-row"><span>정상가 합계</span><strong>${formatKRW(normalSubtotal)}</strong></div>
+            <div class="price-row"><span>할인 금액</span><strong>${discountAmount ? "-" + formatKRW(discountAmount) : "KRW 0"}</strong></div>
+            <div class="price-row"><span>상품 할인가</span><strong>${formatKRW(subtotal)}</strong></div>
+            <div class="price-row"><span>즉시배송비</span><strong>${deliveryFee ? formatKRW(deliveryFee) : "무료"}</strong></div>
+            <div class="price-row total-row"><span>총 결제 예정</span><strong>${formatKRW(total)}</strong></div>
+          </section>
+          <section class="summary-card">
+            <h3>결제와 배송 배정</h3>
+            <div class="line-item"><span>결제 상태</span><strong>${orderForSummary ? paymentLabelForOrder(orderForSummary) : "결제 대기"}</strong></div>
+            <div class="line-item"><span>결제수단</span><strong>${orderForSummary ? orderForSummary.paymentMethod || "카카오페이" : "선택 대기"}</strong></div>
+            <div class="line-item"><span>예상 기사</span><strong>${orderForSummary ? orderForSummary.riderName : riderForRegion(currentRegion().label)}</strong></div>
+            ${orderForSummary && orderForSummary.paid ? '<button class="primary" type="button" disabled style="width:100%;margin-top:8px;">결제 완료</button>' : '<button class="primary" type="button" onclick="payOrder()" style="width:100%;margin-top:8px;">결제하기</button>'}
+          </section>
+        `;
+      }
+
+      function deliveryFormValues() {
+        return {
+          name: document.getElementById("orderCustomerName") ? document.getElementById("orderCustomerName").value.trim() : currentCustomer.name,
+          phone: document.getElementById("orderCustomerPhone") ? document.getElementById("orderCustomerPhone").value.replace(/\D/g, "") : (currentCustomer.phone || ""),
+          address: document.getElementById("orderAddress") ? document.getElementById("orderAddress").value.trim() : (document.getElementById("addressInput").value.trim() || currentRegion().address),
+          receiveType: document.getElementById("receiveType") ? document.getElementById("receiveType").value : "문앞 수령",
+          paymentMethod: document.getElementById("paymentMethod") ? document.getElementById("paymentMethod").value : "카카오페이",
+          riderRequest: document.getElementById("riderRequest") ? document.getElementById("riderRequest").value.trim() : "",
+        };
+      }
+
+      function renderDeliveryForm() {
+        const wrap = document.getElementById("deliveryFormWrap");
+        if (!wrap) return;
+        const phone = currentCustomer.phone && currentCustomer.phone !== "guest-preview" ? currentCustomer.phone : "";
+        wrap.innerHTML = `
+          <section class="summary-card">
+            <h3>배송 정보 확인</h3>
+            <form class="delivery-form" onsubmit="confirmCheckout(event)">
+              <div class="form-grid">
+                <label>고객명
+                  <input id="orderCustomerName" type="text" value="${currentCustomer.name || "고객"}" required />
+                </label>
+                <label>휴대폰
+                  <input id="orderCustomerPhone" type="tel" value="${phone}" placeholder="01012345678" required />
+                </label>
+              </div>
+              <label>배송 주소
+                <input id="orderAddress" type="text" value="${document.getElementById("addressInput").value.trim() || currentRegion().address}" required />
+              </label>
+              <label>수령 방식
+                <select id="receiveType">
+                  <option>문앞 수령</option>
+                  <option>공동현관 앞</option>
+                  <option>직접 수령</option>
+                  <option>경비실 보관</option>
+                </select>
+              </label>
+              <label>결제수단
+                <select id="paymentMethod">
+                  <option>카카오페이</option>
+                  <option>네이버페이</option>
+                  <option>카드결제</option>
+                  <option>현장결제</option>
+                </select>
+              </label>
+              <label>라이더 요청사항
+                <textarea id="riderRequest" placeholder="예: 도착 전 연락 주세요. 공동현관 비밀번호는 주문 후 안내합니다."></textarea>
+              </label>
+              <button class="primary" type="submit">주문 확정</button>
+            </form>
+          </section>
+        `;
+      }
+
+      function clearDeliveryForm() {
+        const wrap = document.getElementById("deliveryFormWrap");
+        if (wrap) wrap.innerHTML = "";
+      }
+
+      function createOrderSnapshot(deliveryInfo = deliveryFormValues()) {
+        const subtotal = cart.reduce((sum, item) => sum + itemSalePrice(item) * item.quantity, 0);
+        const deliveryFee = subtotal >= 120000 ? 0 : 3500;
+        const fastest = cart.length ? Math.min(...cart.map((item) => eta(item))) : 0;
+        return {
+          id: "FN-" + String(Date.now()).slice(-6),
+          region: currentRegion().label,
+          address: deliveryInfo.address || currentRegion().address,
+          receiveType: deliveryInfo.receiveType || "문앞 수령",
+          paymentMethod: deliveryInfo.paymentMethod || "카카오페이",
+          riderRequest: deliveryInfo.riderRequest || "",
+          items: cart.map((item) => ({ ...item })),
+          subtotal,
+          deliveryFee,
+          total: subtotal + deliveryFee,
+          fastest,
+          customerId: customerId(),
+          customerName: deliveryInfo.name || currentCustomer.name,
+          customerContact: deliveryInfo.phone || customerContactLabel(),
+          progressStep: 0,
+          statusCode: "reserved",
+          paid: (deliveryInfo.paymentMethod || "카카오페이") !== "현장결제",
+          paymentLabel: (deliveryInfo.paymentMethod || "카카오페이") !== "현장결제" ? (deliveryInfo.paymentMethod || "카카오페이") + " 결제 완료" : "현장결제 대기",
+          riderName: riderForRegion(currentRegion().label),
+        };
+      }
+
+      function saveOrderHistory(order) {
+        if (!order) return;
+        order.progressStep = Math.max(0, Math.min(order.progressStep || activeStep || 0, steps.length - 1));
+        order.statusCode = statusFromStep(order.progressStep);
+        order.statusLabel = labelFromStep(order.progressStep);
+        if (!order.createdLabel) {
+          order.createdAt = order.createdAt || new Date().toISOString();
+          order.createdLabel = new Date(order.createdAt).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+        }
+        order.paymentLabel = paymentLabelForOrder(order);
+        order.riderName = order.riderName || riderForRegion(order.region);
+        saveOrderStatusOverride(order);
+        orderHistory = [order, ...orderHistory.filter((item) => item.id !== order.id)].slice(0, 10);
+      }
+
+      function renderOrders() {
+        const list = document.getElementById("orderList");
+        if (!orderHistory.length) {
+          list.innerHTML = `
+            <section class="summary-card">
+              <h3>아직 주문 내역이 없습니다</h3>
+              <div class="line-item"><span>상품을 담고 배송 예약을 하면</span><strong>여기에 표시돼요</strong></div>
+            </section>
+          `;
+          return;
+        }
+        list.innerHTML = orderHistory.map((order) => `
+          <button class="order-card" type="button" onclick="selectOrder('${order.id}')">
+            <div class="order-card-head">
+              <div>
+                <strong>${order.id}</strong>
+                <span>${order.createdLabel} - ${order.region}</span>
+              </div>
+              <span class="order-status">${order.statusLabel}</span>
+            </div>
+            <div class="line-item"><span>${order.items[0].name}${order.items.length > 1 ? " 외 " + (order.items.length - 1) + "개" : ""}</span><strong>${formatKRW(order.total)}</strong></div>
+            <div class="line-item"><span>${order.address}</span><strong>${order.fastest}분</strong></div>
+            <div class="line-item"><span>${order.receiveType || "문앞 수령"}</span><strong>${order.riderRequest ? "요청 있음" : "요청 없음"}</strong></div>
+            <div class="line-item"><span>${order.paymentMethod || "카카오페이"}</span><strong>${paymentLabelForOrder(order)}</strong></div>
+            <div class="line-item"><span>담당 기사</span><strong>${order.riderName || riderForRegion(order.region)}</strong></div>
+          </button>
+        `).join("");
+      }
+
+      async function openOrders() {
+        if (supabaseClient) {
+          try {
+            await loadSupabaseOrders();
+            setSyncStatus("주문 내역을 Supabase에서 불러옴");
+          } catch (error) {
+            setSyncStatus("주문 내역은 화면 기록만 표시됨 - DB 불러오기 실패");
+          }
+        }
+        renderOrders();
+        document.getElementById("ordersModal").classList.add("open");
+        document.getElementById("ordersModal").setAttribute("aria-hidden", "false");
+      }
+
+      function closeOrders() {
+        document.getElementById("ordersModal").classList.remove("open");
+        document.getElementById("ordersModal").setAttribute("aria-hidden", "true");
+      }
+
+      function selectOrder(orderId) {
+        const order = orderHistory.find((item) => item.id === orderId);
+        if (!order) return;
+        lastOrder = order;
+        activeStep = lastOrder.progressStep || 0;
+        closeOrders();
+        openTracking();
+      }
+
+      function selectTrackingOrder(orderId) {
+        const order = orderHistory.find((item) => item.id === orderId);
+        if (!order) return;
+        lastOrder = order;
+        activeStep = lastOrder.progressStep || 0;
+        renderTracking();
+      }
+
+      async function updateActiveOrderStep(step, message) {
+        if (!lastOrder) return;
+        lastOrder.progressStep = Math.max(0, Math.min(step, steps.length - 1));
+        lastOrder.statusCode = statusFromStep(lastOrder.progressStep);
+        lastOrder.statusLabel = labelFromStep(lastOrder.progressStep);
+        lastOrder.paymentLabel = paymentLabelForOrder(lastOrder);
+        activeStep = lastOrder.progressStep;
+        saveOrderStatusOverride(lastOrder);
+        saveOrderHistory(lastOrder);
+        try {
+          await syncOrderStatusToSupabase(lastOrder);
+          setSyncStatus(message + " - Supabase 주문 상태 업데이트 완료");
+        } catch (error) {
+          setSyncStatus(message + " - 화면 상태 우선 반영, DB 업데이트 권한 확인 필요");
+        }
+        renderTracking();
+        if (document.getElementById("ordersModal").classList.contains("open")) renderOrders();
+        if (document.getElementById("myModal").classList.contains("open")) renderMyPage();
+        if (document.getElementById("vendorModal").classList.contains("open")) renderVendorOrders();
+        if (document.getElementById("adminModal").classList.contains("open")) renderAdminOrders();
+      }
+
+      function openAdminLogin() {
+        const hint = document.getElementById("adminLoginHint");
+        if (hint) hint.textContent = "데모 운영자 PIN은 0000입니다.";
+        document.getElementById("adminLoginModal").classList.add("open");
+        document.getElementById("adminLoginModal").setAttribute("aria-hidden", "false");
+      }
+
+      function closeAdminLogin() {
+        document.getElementById("adminLoginModal").classList.remove("open");
+        document.getElementById("adminLoginModal").setAttribute("aria-hidden", "true");
+      }
+
+      function loginAdmin(event) {
+        event.preventDefault();
+        const pin = document.getElementById("adminPin").value.trim();
+        if (pin !== adminAccount.pin) {
+          document.getElementById("adminLoginHint").textContent = "운영 PIN이 맞지 않습니다. 다시 확인해 주세요.";
+          return;
+        }
+        currentAdmin = { name: adminAccount.name };
+        saveCurrentAdmin();
+        closeAdminLogin();
+        setSyncStatus("운영자 로그인 완료");
+        openAdmin();
+      }
+
+      function logoutAdmin() {
+        currentAdmin = null;
+        saveCurrentAdmin();
+        closeAdmin();
+        setSyncStatus("운영자 로그아웃 완료");
+      }
+
+      async function openAdmin() {
+        if (!currentAdmin) {
+          openAdminLogin();
+          return;
+        }
+        await renderAdminOrders();
+        document.getElementById("adminSession").innerHTML = currentAdmin.name + ' 로그인 중 <button class="secondary" type="button" onclick="logoutAdmin()" style="min-height:30px;margin-top:8px;">로그아웃</button>';
+        document.getElementById("adminModal").classList.add("open");
+        document.getElementById("adminModal").setAttribute("aria-hidden", "false");
+      }
+
+      function closeAdmin() {
+        document.getElementById("adminModal").classList.remove("open");
+        document.getElementById("adminModal").setAttribute("aria-hidden", "true");
+      }
+
+      function payOrder() {
+        if (!lastOrder || !lastOrder.items.length) {
+          setSyncStatus("결제 처리할 주문이 없습니다");
+          return;
+        }
+        lastOrder.paid = true;
+        lastOrder.paymentLabel = paymentLabelForOrder(lastOrder);
+        saveOrderStatusOverride(lastOrder);
+        saveOrderHistory(lastOrder);
+        setSyncStatus("데모 결제 완료 - 업체 재고 확인 가능");
+        renderOrderSummary();
+        renderTracking();
+        if (document.getElementById("ordersModal").classList.contains("open")) renderOrders();
+        if (document.getElementById("myModal").classList.contains("open")) renderMyPage();
+        if (document.getElementById("vendorModal").classList.contains("open")) renderVendorOrders();
+      }
+
+      function moveOrderStep(direction) {
+        if (!lastOrder || !lastOrder.items.length) {
+          setSyncStatus("진행할 주문이 없습니다");
+          return;
+        }
+        const current = lastOrder.progressStep || 0;
+        if (direction > 0 && current >= steps.length - 1) {
+          setSyncStatus("이미 배송 완료된 주문입니다");
+          renderTracking();
+          return;
+        }
+        if (direction > 0 && current === 0) {
+          updateActiveOrderStep(1, "결제 완료 처리");
+          return;
+        }
+        updateActiveOrderStep(current + direction, direction > 0 ? "배송 단계 진행" : "배송 단계 되돌림");
+      }
+
+      function renderTrackingActions() {
+        const actions = document.getElementById("trackingActions");
+        if (!actions) return;
+        if (!lastOrder || !lastOrder.items.length) {
+          actions.innerHTML = `<button class="primary" type="button" onclick="closeTracking()">새 상품 보기</button>`;
+          return;
+        }
+        actions.innerHTML = `
+          <button class="secondary" type="button" onclick="closeTracking(); openOrders()">주문 보기</button>
+          <button class="secondary" type="button" onclick="setSyncStatus('고객센터 연결 준비 중입니다')">고객센터 문의</button>
+          <button class="primary" type="button" onclick="closeTracking()">새 상품 보기</button>
+        `;
+      }
+
+      function renderTracking() {
+        const summary = document.getElementById("trackingSummary");
+        const title = document.getElementById("trackTitle");
+        const pin = document.getElementById("riderPin");
+        const orderList = document.getElementById("trackingOrderList");
+        if (orderList) {
+          orderList.innerHTML = orderHistory.length ? orderHistory.map((order) => `
+            <button class="order-card" type="button" onclick="selectTrackingOrder('${order.id}')">
+              <div class="order-card-head">
+                <div>
+                  <strong>${order.id}</strong>
+                  <span>${order.createdLabel} - ${order.region}</span>
+                </div>
+                <span class="order-status">${order.id === (lastOrder && lastOrder.id) ? "추적 중" : order.statusLabel}</span>
+              </div>
+              <div class="line-item"><span>${order.items[0].name}${order.items.length > 1 ? " 외 " + (order.items.length - 1) + "개" : ""}</span><strong>${order.statusLabel}</strong></div>
+            </button>
+          `).join("") : "";
+        }
+        activeStep = lastOrder ? (lastOrder.progressStep || activeStep || 0) : activeStep;
+        const progress = steps.length ? Math.min(86, 10 + activeStep * 19) : 10;
+        pin.style.setProperty("--progress", progress + "%");
+        if (!lastOrder || !lastOrder.items.length) {
+          title.textContent = "아직 예약된 배송이 없습니다";
+          summary.innerHTML = `
+            <section class="summary-card">
+              <h3>배송 예약이 필요해요</h3>
+              <div class="line-item"><span>상품을 담고 예약하면</span><strong>실시간 추적 시작</strong></div>
+            </section>
+          `;
+        } else {
+          lastOrder.statusLabel = labelFromStep(activeStep);
+          lastOrder.paymentLabel = paymentLabelFromStep(activeStep);
+          title.textContent = activeStep >= 4 ? "배송이 완료되었습니다" : lastOrder.region + "까지 " + Math.max(0, lastOrder.fastest - activeStep * 6) + "분 남았어요";
+          summary.innerHTML = `
+            <section class="summary-card">
+              <h3>주문 ${lastOrder.id}</h3>
+              <div class="line-item"><span>배송지</span><strong>${lastOrder.address}</strong></div>
+              <div class="line-item"><span>수령 방식</span><strong>${lastOrder.receiveType || "문앞 수령"}</strong></div>
+              <div class="line-item"><span>요청사항</span><strong>${lastOrder.riderRequest || "없음"}</strong></div>
+              <div class="line-item"><span>상품</span><strong>${lastOrder.items.length}종</strong></div>
+              <div class="line-item"><span>결제</span><strong>${lastOrder.paymentMethod || "카카오페이"} · ${paymentLabelForOrder(lastOrder)} · ${formatKRW(lastOrder.total)}</strong></div>
+              <div class="line-item"><span>담당 기사</span><strong>${lastOrder.riderName || riderForRegion(lastOrder.region)}</strong></div>
+              <div class="line-item"><span>현재 상태</span><strong>${lastOrder.statusLabel}</strong></div>
+            </section>
+          `;
+        }
+        const current = activeStep;
+        document.getElementById("trackingTimeline").innerHTML = steps.map((step, index) => `
+          <div class="step ${index <= current ? "done" : ""}">
+            <span class="dot"></span>
+            <span>${step}</span>
+            <span>${index <= current ? "완료" : "대기"}</span>
+          </div>
+        `).join("");
+        renderTrackingActions();
+      }
+
+      async function openTracking() {
+        if (supabaseClient) {
+          try {
+            await loadSupabaseOrders();
+          } catch (error) {
+            setSyncStatus("추적 주문은 화면 기록 기준으로 표시됨 - DB 불러오기 실패");
+          }
+        }
+        if (!lastOrder && orderHistory.length) {
+          lastOrder = orderHistory[0];
+          activeStep = lastOrder.progressStep || 0;
+        }
+        renderTracking();
+        document.getElementById("trackingModal").classList.add("open");
+        document.getElementById("trackingModal").setAttribute("aria-hidden", "false");
+      }
+
+      function closeTracking() {
+        document.getElementById("trackingModal").classList.remove("open");
+        document.getElementById("trackingModal").setAttribute("aria-hidden", "true");
+      }
+
+      async function checkout() {
+        if (!cart.length) {
+          document.getElementById("receiptCopy").textContent = "배송 예약 전에 아이템을 먼저 담아주세요.";
+        } else {
+          lastOrder = null;
+          renderDeliveryForm();
+          document.getElementById("receiptCopy").textContent = "배송 정보를 확인한 뒤 주문을 확정해 주세요.";
+        }
+        renderOrderSummary();
+        activeStep = 0;
+        renderTimeline();
+        document.getElementById("orderModal").classList.add("open");
+        document.getElementById("orderModal").setAttribute("aria-hidden", "false");
+        clearInterval(trackingTimer);
+      }
+
+      async function confirmCheckout(event) {
+        event.preventDefault();
+        const deliveryInfo = deliveryFormValues();
+        if (!deliveryInfo.name || !deliveryInfo.phone || !deliveryInfo.address) {
+          setSyncStatus("고객명, 휴대폰, 배송 주소를 확인해 주세요");
+          return;
+        }
+        currentCustomer = {
+          ...currentCustomer,
+          name: deliveryInfo.name,
+          phone: deliveryInfo.phone,
+          id: currentCustomer.id === "guest-preview" ? "customer-" + deliveryInfo.phone : currentCustomer.id,
+        };
+        saveCurrentCustomer();
+        lastOrder = createOrderSnapshot(deliveryInfo);
+        document.getElementById("addressInput").value = deliveryInfo.address;
+        const fastest = Math.min(...cart.map((item) => eta(item)));
+        document.getElementById("receiptCopy").textContent = "배송비 포함. 총 " + formatKRW(lastOrder.total) + ". 예상 도착 시간은 " + fastest + "분입니다.";
+        clearDeliveryForm();
+        try {
+          await syncOrderToSupabase(lastOrder);
+          setSyncStatus("주문이 Supabase에 저장됨 - " + lastOrder.id);
+        } catch (error) {
+          setSyncStatus("주문은 화면에만 예약됨 - DB 저장 실패: 로그인/권한 설정 확인 필요");
+        }
+        saveOrderHistory(lastOrder);
+        renderOrderSummary();
+        renderTimeline();
+        if (document.getElementById("ordersModal").classList.contains("open")) renderOrders();
+        if (document.getElementById("myModal").classList.contains("open")) renderMyPage();
+      }
+
+      function renderTimeline() {
+        const current = lastOrder ? (lastOrder.progressStep || 0) : activeStep;
+        document.getElementById("timeline").innerHTML = steps.map((step, index) => `
+          <div class="step ${index <= current ? "done" : ""}">
+            <span class="dot"></span>
+            <span>${step}</span>
+            <span>${index <= current ? "완료" : "대기"}</span>
+          </div>
+        `).join("");
+      }
+
+      function closeModal() {
+        document.getElementById("orderModal").classList.remove("open");
+        document.getElementById("orderModal").setAttribute("aria-hidden", "true");
+      }
+
+      function closeDetail() {
+        document.getElementById("detailModal").classList.remove("open");
+        document.getElementById("detailModal").setAttribute("aria-hidden", "true");
+      }
+
+      restoreSavedCustomer();
+      restoreSavedVendor();
+      restoreSavedAdmin();
+      renderProducts();
+      renderCart();
+      initSupabase().then(() => {
+        renderProducts();
+        renderCart();
+      });
+    </script>
+  </body>
+</html>
