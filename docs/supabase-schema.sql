@@ -100,16 +100,50 @@ create table if not exists public.look_set_items (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.product_reviews (
+  id uuid primary key default gen_random_uuid(),
+  order_code text not null,
+  user_id text,
+  product_id uuid references public.products(id) on delete set null,
+  product_slug text not null,
+  product_name text not null,
+  showroom_id uuid references public.showrooms(id) on delete set null,
+  showroom_name text not null,
+  size text not null default 'FREE',
+  rating integer not null check (rating between 1 and 5),
+  comment text not null default '',
+  customer_name text not null default '고객',
+  created_at timestamptz not null default now(),
+  unique (order_code, product_slug, size, user_id)
+);
+
+create table if not exists public.wishlists (
+  id uuid primary key default gen_random_uuid(),
+  user_id text not null,
+  product_id uuid references public.products(id) on delete cascade,
+  product_slug text not null,
+  product_name text not null default '',
+  showroom_name text not null default '',
+  created_at timestamptz not null default now(),
+  unique (user_id, product_slug)
+);
+
 create index if not exists products_showroom_id_idx on public.products(showroom_id);
 create index if not exists order_items_order_id_idx on public.order_items(order_id);
 create index if not exists orders_created_at_idx on public.orders(created_at desc);
 create index if not exists look_sets_showroom_id_idx on public.look_sets(showroom_id);
 create index if not exists look_set_items_look_set_id_idx on public.look_set_items(look_set_id);
+create index if not exists product_reviews_product_slug_idx on public.product_reviews(product_slug);
+create index if not exists product_reviews_showroom_name_idx on public.product_reviews(showroom_name);
+create index if not exists wishlists_user_id_idx on public.wishlists(user_id);
+create index if not exists wishlists_product_slug_idx on public.wishlists(product_slug);
 
 grant select, insert, update, delete on public.showrooms, public.products to anon, authenticated;
 grant select, insert, update, delete on public.look_sets, public.look_set_items to anon, authenticated;
 grant select, insert, update on public.orders to anon, authenticated;
 grant select, insert on public.order_items to anon, authenticated;
+grant select, insert, update, delete on public.product_reviews to anon, authenticated;
+grant select, insert, update, delete on public.wishlists to anon, authenticated;
 
 alter table public.showrooms enable row level security;
 alter table public.products enable row level security;
@@ -117,6 +151,8 @@ alter table public.orders enable row level security;
 alter table public.order_items enable row level security;
 alter table public.look_sets enable row level security;
 alter table public.look_set_items enable row level security;
+alter table public.product_reviews enable row level security;
+alter table public.wishlists enable row level security;
 
 drop policy if exists "Showrooms public read" on public.showrooms;
 drop policy if exists "Showrooms public write" on public.showrooms;
@@ -131,6 +167,10 @@ drop policy if exists "Look sets public read" on public.look_sets;
 drop policy if exists "Look sets public write" on public.look_sets;
 drop policy if exists "Look set items public read" on public.look_set_items;
 drop policy if exists "Look set items public write" on public.look_set_items;
+drop policy if exists "Product reviews public read" on public.product_reviews;
+drop policy if exists "Product reviews public write" on public.product_reviews;
+drop policy if exists "Wishlists public read" on public.wishlists;
+drop policy if exists "Wishlists public write" on public.wishlists;
 
 create policy "Showrooms public read"
 on public.showrooms for select
@@ -189,6 +229,24 @@ on public.look_set_items for all
 using (true)
 with check (true);
 
+create policy "Product reviews public read"
+on public.product_reviews for select
+using (true);
+
+create policy "Product reviews public write"
+on public.product_reviews for all
+using (true)
+with check (true);
+
+create policy "Wishlists public read"
+on public.wishlists for select
+using (true);
+
+create policy "Wishlists public write"
+on public.wishlists for all
+using (true)
+with check (true);
+
 insert into storage.buckets (id, name, public)
 values ('product-images', 'product-images', true)
 on conflict (id) do update set public = true;
@@ -212,5 +270,5 @@ with check (bucket_id = 'product-images');
 
 select
   'fitnow_schema_ready' as check_name,
-  (select count(*) from information_schema.tables where table_schema = 'public' and table_name in ('showrooms', 'products', 'orders', 'order_items', 'look_sets', 'look_set_items')) as public_table_count,
+  (select count(*) from information_schema.tables where table_schema = 'public' and table_name in ('showrooms', 'products', 'orders', 'order_items', 'look_sets', 'look_set_items', 'product_reviews', 'wishlists')) as public_table_count,
   (select count(*) from storage.buckets where id = 'product-images') as product_image_bucket_count;
