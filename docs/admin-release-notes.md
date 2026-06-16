@@ -107,6 +107,26 @@
 - Codex 인앱 브라우저는 실제 다운로드 파일 저장을 지원하지 않습니다.
 - CSV 다운로드 버튼 클릭과 상태 메시지는 확인했지만, 실제 파일 저장은 일반 브라우저에서 최종 확인해야 합니다.
 
+## 2026-06-16 최종 정리 및 재검증
+
+- 로컬 생성 산출물은 삭제하지 않고 `.gitignore`에 등록했습니다.
+  - `converted/`
+  - 사업계획서 초안 문서, 복구 문서, 생성/검수 스크립트, 앱 스크린샷
+- `standalone-preview.html`의 정산 마감 미리보기 상태를 소스 기능과 맞춰 커밋했습니다.
+- 최신 정리 커밋:
+  - `3cb4e54 Clean local artifacts and update preview`
+- GitHub Pages 배포 워크플로 결과:
+  - `Deploy GitHub Pages` 성공
+- 배포 페이지 확인:
+  - `https://restshop7779.github.io/fitnow/index.react.html`
+  - 응답 `200 OK`
+  - 타이틀 `FitNow Preview`
+- 빌드 확인:
+  - `.\node_modules\.bin\vite.cmd build`
+  - 결과: 성공
+- 작업공간 상태:
+  - `git status --short` 기준 변경 없음
+
 ## 배포 전 권장 순서
 
 1. 총관리자 화면 진입

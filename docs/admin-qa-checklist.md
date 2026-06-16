@@ -80,3 +80,23 @@
 
 - Codex 인앱 브라우저에서는 실제 파일 다운로드 완료 이벤트를 검증하기 어렵다. `CSV 다운로드`는 버튼 렌더링과 클릭 가능 상태를 확인하고, 실제 다운로드는 일반 브라우저에서 한 번 더 확인한다.
 - 문서만 수정한 경우 앱 빌드는 필수는 아니지만, 배포 전에는 `.\node_modules\.bin\vite.cmd build`를 실행한다.
+
+## 실행 기록
+
+### 2026-06-16 22:34 KST
+
+- 확인 범위:
+  - 로컬 생성 산출물 무시 처리 후 작업공간 정리 상태 확인
+  - `standalone-preview.html` 정산 마감 미리보기 변경분 커밋 및 원격 반영 확인
+  - GitHub Pages 배포 워크플로 성공 확인
+  - 배포 페이지 `https://restshop7779.github.io/fitnow/index.react.html` 응답 `200 OK` 확인
+  - Vite 프로덕션 빌드 통과 확인
+- 실행 명령:
+  - `.\node_modules\.bin\vite.cmd build`
+- 결과:
+  - 빌드 성공
+  - `git status --short` 기준 작업공간 정리 완료
+  - 최신 정리 커밋: `3cb4e54 Clean local artifacts and update preview`
+- 남은 수동 확인:
+  - 일반 브라우저에서 CSV 파일 저장 여부 확인
+  - 실제 운영 전 총관리자 QA 체크리스트 24개 항목을 화면에서 직접 체크하고 리포트 저장
