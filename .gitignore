@@ -6,3 +6,11 @@ dist/
 .pnpm-store/
 .vite/
 *.log
+
+# Local generated business-plan/recovery artifacts
+converted/
+docs/FitNow_AI_사업계획서_초안.docx
+docs/FitNow_chat_recovery.md
+docs/create_fitnow_business_plan.py
+docs/fitnow-app-screenshot.png
+docs/inspect_fitnow_business_plan.py
