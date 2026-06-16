@@ -79,6 +79,29 @@
   - 새로고침 후에도 `OPERATING MODE`와 `4/4` 유지
   - 진단 주문 재노출 없음
 
+## 배포 후 확인
+
+- 배포 URL:
+  - `https://restshop7779.github.io/fitnow/`
+  - `https://restshop7779.github.io/fitnow/index.react.html`
+- GitHub Pages 배포 확인:
+  - 페이지 응답 `200 OK`
+  - 앱 타이틀 `FitNow Preview`
+  - 총관리자 화면 진입 확인
+  - 관리자 테스트 도구와 QA 체크리스트 버튼 표시 확인
+- 사용자 흐름 확인:
+  - 홈 화면 로드
+  - 상품 담기
+  - 배송 예약 모달 열기
+  - 휴대폰 번호 입력 후 주문 확정
+  - 관리센터 진입
+- 스모크 테스트 주문:
+  - 생성 주문번호: `FN-196001`
+  - Supabase 저장 확인 후 운영자 취소 처리
+  - 최종 상태: `cancelled`
+  - 취소 분류: `operator`
+  - 환불 상태: `pending`
+
 ## 알려진 제한
 
 - Codex 인앱 브라우저는 실제 다운로드 파일 저장을 지원하지 않습니다.
