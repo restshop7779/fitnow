@@ -2907,7 +2907,7 @@ import {
         setSyncStatus("QA 체크리스트 저장 완료 - " + progress.checked + "/" + progress.total);
       }
 
-      function markAdminQaChecklistItems(updates = {}) {
+      function markAdminQaChecklistItems(updates = {}, options = {}) {
         const keys = Object.keys(updates);
         if (!keys.length) return;
         const store = readAdminQaChecklistStore();
@@ -2919,6 +2919,7 @@ import {
         const progress = adminQaChecklistProgress(store);
         store.completedAt = progress.done ? store.updatedAt : "";
         saveAdminQaChecklistStore(store);
+        if (options.render === false) return;
         renderSettlementExportActions();
         renderAdminReleaseReadiness(adminRenderedOrders.length ? adminRenderedOrders : orderHistory);
         const summary = document.getElementById("adminQaChecklistSummary");
@@ -3106,13 +3107,6 @@ import {
         const removedOrderTotal = beforeOrderCount - orderHistory.length;
         const removedLogTotal = beforeLogCount - settlementFlowCheckLogs.length;
         if (options.auto && !removedOrderTotal && !removedStatusCount && !removedLogTotal) return;
-        await renderAdminOrders(orderHistory);
-        renderOrders();
-        renderTracking();
-        renderSettlementFlowCheckLogs();
-        saveTestToolMeta({ lastCleanupAt: new Date().toISOString(), lastCleanupMode: expiredOnly ? "expired" : "manual" });
-        renderSettlementExportActions();
-        renderAdminReleaseReadiness(adminRenderedOrders.length ? adminRenderedOrders : orderHistory);
         const diagnosticAfterCleanup = adminDiagnosticState(orderHistory);
         if (!expiredOnly && !options.auto && !diagnosticAfterCleanup.hasTestState) {
           markAdminQaChecklistItems({
@@ -3120,8 +3114,15 @@ import {
             [adminQaChecklistItemKey("cleanup", "cleanup-time")]: true,
             [adminQaChecklistItemKey("cleanup", "operating-mode")]: true,
             [adminQaChecklistItemKey("cleanup", "notice-hidden")]: true,
-          });
+          }, { render: false });
         }
+        await renderAdminOrders(orderHistory);
+        renderOrders();
+        renderTracking();
+        renderSettlementFlowCheckLogs();
+        saveTestToolMeta({ lastCleanupAt: new Date().toISOString(), lastCleanupMode: expiredOnly ? "expired" : "manual" });
+        renderSettlementExportActions();
+        renderAdminReleaseReadiness(adminRenderedOrders.length ? adminRenderedOrders : orderHistory);
         setSyncStatus((expiredOnly ? "만료 테스트 데이터 자동 정리 완료 - " : "테스트 데이터 정리 완료 - ") + "주문 " + removedOrderTotal + "건, 상태 " + removedStatusCount + "건, 로그 " + removedLogTotal + "건 삭제");
       }
 
