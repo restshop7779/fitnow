@@ -7,16 +7,14 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: pages
   cancel-in-progress: false
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -27,9 +25,6 @@ jobs:
         with:
           node-version: 22
 
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-
       - name: Enable pnpm
         run: corepack enable
 
@@ -39,18 +34,20 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
+      - name: Prepare Pages files
+        run: |
+          touch dist/.nojekyll
+          cat > dist/index.html <<'HTML'
+          <!doctype html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=./index.react.html"><title>FitNow</title></head><body><a href="./index.react.html">Open FitNow</a></body></html>
+          HTML
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Publish gh-pages branch
+        run: |
+          cd dist
+          git init
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b gh-pages
+          git add -A
+          git commit -m "Deploy FitNow static build"
+          git push --force "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" gh-pages
