@@ -2907,6 +2907,29 @@ import {
         setSyncStatus("QA 체크리스트 저장 완료 - " + progress.checked + "/" + progress.total);
       }
 
+      function markAdminQaChecklistItems(updates = {}) {
+        const keys = Object.keys(updates);
+        if (!keys.length) return;
+        const store = readAdminQaChecklistStore();
+        store.checked = { ...(store.checked || {}) };
+        keys.forEach((key) => {
+          store.checked[key] = !!updates[key];
+        });
+        store.updatedAt = new Date().toISOString();
+        const progress = adminQaChecklistProgress(store);
+        store.completedAt = progress.done ? store.updatedAt : "";
+        saveAdminQaChecklistStore(store);
+        renderSettlementExportActions();
+        renderAdminReleaseReadiness(adminRenderedOrders.length ? adminRenderedOrders : orderHistory);
+        const summary = document.getElementById("adminQaChecklistSummary");
+        if (summary) {
+          summary.innerHTML = `
+            <strong>${progress.done ? "QA 점검 완료" : "QA 점검 진행 중"}</strong>
+            <span>${progress.checked}/${progress.total}개 완료 · 마지막 저장 ${testToolTimeLabel(store.updatedAt)}</span>
+          `;
+        }
+      }
+
       function clearAdminQaChecklist() {
         localStorage.removeItem(ADMIN_QA_CHECKLIST_KEY);
         renderSettlementExportActions();
@@ -3090,6 +3113,15 @@ import {
         saveTestToolMeta({ lastCleanupAt: new Date().toISOString(), lastCleanupMode: expiredOnly ? "expired" : "manual" });
         renderSettlementExportActions();
         renderAdminReleaseReadiness(adminRenderedOrders.length ? adminRenderedOrders : orderHistory);
+        const diagnosticAfterCleanup = adminDiagnosticState(orderHistory);
+        if (!expiredOnly && !options.auto && !diagnosticAfterCleanup.hasTestState) {
+          markAdminQaChecklistItems({
+            [adminQaChecklistItemKey("cleanup", "remove-diagnostics")]: true,
+            [adminQaChecklistItemKey("cleanup", "cleanup-time")]: true,
+            [adminQaChecklistItemKey("cleanup", "operating-mode")]: true,
+            [adminQaChecklistItemKey("cleanup", "notice-hidden")]: true,
+          });
+        }
         setSyncStatus((expiredOnly ? "만료 테스트 데이터 자동 정리 완료 - " : "테스트 데이터 정리 완료 - ") + "주문 " + removedOrderTotal + "건, 상태 " + removedStatusCount + "건, 로그 " + removedLogTotal + "건 삭제");
       }
 
