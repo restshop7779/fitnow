@@ -72,6 +72,8 @@ import {
       const TEST_DATA_RETENTION_KEY = "fitnow_test_data_retention";
       const TEST_TOOL_META_KEY = "fitnow_test_tool_meta";
       const ADMIN_QA_CHECKLIST_KEY = "fitnow_admin_qa_checklist";
+      const DELIVERY_PROOF_RETENTION_DAYS = 30;
+      const DELIVERY_PROOF_RETENTION_MS = DELIVERY_PROOF_RETENTION_DAYS * 24 * 60 * 60 * 1000;
       const TEST_DATA_RETENTION_OPTIONS = {
         "1h": { label: "1시간", ms: 60 * 60 * 1000 },
         "24h": { label: "24시간", ms: 24 * 60 * 60 * 1000 },
@@ -565,6 +567,47 @@ import {
         const photo = deliveryProofPhoto(order, type);
         const photoLabel = deliveryProofPhotoSrc(photo) ? " · 사진 포함" + (deliveryProofPhotoStorageLabel(photo) ? " · " + deliveryProofPhotoStorageLabel(photo) : "") : "";
         return new Date(value).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) + photoLabel;
+      }
+
+      function deliveryProofCompletedAt(order) {
+        if (!order || (order.progressStep || 0) < 4) return "";
+        const logs = Array.isArray(order.deliveryLogs) ? order.deliveryLogs : [];
+        const doneLog = logs.find((log) => log.action === "배송 완료");
+        return (doneLog && doneLog.createdAt) || order.arrivalConfirmedAt || order.updatedAt || order.createdAt || "";
+      }
+
+      function isDeliveryProofRetentionExpired(order, now = Date.now()) {
+        const completedAt = deliveryProofCompletedAt(order);
+        if (!completedAt) return false;
+        const time = new Date(completedAt).getTime();
+        return Number.isFinite(time) && now - time > DELIVERY_PROOF_RETENTION_MS;
+      }
+
+      function deliveryProofPhotoPaths(order) {
+        const paths = [];
+        const pushPhoto = (photo) => {
+          if (photo && photo.path && !paths.includes(photo.path)) paths.push(photo.path);
+        };
+        pushPhoto(order && order.pickupProofPhoto);
+        pushPhoto(order && order.arrivalProofPhoto);
+        (Array.isArray(order && order.deliveryLogs) ? order.deliveryLogs : []).forEach((log) => pushPhoto(log.photo));
+        return paths;
+      }
+
+      function stripDeliveryProofPhotos(order) {
+        if (!order) return 0;
+        let removed = 0;
+        if (deliveryProofPhotoSrc(order.pickupProofPhoto)) removed += 1;
+        if (deliveryProofPhotoSrc(order.arrivalProofPhoto)) removed += 1;
+        order.pickupProofPhoto = null;
+        order.arrivalProofPhoto = null;
+        if (Array.isArray(order.deliveryLogs)) {
+          order.deliveryLogs = order.deliveryLogs.map((log) => {
+            if (log && log.photo) removed += 1;
+            return log && log.photo ? { ...log, photo: null } : log;
+          });
+        }
+        return removed;
       }
 
       function deliveryLogActor() {
@@ -3345,6 +3388,56 @@ import {
         setSyncStatus((expiredOnly ? "만료 테스트 데이터 자동 정리 완료 - " : "테스트 데이터 정리 완료 - ") + "주문 " + removedOrderTotal + "건, 상태 " + removedStatusCount + "건, 로그 " + removedLogTotal + "건 삭제");
       }
 
+      function deliveryProofCleanupCandidates(orders = orderHistory) {
+        const now = Date.now();
+        return (orders || []).filter((order) =>
+          !isDiagnosticOrder(order) &&
+          isDeliveryProofRetentionExpired(order, now) &&
+          (deliveryProofPhotoSrc(order.pickupProofPhoto) || deliveryProofPhotoSrc(order.arrivalProofPhoto) || deliveryProofPhotoPaths(order).length)
+        );
+      }
+
+      async function clearExpiredDeliveryProofPhotos(options = {}) {
+        if (!currentAdmin || currentAdmin.role !== "total") {
+          setSyncStatus("인증사진 정리는 총관리자만 가능합니다");
+          return;
+        }
+        let sourceOrders = adminRenderedOrders.length ? adminRenderedOrders : orderHistory;
+        if (supabaseClient) {
+          sourceOrders = await loadAdminOrders({ includeDiagnostic: false }).catch(() => sourceOrders);
+        }
+        const candidates = deliveryProofCleanupCandidates(sourceOrders);
+        if (!candidates.length) {
+          if (!options.auto) setSyncStatus("30일 지난 배송 인증사진이 없습니다");
+          return;
+        }
+        let removedPhotoRefs = 0;
+        let removedStorageFiles = 0;
+        for (const order of candidates) {
+          const paths = deliveryProofPhotoPaths(order);
+          if (supabaseClient && paths.length) {
+            const result = await supabaseClient.storage.from("delivery-proof-photos").remove(paths);
+            if (result.error) throw result.error;
+            removedStorageFiles += paths.length;
+          }
+          removedPhotoRefs += stripDeliveryProofPhotos(order);
+          addDeliveryLog(order, "인증사진 보관 만료", "배송완료 후 " + DELIVERY_PROOF_RETENTION_DAYS + "일 경과로 사진 참조 정리");
+          saveOrderStatusOverride(order);
+          saveOrderHistory(order);
+          if (supabaseClient) await syncOrderStatusToSupabase(order);
+        }
+        if (supabaseClient) {
+          orderHistory = mergeOrderLists(
+            await loadAdminOrders({ includeDiagnostic: shouldIncludeDiagnosticAdminOrders() }).catch(() => candidates),
+            orderHistory,
+          );
+        }
+        await renderAdminOrders(orderHistory);
+        renderOrders();
+        renderTracking();
+        setSyncStatus("만료 인증사진 정리 완료 - 주문 " + candidates.length + "건, 사진 " + removedPhotoRefs + "개, 저장소 파일 " + removedStorageFiles + "개");
+      }
+
       function renderSettlementViewTabs(orders = []) {
         const node = document.getElementById("adminSettlementViewTabs");
         if (!node) return;
@@ -3625,6 +3718,7 @@ import {
         const qaProgress = adminQaChecklistProgress();
         const qaStore = readAdminQaChecklistStore();
         const qaRemaining = Math.max(qaProgress.total - qaProgress.checked, 0);
+        const expiredProofCount = deliveryProofCleanupCandidates(adminRenderedOrders.length ? adminRenderedOrders : orderHistory).length;
         testNode.innerHTML = `
           <div class="settlement-test-status">
             <div><span>마지막 점검</span><strong>${testToolTimeLabel(testMeta.lastCheckAt)}</strong></div>
@@ -3644,6 +3738,13 @@ import {
               ${Object.entries(TEST_DATA_RETENTION_OPTIONS).map(([key, option]) =>
                 '<button type="button" class="' + (retentionKey === key ? 'active-control' : '') + '" onclick="setTestDataRetention(\'' + key + '\')">' + option.label + '</button>'
               ).join("")}
+            </div>
+          </div>
+          <div class="settlement-test-retention">
+            <span>배송 인증사진 보관</span>
+            <div>
+              <button type="button" class="active-control" disabled>배송완료 후 ${DELIVERY_PROOF_RETENTION_DAYS}일</button>
+              <button type="button" ${expiredProofCount ? "" : "disabled"} onclick="clearExpiredDeliveryProofPhotos()">만료 사진 정리 ${expiredProofCount}건</button>
             </div>
           </div>
           <button type="button" onclick="runSettlementFlowAutoCheck()">정산 플로우 점검</button>
@@ -8203,6 +8304,7 @@ Object.assign(window, {
   runSettlementFlowAutoCheck,
   clearSettlementFlowCheckLogs,
   clearAdminTestData,
+  clearExpiredDeliveryProofPhotos,
   setTestDataRetention,
   downloadSettlementCsv,
   openSettlementStatement,
@@ -8258,6 +8360,7 @@ exposeHandlers({
   claimDeliveryOrder,
   claimDeliveryOrderFromDetail,
   clearDeliveryForm,
+  clearExpiredDeliveryProofPhotos,
   closeAdmin,
   closeAdminLogin,
   closeAdminOrderDetail,

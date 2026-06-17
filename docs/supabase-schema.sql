@@ -261,6 +261,7 @@ drop policy if exists "Product image update" on storage.objects;
 drop policy if exists "Public delivery proof photo read" on storage.objects;
 drop policy if exists "Delivery proof photo upload" on storage.objects;
 drop policy if exists "Delivery proof photo update" on storage.objects;
+drop policy if exists "Delivery proof photo delete" on storage.objects;
 
 create policy "Public product image read"
 on storage.objects for select
@@ -287,6 +288,10 @@ create policy "Delivery proof photo update"
 on storage.objects for update
 using (bucket_id = 'delivery-proof-photos')
 with check (bucket_id = 'delivery-proof-photos');
+
+create policy "Delivery proof photo delete"
+on storage.objects for delete
+using (bucket_id = 'delivery-proof-photos');
 
 select
   'fitnow_schema_ready' as check_name,
