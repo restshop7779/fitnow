@@ -539,6 +539,26 @@ import {
         `;
       }
 
+      function renderCustomerArrivalProof(order) {
+        const photo = deliveryProofPhoto(order, "arrival");
+        const src = deliveryProofPhotoSrc(photo);
+        if (!src) return "";
+        const mediaSrc = safeMediaUrl(src);
+        const capturedAt = photo && photo.capturedAt
+          ? new Date(photo.capturedAt).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
+          : (order.arrivalConfirmedAt ? new Date(order.arrivalConfirmedAt).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "");
+        return `
+          <section class="summary-card customer-proof-card">
+            <h3>도착 인증 사진</h3>
+            <div class="delivery-proof-media">
+              <img class="delivery-proof-preview" src="${mediaSrc}" alt="도착 인증 사진">
+              <span class="delivery-proof-meta">${capturedAt ? "촬영 " + capturedAt : "도착 인증 완료"}</span>
+              <a class="delivery-proof-link" href="${mediaSrc}" target="_blank" rel="noopener">사진 크게 보기</a>
+            </div>
+          </section>
+        `;
+      }
+
       function deliveryProofLabel(order, type) {
         const value = type === "pickup" ? order.pickupConfirmedAt : order.arrivalConfirmedAt;
         if (!value) return "미인증";
@@ -7972,6 +7992,7 @@ import {
               ${isOrderCancelled(lastOrder) ? '<div class="line-item"><span>취소 분류</span><strong>' + cancelReasonLabel(lastOrder) + '</strong></div>' : ""}
               ${isOrderCancelled(lastOrder) ? '<div class="line-item"><span>취소 사유</span><strong>' + (lastOrder.cancelReason || "사유 미입력") + '</strong></div>' : ""}
             </section>
+            ${renderCustomerArrivalProof(lastOrder)}
           `;
         }
         const current = activeStep;
