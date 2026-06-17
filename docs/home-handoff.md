@@ -6,7 +6,7 @@ Updated: 2026-06-17 09:00 KST
 
 - Repository: `https://github.com/restshop7779/fitnow.git`
 - Branch: `main`
-- Latest app commit at handoff: `Add delivery operator work shortcuts`
+- Latest app commit at handoff: `Keep diagnostic delivery orders visible during checks`
 - Deployed app:
   - `https://restshop7779.github.io/fitnow/`
   - `https://restshop7779.github.io/fitnow/index.react.html`
@@ -24,6 +24,7 @@ Updated: 2026-06-17 09:00 KST
   - `정산서 미리보기`
   - `정산 CSV`
 - Delivery partner login now includes a top-level `배송 작업 바로가기` panel for claim, pickup, delivery start, arrival proof, finish, and today done checks.
+- Delivery test orders now stay visible during admin diagnostic checks while remaining excluded from normal operating lists.
 - QA checklist CSV download was verified in Chrome.
 - Settlement statement preview and settlement CSV download were verified with 6 test settlement rows.
 - Test data cleanup now auto-checks the QA cleanup items after cleanup succeeds:
@@ -96,7 +97,7 @@ Nested fallback path:
   - confirm cleanup items auto-check
   - save QA report
 - After that, decide whether partner/delivery operator views need the same release-readiness shortcut pattern.
-- Next, run one manual delivery partner pass with PIN `7701` and confirm each shortcut lands on the expected dashboard section.
+- Next, run a full diagnostic delivery pass and confirm each shortcut lands on the expected dashboard section.
 
 ## Reference Docs
 

@@ -1302,15 +1302,18 @@ import {
           .filter((order) => order.items.some((item) => item.showroom === currentVendor.store));
       }
 
-      async function loadAdminOrders() {
+      async function loadAdminOrders(options = {}) {
         if (!supabaseClient) return orderHistory;
+        const includeDiagnostic = !!(options && options.includeDiagnostic);
         const orderResult = await supabaseClient
           .from("orders")
           .select("*, order_items(*)")
           .order("created_at", { ascending: false })
           .limit(50);
         if (orderResult.error) throw orderResult.error;
-        return (orderResult.data || []).map(orderRowToHistory).filter((order) => !isDiagnosticOrder(order));
+        return (orderResult.data || [])
+          .map(orderRowToHistory)
+          .filter((order) => includeDiagnostic || !isDiagnosticOrder(order));
       }
 
       function orderRowToHistory(row) {
@@ -3990,7 +3993,7 @@ import {
         try {
           if (supabaseClient) {
             await syncOrderToSupabase(order);
-            const refreshedOrders = await loadAdminOrders();
+            const refreshedOrders = await loadAdminOrders({ includeDiagnostic: true });
             await renderAdminOrders(refreshedOrders);
             setSyncStatus("배송 테스트 주문 생성 완료 - Supabase 반영 " + order.id);
           } else {
@@ -4564,6 +4567,10 @@ import {
         };
       }
 
+      function shouldIncludeDiagnosticAdminOrders() {
+        return storedDiagnosticStatusCount() > 0 || settlementFlowCheckLogs.length > 0 || orderHistory.some(isDiagnosticOrder);
+      }
+
       function renderAdminModeBanner(orders = []) {
         const node = document.getElementById("adminModeBanner");
         if (!node) return;
@@ -4734,7 +4741,7 @@ import {
         let orders = ordersOverride || orderHistory;
         if (!ordersOverride && supabaseClient) {
           try {
-            orders = await loadAdminOrders();
+            orders = await loadAdminOrders({ includeDiagnostic: shouldIncludeDiagnosticAdminOrders() });
           } catch (error) {
             setSyncStatus("운영 주문은 화면 기록 기준으로 표시됨 - DB 불러오기 실패");
           }
@@ -5423,7 +5430,7 @@ import {
       async function findAdminOrder(orderId) {
         let order = orderHistory.find((item) => item.id === orderId);
         if (supabaseClient) {
-          const orders = await loadAdminOrders().catch(() => []);
+          const orders = await loadAdminOrders({ includeDiagnostic: String(orderId || "").startsWith("FN-TEST-") || String(orderId || "").startsWith("FN-SET") }).catch(() => []);
           const dbOrder = orders.find((item) => item.id === orderId);
           if (dbOrder) order = dbOrder;
         }
@@ -5745,7 +5752,7 @@ import {
         saveOrderHistory(order);
         try {
           await syncOrderStatusToSupabase(order);
-          const refreshedOrders = supabaseClient ? await loadAdminOrders() : orderHistory;
+          const refreshedOrders = supabaseClient ? await loadAdminOrders({ includeDiagnostic: isDiagnosticOrder(order) }) : orderHistory;
           await renderAdminOrders(refreshedOrders);
           renderTracking();
           if (document.getElementById("ordersModal").classList.contains("open")) renderOrders();
@@ -5878,7 +5885,7 @@ import {
         }
         let order = orderHistory.find((item) => item.id === orderId);
         if (supabaseClient) {
-          const orders = await loadAdminOrders().catch(() => []);
+          const orders = await loadAdminOrders({ includeDiagnostic: String(orderId || "").startsWith("FN-TEST-") || String(orderId || "").startsWith("FN-SET") }).catch(() => []);
           const dbOrder = orders.find((item) => item.id === orderId);
           if (dbOrder) {
             order = { ...dbOrder, progressStep: Math.max(order ? (order.progressStep || 0) : 0, dbOrder.progressStep || 0) };
