@@ -463,6 +463,28 @@
       .delivery-proof-thumb {
         max-width: 160px;
       }
+      .delivery-proof-media {
+        display: grid;
+        justify-items: start;
+        gap: 4px;
+        margin-top: 8px;
+      }
+      .delivery-proof-media .delivery-proof-thumb,
+      .delivery-proof-media .delivery-proof-preview {
+        margin-top: 0;
+      }
+      .delivery-proof-meta,
+      .delivery-proof-link {
+        font-size: 12px;
+        font-weight: 850;
+      }
+      .delivery-proof-meta {
+        color: var(--muted);
+      }
+      .delivery-proof-link {
+        color: var(--teal);
+        text-decoration: none;
+      }
       .catalog-controls { display: grid; gap: 10px; padding: 0 18px 14px; }
       .search input {
         width: 100%;

@@ -497,11 +497,54 @@ import {
         return photo.publicUrl || photo.url || photo.dataUrl || "";
       }
 
+      function deliveryProofPhotoStorageLabel(photo) {
+        if (!photo) return "";
+        if (photo.publicUrl || photo.path) return "저장소 저장";
+        if (photo.dataUrl) return "임시 저장";
+        return "사진 기록";
+      }
+
+      function deliveryProofPhotoSizeLabel(photo) {
+        const size = Number(photo && photo.size ? photo.size : 0);
+        if (!size) return "";
+        if (size >= 1024 * 1024) return (size / 1024 / 1024).toFixed(1) + "MB";
+        if (size >= 1024) return Math.round(size / 1024) + "KB";
+        return size + "B";
+      }
+
+      function deliveryProofPhotoMeta(photo) {
+        if (!photo) return "";
+        const parts = [deliveryProofPhotoStorageLabel(photo), deliveryProofPhotoSizeLabel(photo)].filter(Boolean);
+        if (photo.capturedAt) {
+          parts.push(new Date(photo.capturedAt).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }));
+        }
+        return parts.join(" · ");
+      }
+
+      function safeMediaUrl(value) {
+        return String(value || "").replace(/"/g, "%22");
+      }
+
+      function renderDeliveryProofPhoto(photo, alt, className = "delivery-proof-preview") {
+        const src = deliveryProofPhotoSrc(photo);
+        if (!src) return "";
+        const mediaSrc = safeMediaUrl(src);
+        const meta = deliveryProofPhotoMeta(photo);
+        return `
+          <div class="delivery-proof-media">
+            <img class="${className}" src="${mediaSrc}" alt="${alt}">
+            ${meta ? '<span class="delivery-proof-meta">' + meta + '</span>' : ""}
+            ${photo && photo.publicUrl ? '<a class="delivery-proof-link" href="' + mediaSrc + '" target="_blank" rel="noopener">사진 원본 보기</a>' : ""}
+          </div>
+        `;
+      }
+
       function deliveryProofLabel(order, type) {
         const value = type === "pickup" ? order.pickupConfirmedAt : order.arrivalConfirmedAt;
         if (!value) return "미인증";
         const photo = deliveryProofPhoto(order, type);
-        return new Date(value).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) + (deliveryProofPhotoSrc(photo) ? " · 사진 포함" : "");
+        const photoLabel = deliveryProofPhotoSrc(photo) ? " · 사진 포함" + (deliveryProofPhotoStorageLabel(photo) ? " · " + deliveryProofPhotoStorageLabel(photo) : "") : "";
+        return new Date(value).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) + photoLabel;
       }
 
       function deliveryLogActor() {
@@ -543,7 +586,7 @@ import {
               <strong>${log.action}</strong>
               <span>${log.detail || "상세 기록 없음"}</span>
               <span>${new Date(log.createdAt).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })} · ${log.actor || "시스템"}</span>
-              ${deliveryProofPhotoSrc(log.photo) ? '<img class="delivery-proof-thumb" src="' + deliveryProofPhotoSrc(log.photo) + '" alt="' + log.action + ' 사진">' : ""}
+              ${renderDeliveryProofPhoto(log.photo, log.action + " 사진", "delivery-proof-thumb")}
             </div>
           </div>
         `).join("");
@@ -5766,8 +5809,8 @@ import {
               <strong>픽업 · 도착 인증</strong>
               <span>픽업 인증: ${deliveryProofLabel(order, "pickup")}</span>
               <span>도착 인증: ${deliveryProofLabel(order, "arrival")}</span>
-              ${deliveryProofPhotoSrc(deliveryProofPhoto(order, "pickup")) ? '<img class="delivery-proof-preview" src="' + deliveryProofPhotoSrc(deliveryProofPhoto(order, "pickup")) + '" alt="픽업 인증 사진">' : ""}
-              ${deliveryProofPhotoSrc(deliveryProofPhoto(order, "arrival")) ? '<img class="delivery-proof-preview" src="' + deliveryProofPhotoSrc(deliveryProofPhoto(order, "arrival")) + '" alt="도착 인증 사진">' : ""}
+              ${renderDeliveryProofPhoto(deliveryProofPhoto(order, "pickup"), "픽업 인증 사진")}
+              ${renderDeliveryProofPhoto(deliveryProofPhoto(order, "arrival"), "도착 인증 사진")}
             </div>
             <div class="order-detail-block">
               <strong>정산 처리 이력</strong>
@@ -5857,7 +5900,7 @@ import {
         addDeliveryLog(
           order,
           type === "pickup" ? "픽업 인증" : "도착 인증",
-          (order.deliveryPartnerName || "지금배송") + " · " + assignedRiderLabel(order) + (options.photo ? " · 사진 포함" : ""),
+          (order.deliveryPartnerName || "지금배송") + " · " + assignedRiderLabel(order) + (options.photo ? " · 사진 포함 · " + deliveryProofPhotoStorageLabel(options.photo) : ""),
           { photo: options.photo || null }
         );
         await persistDeliveryAssignment(order, (type === "pickup" ? "픽업 인증 완료" : "도착 인증 완료") + " - " + order.id);
