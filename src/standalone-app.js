@@ -4624,6 +4624,10 @@ import {
               <em>${readyCount}/4</em>
             </div>
             <div class="admin-release-readiness-grid">${itemMarkup}</div>
+            <div class="admin-release-actions">
+              <button type="button" onclick="openAdminQaChecklist()">QA 체크리스트</button>
+              <button type="button" ${diagnostic.hasTestState ? "" : "disabled"} onclick="clearAdminTestData()">테스트 데이터 정리</button>
+            </div>
           </div>
         `;
       }

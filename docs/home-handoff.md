@@ -1,12 +1,12 @@
 # FitNow Home Handoff
 
-Updated: 2026-06-16 23:54 KST
+Updated: 2026-06-17 09:00 KST
 
 ## Current Status
 
 - Repository: `https://github.com/restshop7779/fitnow.git`
 - Branch: `main`
-- Latest commit: `1c41048 Fix QA cleanup auto-check render order`
+- Latest app commit at handoff: `Add admin QA shortcut actions`
 - Deployed app:
   - `https://restshop7779.github.io/fitnow/`
   - `https://restshop7779.github.io/fitnow/index.react.html`
@@ -18,6 +18,7 @@ Updated: 2026-06-16 23:54 KST
 - GitHub Pages deployment is working from the `gh-pages` branch workflow.
 - Total admin release readiness panel is live.
 - Admin QA checklist is live.
+- Total admin release readiness panel now includes top-level `QA 체크리스트` and `테스트 데이터 정리` shortcut buttons.
 - QA checklist CSV download was verified in Chrome.
 - Settlement statement preview and settlement CSV download were verified with 6 test settlement rows.
 - Test data cleanup now auto-checks the QA cleanup items after cleanup succeeds:
@@ -68,6 +69,13 @@ https://restshop7779.github.io/fitnow/index.react.html
 1. 하단 메뉴 `관리`
 2. `총관리자` 카드 `열기`
 3. PIN `0000`
+4. 상단 `배포 준비 상태` 패널의 `QA 체크리스트` 클릭
+
+Nested fallback path:
+
+1. 하단 메뉴 `관리`
+2. `총관리자` 카드 `열기`
+3. PIN `0000`
 4. `배송 대시보드` 펼치기
 5. `지금배송 정산 요약` 펼치기
 6. `관리자 테스트 도구` 펼치기
@@ -81,7 +89,7 @@ https://restshop7779.github.io/fitnow/index.react.html
   - `테스트 데이터 정리`
   - confirm cleanup items auto-check
   - save QA report
-- After that, decide whether to add a more visible top-level shortcut to `QA 체크리스트`, because it is currently nested under `배송 대시보드 > 지금배송 정산 요약 > 관리자 테스트 도구`.
+- After that, decide whether the same top-level shortcut pattern should be applied to settlement CSV/report actions.
 
 ## Reference Docs
 
