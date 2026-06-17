@@ -251,9 +251,16 @@ insert into storage.buckets (id, name, public)
 values ('product-images', 'product-images', true)
 on conflict (id) do update set public = true;
 
+insert into storage.buckets (id, name, public)
+values ('delivery-proof-photos', 'delivery-proof-photos', true)
+on conflict (id) do update set public = true;
+
 drop policy if exists "Public product image read" on storage.objects;
 drop policy if exists "Product image upload" on storage.objects;
 drop policy if exists "Product image update" on storage.objects;
+drop policy if exists "Public delivery proof photo read" on storage.objects;
+drop policy if exists "Delivery proof photo upload" on storage.objects;
+drop policy if exists "Delivery proof photo update" on storage.objects;
 
 create policy "Public product image read"
 on storage.objects for select
@@ -268,7 +275,21 @@ on storage.objects for update
 using (bucket_id = 'product-images')
 with check (bucket_id = 'product-images');
 
+create policy "Public delivery proof photo read"
+on storage.objects for select
+using (bucket_id = 'delivery-proof-photos');
+
+create policy "Delivery proof photo upload"
+on storage.objects for insert
+with check (bucket_id = 'delivery-proof-photos');
+
+create policy "Delivery proof photo update"
+on storage.objects for update
+using (bucket_id = 'delivery-proof-photos')
+with check (bucket_id = 'delivery-proof-photos');
+
 select
   'fitnow_schema_ready' as check_name,
   (select count(*) from information_schema.tables where table_schema = 'public' and table_name in ('showrooms', 'products', 'orders', 'order_items', 'look_sets', 'look_set_items', 'product_reviews', 'wishlists')) as public_table_count,
-  (select count(*) from storage.buckets where id = 'product-images') as product_image_bucket_count;
+  (select count(*) from storage.buckets where id = 'product-images') as product_image_bucket_count,
+  (select count(*) from storage.buckets where id = 'delivery-proof-photos') as delivery_proof_photo_bucket_count;

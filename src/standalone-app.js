@@ -492,11 +492,16 @@ import {
         return type === "pickup" ? order.pickupProofPhoto : order.arrivalProofPhoto;
       }
 
+      function deliveryProofPhotoSrc(photo) {
+        if (!photo) return "";
+        return photo.publicUrl || photo.url || photo.dataUrl || "";
+      }
+
       function deliveryProofLabel(order, type) {
         const value = type === "pickup" ? order.pickupConfirmedAt : order.arrivalConfirmedAt;
         if (!value) return "미인증";
         const photo = deliveryProofPhoto(order, type);
-        return new Date(value).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) + (photo && photo.dataUrl ? " · 사진 포함" : "");
+        return new Date(value).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) + (deliveryProofPhotoSrc(photo) ? " · 사진 포함" : "");
       }
 
       function deliveryLogActor() {
@@ -538,7 +543,7 @@ import {
               <strong>${log.action}</strong>
               <span>${log.detail || "상세 기록 없음"}</span>
               <span>${new Date(log.createdAt).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })} · ${log.actor || "시스템"}</span>
-              ${log.photo && log.photo.dataUrl ? '<img class="delivery-proof-thumb" src="' + log.photo.dataUrl + '" alt="' + log.action + ' 사진">' : ""}
+              ${deliveryProofPhotoSrc(log.photo) ? '<img class="delivery-proof-thumb" src="' + deliveryProofPhotoSrc(log.photo) + '" alt="' + log.action + ' 사진">' : ""}
             </div>
           </div>
         `).join("");
@@ -578,6 +583,45 @@ import {
         };
       }
 
+      function dataUrlToBlob(dataUrl) {
+        const parts = String(dataUrl || "").split(",");
+        const meta = parts[0] || "";
+        const body = parts[1] || "";
+        const mime = (meta.match(/data:(.*?);base64/) || [])[1] || "image/jpeg";
+        const binary = atob(body);
+        const bytes = new Uint8Array(binary.length);
+        for (let index = 0; index < binary.length; index += 1) {
+          bytes[index] = binary.charCodeAt(index);
+        }
+        return new Blob([bytes], { type: mime });
+      }
+
+      function deliveryProofUploadPath(orderId, type, capturedAt) {
+        const safeOrderId = String(orderId || "order").replace(/[^a-z0-9_-]/gi, "-").slice(0, 80);
+        const stamp = String(capturedAt || new Date().toISOString()).replace(/[^0-9]/g, "").slice(0, 14) || Date.now();
+        return safeOrderId + "/" + type + "-" + stamp + ".jpg";
+      }
+
+      async function uploadDeliveryProofPhoto(orderId, type, photo) {
+        if (!supabaseClient || !photo || !photo.dataUrl) return photo;
+        const path = deliveryProofUploadPath(orderId, type, photo.capturedAt);
+        const blob = dataUrlToBlob(photo.dataUrl);
+        const uploadResult = await supabaseClient.storage
+          .from("delivery-proof-photos")
+          .upload(path, blob, { cacheControl: "3600", upsert: true, contentType: photo.mimeType || "image/jpeg" });
+        if (uploadResult.error) throw uploadResult.error;
+        const publicResult = supabaseClient.storage.from("delivery-proof-photos").getPublicUrl(path);
+        const publicUrl = publicResult && publicResult.data ? publicResult.data.publicUrl : "";
+        return {
+          name: photo.name,
+          mimeType: photo.mimeType || "image/jpeg",
+          size: blob.size,
+          capturedAt: photo.capturedAt,
+          path,
+          publicUrl,
+        };
+      }
+
       function startDeliveryProofCapture(orderId, type) {
         if (!currentAdmin) {
           openAdminLogin();
@@ -597,7 +641,15 @@ import {
           }
           try {
             setSyncStatus((type === "pickup" ? "픽업" : "도착") + " 사진 압축 중");
-            const photo = await compressDeliveryProofPhoto(file, type);
+            let photo = await compressDeliveryProofPhoto(file, type);
+            if (supabaseClient) {
+              try {
+                setSyncStatus((type === "pickup" ? "픽업" : "도착") + " 사진 저장소 업로드 중");
+                photo = await uploadDeliveryProofPhoto(orderId, type, photo);
+              } catch (uploadError) {
+                setSyncStatus("사진 저장소 업로드 실패 - 임시 사진으로 인증 계속");
+              }
+            }
             await confirmDeliveryProof(orderId, type, { photo });
             const detailModal = document.getElementById("adminOrderDetailModal");
             if (detailModal && detailModal.classList.contains("open")) {
@@ -843,8 +895,6 @@ import {
           arrivalConfirmedAt: order.arrivalConfirmedAt || "",
           pickupProofPhoto: order.pickupProofPhoto || null,
           arrivalProofPhoto: order.arrivalProofPhoto || null,
-          pickupProofPhoto: order.pickupProofPhoto || null,
-          arrivalProofPhoto: order.arrivalProofPhoto || null,
           settlementStatus: order.settlementStatus || "",
           settlementConfirmedAt: order.settlementConfirmedAt || "",
           settlementConfirmedBy: order.settlementConfirmedBy || "",
@@ -1085,23 +1135,24 @@ import {
           const result = await supabaseClient.from(table).select("*").limit(1);
           checks.push({ name: table, ok: !result.error, error: result.error ? result.error.message : "" });
         }
-        let storageOk = false;
-        let storageError = "";
+        const storageChecks = [];
         try {
           const blob = new Blob(["fitnow storage check"], { type: "text/plain" });
-          const upload = await supabaseClient.storage.from("product-images").upload("health-check.txt", blob, { upsert: true });
-          storageOk = !upload.error;
-          storageError = upload.error ? upload.error.message : "";
+          for (const bucket of ["product-images", "delivery-proof-photos"]) {
+            const upload = await supabaseClient.storage.from(bucket).upload("health-check.txt", blob, { upsert: true });
+            storageChecks.push({ name: bucket, ok: !upload.error, error: upload.error ? upload.error.message : "" });
+          }
         } catch (error) {
-          storageError = error.message;
+          storageChecks.push({ name: "storage", ok: false, error: error.message });
         }
         const failed = checks.filter((item) => !item.ok);
-        if (!failed.length && storageOk) {
-          resultNode.textContent = "정상입니다. 테이블 8개와 product-images 이미지 저장소가 준비됐습니다.";
+        const failedStorage = storageChecks.filter((item) => !item.ok);
+        if (!failed.length && !failedStorage.length) {
+          resultNode.textContent = "정상입니다. 테이블 8개와 이미지 저장소 2개가 준비됐습니다.";
           setSyncStatus("Supabase SQL 확인 완료");
         } else {
           const tableText = failed.length ? "실패 테이블: " + failed.map((item) => item.name).join(", ") + ". " : "";
-          const storageText = storageOk ? "" : "이미지 저장소 실패: " + storageError;
+          const storageText = failedStorage.length ? "이미지 저장소 실패: " + failedStorage.map((item) => item.name + " " + item.error).join(", ") : "";
           resultNode.textContent = tableText + storageText;
           setSyncStatus("Supabase SQL 확인 필요");
         }
@@ -1207,6 +1258,8 @@ import {
           riderName: order.riderName || "",
           pickupConfirmedAt: order.pickupConfirmedAt || "",
           arrivalConfirmedAt: order.arrivalConfirmedAt || "",
+          pickupProofPhoto: order.pickupProofPhoto || null,
+          arrivalProofPhoto: order.arrivalProofPhoto || null,
           settlementStatus: order.settlementStatus || "",
           settlementConfirmedAt: order.settlementConfirmedAt || "",
           settlementConfirmedBy: order.settlementConfirmedBy || "",
@@ -5706,8 +5759,8 @@ import {
               <strong>픽업 · 도착 인증</strong>
               <span>픽업 인증: ${deliveryProofLabel(order, "pickup")}</span>
               <span>도착 인증: ${deliveryProofLabel(order, "arrival")}</span>
-              ${deliveryProofPhoto(order, "pickup") && deliveryProofPhoto(order, "pickup").dataUrl ? '<img class="delivery-proof-preview" src="' + deliveryProofPhoto(order, "pickup").dataUrl + '" alt="픽업 인증 사진">' : ""}
-              ${deliveryProofPhoto(order, "arrival") && deliveryProofPhoto(order, "arrival").dataUrl ? '<img class="delivery-proof-preview" src="' + deliveryProofPhoto(order, "arrival").dataUrl + '" alt="도착 인증 사진">' : ""}
+              ${deliveryProofPhotoSrc(deliveryProofPhoto(order, "pickup")) ? '<img class="delivery-proof-preview" src="' + deliveryProofPhotoSrc(deliveryProofPhoto(order, "pickup")) + '" alt="픽업 인증 사진">' : ""}
+              ${deliveryProofPhotoSrc(deliveryProofPhoto(order, "arrival")) ? '<img class="delivery-proof-preview" src="' + deliveryProofPhotoSrc(deliveryProofPhoto(order, "arrival")) + '" alt="도착 인증 사진">' : ""}
             </div>
             <div class="order-detail-block">
               <strong>정산 처리 이력</strong>
