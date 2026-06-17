@@ -1924,6 +1924,97 @@
         color: #9a9186;
         cursor: not-allowed;
       }
+      .delivery-work-shortcuts {
+        display: grid;
+        gap: 9px;
+        margin: 0 0 12px;
+        padding: 10px;
+        border: 1px solid #1f7d6d;
+        border-radius: 8px;
+        background: #f1fff9;
+      }
+      .delivery-work-shortcuts.pending {
+        border-color: #7c4d00;
+        background: #fff8e6;
+      }
+      .delivery-work-shortcuts-head {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        align-items: center;
+      }
+      .delivery-work-shortcuts-head span {
+        display: block;
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 950;
+      }
+      .delivery-work-shortcuts-head strong {
+        display: block;
+        margin-top: 3px;
+        color: #171717;
+        font-size: 13px;
+        font-weight: 950;
+      }
+      .delivery-work-shortcuts-head em {
+        min-width: max-content;
+        padding: 6px 9px;
+        border-radius: 999px;
+        background: #171717;
+        color: #fff;
+        font-size: 11px;
+        font-style: normal;
+        font-weight: 950;
+      }
+      .delivery-work-shortcut-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 7px;
+      }
+      .delivery-work-shortcut-grid button {
+        min-width: 0;
+        min-height: 70px;
+        padding: 8px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        color: #171717;
+        text-align: left;
+      }
+      .delivery-work-shortcut-grid button span,
+      .delivery-work-shortcut-grid button strong,
+      .delivery-work-shortcut-grid button em {
+        display: block;
+      }
+      .delivery-work-shortcut-grid button span {
+        color: #3f4a54;
+        font-size: 10px;
+        font-weight: 950;
+      }
+      .delivery-work-shortcut-grid button strong {
+        margin-top: 4px;
+        color: #171717;
+        font-size: 16px;
+        font-weight: 950;
+      }
+      .delivery-work-shortcut-grid button em {
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 10px;
+        font-style: normal;
+        font-weight: 850;
+        line-height: 1.25;
+      }
+      .delivery-work-shortcut-grid button:disabled {
+        background: #f8f5ef;
+        color: #9a9186;
+        cursor: not-allowed;
+      }
+      .delivery-work-shortcut-grid button:disabled strong,
+      .delivery-work-shortcut-grid button:disabled span,
+      .delivery-work-shortcut-grid button:disabled em {
+        color: #9a9186;
+      }
       .settlement-test-retention {
         grid-column: 1 / -1;
         display: grid;
@@ -2639,6 +2730,7 @@
         .phone-frame { width: 100%; height: 100vh; border: 0; border-radius: 0; }
         .role-strip { grid-template-columns: 1fr; }
         .admin-release-readiness-grid { grid-template-columns: 1fr; }
+        .delivery-work-shortcut-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .admin-test-notice { grid-template-columns: 1fr; }
         .admin-test-notice button { width: 100%; }
         .settlement-test-status { grid-template-columns: 1fr; }

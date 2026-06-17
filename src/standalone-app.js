@@ -4635,6 +4635,99 @@ import {
         `;
       }
 
+      function deliveryShortcutItems(orders = []) {
+        const activeOrders = orders.filter((order) => !isOrderCancelled(order));
+        return [
+          {
+            key: "claimable",
+            label: "오픈콜 배정",
+            detail: "배정 대기",
+            sectionId: "adminClaimableDeliverySection",
+            count: activeOrders.filter((order) => (order.progressStep || 0) >= 2 && (order.progressStep || 0) < 3 && !isDeliveryOrderClaimed(order)).length,
+          },
+          {
+            key: "pickup_proof",
+            label: "픽업 인증",
+            detail: "픽업 사진 필요",
+            sectionId: "adminPickupDeliverySection",
+            count: activeOrders.filter((order) => (order.progressStep || 0) >= 2 && (order.progressStep || 0) < 3 && isDeliveryOrderClaimed(order) && !hasDeliveryProof(order, "pickup")).length,
+          },
+          {
+            key: "delivery_start",
+            label: "배송 시작",
+            detail: "픽업 인증 완료",
+            sectionId: "adminPickupDeliverySection",
+            count: activeOrders.filter((order) => (order.progressStep || 0) >= 2 && (order.progressStep || 0) < 3 && isDeliveryOrderClaimed(order) && hasDeliveryProof(order, "pickup")).length,
+          },
+          {
+            key: "arrival_proof",
+            label: "도착 인증",
+            detail: "배송중",
+            sectionId: "adminActiveDeliverySection",
+            count: activeOrders.filter((order) => (order.progressStep || 0) === 3 && isDeliveryOrderClaimed(order) && !hasDeliveryProof(order, "arrival")).length,
+          },
+          {
+            key: "delivery_finish",
+            label: "완료 처리",
+            detail: "도착 인증 완료",
+            sectionId: "adminActiveDeliverySection",
+            count: activeOrders.filter((order) => (order.progressStep || 0) === 3 && isDeliveryOrderClaimed(order) && hasDeliveryProof(order, "arrival")).length,
+          },
+          {
+            key: "done_today",
+            label: "오늘 완료",
+            detail: "마감 확인",
+            sectionId: "adminDoneDeliverySection",
+            count: activeOrders.filter((order) => (order.progressStep || 0) >= 4 && isTodayOrder(order)).length,
+          },
+        ];
+      }
+
+      function renderDeliveryWorkShortcuts(orders = []) {
+        const node = document.getElementById("adminDeliveryWorkShortcuts");
+        if (!node) return;
+        if (!currentAdmin || currentAdmin.role !== "delivery") {
+          node.innerHTML = "";
+          return;
+        }
+        const items = deliveryShortcutItems(orders);
+        const urgentCount = items.slice(0, 5).reduce((sum, item) => sum + item.count, 0);
+        node.innerHTML = `
+          <div class="delivery-work-shortcuts ${urgentCount ? "pending" : "ready"}">
+            <div class="delivery-work-shortcuts-head">
+              <div>
+                <span>배송 작업 바로가기</span>
+                <strong>${urgentCount ? "지금 처리할 배송 작업 " + urgentCount + "건" : "현재 긴급 배송 작업 없음"}</strong>
+              </div>
+              <em>${currentAdmin.name}</em>
+            </div>
+            <div class="delivery-work-shortcut-grid">
+              ${items.map((item) => `
+                <button type="button" ${item.count ? "" : "disabled"} onclick="focusDeliveryWorkShortcut('${item.key}')">
+                  <span>${item.label}</span>
+                  <strong>${item.count}건</strong>
+                  <em>${item.detail}</em>
+                </button>
+              `).join("")}
+            </div>
+          </div>
+        `;
+      }
+
+      function focusDeliveryWorkShortcut(key) {
+        const item = deliveryShortcutItems(adminRenderedOrders).find((entry) => entry.key === key);
+        if (!item) return;
+        const dashboard = document.getElementById("adminDeliveryDashboardSection");
+        const target = document.getElementById(item.sectionId);
+        if (dashboard) dashboard.open = true;
+        if (target) {
+          target.open = true;
+          if (target.scrollIntoView) target.scrollIntoView({ behavior: "smooth", block: "start" });
+          highlightAdminTarget(target);
+        }
+        setSyncStatus(item.label + " " + item.count + "건 위치로 이동");
+      }
+
       async function renderAdminOrders(ordersOverride) {
         const list = document.getElementById("adminOrderList");
         if (!list) return;
@@ -4650,6 +4743,7 @@ import {
         adminRenderedOrders = orders;
         renderAdminModeBanner(orders);
         renderAdminReleaseReadiness(orders);
+        renderDeliveryWorkShortcuts(orders);
         const deliveryScope = document.getElementById("adminDeliveryScope");
         if (deliveryScope) {
           deliveryScope.innerHTML = currentAdmin && currentAdmin.role === "delivery"
@@ -7842,6 +7936,7 @@ Object.assign(window, {
   openAdminSettlementFromManagement,
   closeAdmin,
   closeSettlementConfirm,
+  focusDeliveryWorkShortcut,
   focusAdminTodo,
   highlightAdminTarget,
   openAdminOrderDetail,
@@ -7985,6 +8080,7 @@ exposeHandlers({
   filteredAdminOrders,
   filterLookItems,
   focusAdminTodo,
+  focusDeliveryWorkShortcut,
   findAdminOrder,
   findVendorOrder,
   focusRiderOrders,
@@ -8125,6 +8221,7 @@ exposeHandlers({
   renderDeliveryForm,
   renderDeliveryLogs,
   renderDeliveryRiderGroups,
+  renderDeliveryWorkShortcuts,
   renderDeliverySettlement,
   renderDeliveryWarnings,
   renderHeldSettlements,

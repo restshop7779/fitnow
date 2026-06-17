@@ -493,6 +493,7 @@
         <div class="vendor-session" id="adminSession">운영자 로그인 후 배송을 관리할 수 있습니다.</div>
         <div id="adminModeBanner"></div>
         <div id="adminReleaseReadiness"></div>
+        <div id="adminDeliveryWorkShortcuts"></div>
         <details class="admin-home-board" id="adminHomeBoard">
           <summary>총관리자 운영 홈</summary>
           <div id="adminHomeBoardBody"></div>
@@ -556,19 +557,19 @@
           <div class="line-item"><span>배정 대기</span><strong id="adminClaimableOrders">0건</strong></div>
           <div class="line-item"><span>픽업 준비</span><strong id="adminPickupOrders">0건</strong></div>
           <div class="line-item"><span>배송 중</span><strong id="adminActiveOrders">0건</strong></div>
-          <details class="admin-store-group" open style="margin-top: 10px;">
+          <details class="admin-store-group" id="adminClaimableDeliverySection" open style="margin-top: 10px;">
             <summary>배정 대기 주문 <span id="adminClaimableDeliveryCount">0건</span></summary>
             <div class="admin-store-orders" id="adminClaimableDeliveryList"></div>
           </details>
-          <details class="admin-store-group" open style="margin-top: 10px;">
+          <details class="admin-store-group" id="adminPickupDeliverySection" open style="margin-top: 10px;">
             <summary>배정 완료 픽업 주문 <span id="adminPickupDeliveryCount">0건</span></summary>
             <div class="admin-store-orders" id="adminPickupDeliveryList"></div>
           </details>
-          <details class="admin-store-group" open style="margin-top: 10px;">
+          <details class="admin-store-group" id="adminActiveDeliverySection" open style="margin-top: 10px;">
             <summary>배송중 주문 <span id="adminActiveDeliveryCount">0건</span></summary>
             <div class="admin-store-orders" id="adminActiveDeliveryList"></div>
           </details>
-          <details class="admin-store-group" style="margin-top: 10px;">
+          <details class="admin-store-group" id="adminDoneDeliverySection" style="margin-top: 10px;">
             <summary>오늘 배송완료 주문 <span id="adminDoneDeliveryCount">0건</span></summary>
             <div class="admin-store-orders" id="adminDoneDeliveryList"></div>
           </details>
