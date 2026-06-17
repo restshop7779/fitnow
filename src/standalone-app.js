@@ -2310,7 +2310,22 @@ import {
                   (actionStep === 3 && nextState.label === "배송중 처리 가능") ||
                   (actionStep === 4 && nextState.label === "배송완료 가능")
                 );
-                const actionMarkup = actionLabel ? `<div class="mini-actions order-detail-action"><button type="button" ${canRunAction ? "" : "disabled"} onclick="adminAdvanceOrder('${order.id}', ${actionStep})">${canRunAction ? actionLabel : nextState.label}</button></div>` : "";
+                let actionMarkup = "";
+                if (actionLabel) {
+                  let buttonLabel = canRunAction ? actionLabel : nextState.label;
+                  let buttonAction = `adminAdvanceOrder('${order.id}', ${actionStep})`;
+                  let buttonEnabled = canRunAction;
+                  if (actionStep === 3 && nextState.label === "픽업 인증 필요") {
+                    buttonLabel = "픽업 인증";
+                    buttonAction = `confirmDeliveryProof('${order.id}', 'pickup')`;
+                    buttonEnabled = canCurrentAdminManageOrder(order);
+                  } else if (actionStep === 4 && nextState.label === "도착 인증 필요") {
+                    buttonLabel = "도착 인증";
+                    buttonAction = `confirmDeliveryProof('${order.id}', 'arrival')`;
+                    buttonEnabled = canCurrentAdminManageOrder(order);
+                  }
+                  actionMarkup = `<div class="mini-actions order-detail-action"><button type="button" ${buttonEnabled ? "" : "disabled"} onclick="${buttonAction}">${buttonLabel}</button></div>`;
+                }
                 return `
                   <div class="vendor-product-row admin-order-row">
                     <div>
