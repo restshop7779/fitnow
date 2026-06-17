@@ -487,10 +487,16 @@ import {
         return !!(order && (type === "pickup" ? order.pickupConfirmedAt : order.arrivalConfirmedAt));
       }
 
+      function deliveryProofPhoto(order, type) {
+        if (!order) return null;
+        return type === "pickup" ? order.pickupProofPhoto : order.arrivalProofPhoto;
+      }
+
       function deliveryProofLabel(order, type) {
         const value = type === "pickup" ? order.pickupConfirmedAt : order.arrivalConfirmedAt;
         if (!value) return "미인증";
-        return new Date(value).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+        const photo = deliveryProofPhoto(order, type);
+        return new Date(value).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) + (photo && photo.dataUrl ? " · 사진 포함" : "");
       }
 
       function deliveryLogActor() {
@@ -499,7 +505,7 @@ import {
         return currentAdmin.role === "total" ? "총관리자" : currentAdmin.name;
       }
 
-      function addDeliveryLog(order, action, detail = "") {
+      function addDeliveryLog(order, action, detail = "", options = {}) {
         if (!order) return;
         const previousLogs = Array.isArray(order.deliveryLogs) ? order.deliveryLogs : [];
         order.deliveryLogs = [
@@ -511,6 +517,7 @@ import {
             partnerName: order.deliveryPartnerName || "",
             riderName: order.riderName || "",
             createdAt: new Date().toISOString(),
+            photo: options.photo || null,
           },
           ...previousLogs,
         ].slice(0, 30);
@@ -531,9 +538,77 @@ import {
               <strong>${log.action}</strong>
               <span>${log.detail || "상세 기록 없음"}</span>
               <span>${new Date(log.createdAt).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })} · ${log.actor || "시스템"}</span>
+              ${log.photo && log.photo.dataUrl ? '<img class="delivery-proof-thumb" src="' + log.photo.dataUrl + '" alt="' + log.action + ' 사진">' : ""}
             </div>
           </div>
         `).join("");
+      }
+
+      function readFileAsDataUrl(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(reader.error || new Error("사진을 읽을 수 없습니다"));
+          reader.readAsDataURL(file);
+        });
+      }
+
+      async function compressDeliveryProofPhoto(file, type) {
+        const source = await readFileAsDataUrl(file);
+        const image = new Image();
+        image.src = source;
+        await new Promise((resolve, reject) => {
+          image.onload = resolve;
+          image.onerror = () => reject(new Error("사진을 불러올 수 없습니다"));
+        });
+        const maxSize = 960;
+        const scale = Math.min(1, maxSize / Math.max(image.width || maxSize, image.height || maxSize));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round((image.width || maxSize) * scale));
+        canvas.height = Math.max(1, Math.round((image.height || maxSize) * scale));
+        const context = canvas.getContext("2d");
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.72);
+        return {
+          dataUrl,
+          name: file.name || (type === "pickup" ? "pickup-proof.jpg" : "arrival-proof.jpg"),
+          mimeType: "image/jpeg",
+          size: dataUrl.length,
+          capturedAt: new Date().toISOString(),
+        };
+      }
+
+      function startDeliveryProofCapture(orderId, type) {
+        if (!currentAdmin) {
+          openAdminLogin();
+          return;
+        }
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "image/*";
+        input.capture = "environment";
+        input.style.display = "none";
+        input.addEventListener("change", async () => {
+          const file = input.files && input.files[0];
+          input.remove();
+          if (!file) {
+            setSyncStatus("사진 인증이 취소되었습니다");
+            return;
+          }
+          try {
+            setSyncStatus((type === "pickup" ? "픽업" : "도착") + " 사진 압축 중");
+            const photo = await compressDeliveryProofPhoto(file, type);
+            await confirmDeliveryProof(orderId, type, { photo });
+            const detailModal = document.getElementById("adminOrderDetailModal");
+            if (detailModal && detailModal.classList.contains("open")) {
+              await openAdminOrderDetail(orderId);
+            }
+          } catch (error) {
+            setSyncStatus("사진 인증 실패 - " + (error.message || "사진 파일 확인 필요"));
+          }
+        }, { once: true });
+        document.body.appendChild(input);
+        input.click();
       }
 
       function settlementAuditEvents(order) {
@@ -766,6 +841,10 @@ import {
           riderName: order.riderName || "",
           pickupConfirmedAt: order.pickupConfirmedAt || "",
           arrivalConfirmedAt: order.arrivalConfirmedAt || "",
+          pickupProofPhoto: order.pickupProofPhoto || null,
+          arrivalProofPhoto: order.arrivalProofPhoto || null,
+          pickupProofPhoto: order.pickupProofPhoto || null,
+          arrivalProofPhoto: order.arrivalProofPhoto || null,
           settlementStatus: order.settlementStatus || "",
           settlementConfirmedAt: order.settlementConfirmedAt || "",
           settlementConfirmedBy: order.settlementConfirmedBy || "",
@@ -809,6 +888,8 @@ import {
         order.riderName = stored.riderName || order.riderName || "";
         order.pickupConfirmedAt = stored.pickupConfirmedAt || order.pickupConfirmedAt || "";
         order.arrivalConfirmedAt = stored.arrivalConfirmedAt || order.arrivalConfirmedAt || "";
+        order.pickupProofPhoto = stored.pickupProofPhoto || order.pickupProofPhoto || null;
+        order.arrivalProofPhoto = stored.arrivalProofPhoto || order.arrivalProofPhoto || null;
         order.settlementStatus = stored.settlementStatus || order.settlementStatus || "";
         order.settlementConfirmedAt = stored.settlementConfirmedAt || order.settlementConfirmedAt || "";
         order.settlementConfirmedBy = stored.settlementConfirmedBy || order.settlementConfirmedBy || "";
@@ -1158,6 +1239,8 @@ import {
               riderName: parsed.riderName || "",
               pickupConfirmedAt: parsed.pickupConfirmedAt || "",
               arrivalConfirmedAt: parsed.arrivalConfirmedAt || "",
+              pickupProofPhoto: parsed.pickupProofPhoto || null,
+              arrivalProofPhoto: parsed.arrivalProofPhoto || null,
               settlementStatus: parsed.settlementStatus || "",
               settlementConfirmedAt: parsed.settlementConfirmedAt || "",
               settlementConfirmedBy: parsed.settlementConfirmedBy || "",
@@ -1172,9 +1255,9 @@ import {
             };
           }
         } catch (error) {
-          return { address: value || fallbackRegion || "", receiveType: "문앞 수령", paymentMethod: "", riderRequest: "", cancelReasonCode: "", cancelReason: "", refundStatus: "", stockReserved: false, stockRestored: false, deliveryPartnerName: "", riderName: "", pickupConfirmedAt: "", arrivalConfirmedAt: "", settlementStatus: "", settlementConfirmedAt: "", settlementConfirmedBy: "", settlementPaidAt: "", settlementHoldReason: "", settlementHeldAt: "", settlementReleasedAt: "", settlementClosedAt: "", settlementClosedBy: "", settlementCloseLabel: "", deliveryLogs: [] };
+          return { address: value || fallbackRegion || "", receiveType: "문앞 수령", paymentMethod: "", riderRequest: "", cancelReasonCode: "", cancelReason: "", refundStatus: "", stockReserved: false, stockRestored: false, deliveryPartnerName: "", riderName: "", pickupConfirmedAt: "", arrivalConfirmedAt: "", pickupProofPhoto: null, arrivalProofPhoto: null, settlementStatus: "", settlementConfirmedAt: "", settlementConfirmedBy: "", settlementPaidAt: "", settlementHoldReason: "", settlementHeldAt: "", settlementReleasedAt: "", settlementClosedAt: "", settlementClosedBy: "", settlementCloseLabel: "", deliveryLogs: [] };
         }
-        return { address: value || fallbackRegion || "", receiveType: "문앞 수령", paymentMethod: "", riderRequest: "", cancelReasonCode: "", cancelReason: "", refundStatus: "", stockReserved: false, stockRestored: false, deliveryPartnerName: "", riderName: "", pickupConfirmedAt: "", arrivalConfirmedAt: "", settlementStatus: "", settlementConfirmedAt: "", settlementConfirmedBy: "", settlementPaidAt: "", settlementHoldReason: "", settlementHeldAt: "", settlementReleasedAt: "", settlementClosedAt: "", settlementClosedBy: "", settlementCloseLabel: "", deliveryLogs: [] };
+        return { address: value || fallbackRegion || "", receiveType: "문앞 수령", paymentMethod: "", riderRequest: "", cancelReasonCode: "", cancelReason: "", refundStatus: "", stockReserved: false, stockRestored: false, deliveryPartnerName: "", riderName: "", pickupConfirmedAt: "", arrivalConfirmedAt: "", pickupProofPhoto: null, arrivalProofPhoto: null, settlementStatus: "", settlementConfirmedAt: "", settlementConfirmedBy: "", settlementPaidAt: "", settlementHoldReason: "", settlementHeldAt: "", settlementReleasedAt: "", settlementClosedAt: "", settlementClosedBy: "", settlementCloseLabel: "", deliveryLogs: [] };
       }
 
       async function initSupabase() {
@@ -1383,6 +1466,8 @@ import {
           deliveryLogs: deliveryRequest.deliveryLogs || [],
           pickupConfirmedAt: deliveryRequest.pickupConfirmedAt || "",
           arrivalConfirmedAt: deliveryRequest.arrivalConfirmedAt || "",
+          pickupProofPhoto: deliveryRequest.pickupProofPhoto || null,
+          arrivalProofPhoto: deliveryRequest.arrivalProofPhoto || null,
           settlementStatus: deliveryRequest.settlementStatus || "",
           settlementConfirmedAt: deliveryRequest.settlementConfirmedAt || "",
           settlementConfirmedBy: deliveryRequest.settlementConfirmedBy || "",
@@ -2317,11 +2402,11 @@ import {
                   let buttonEnabled = canRunAction;
                   if (actionStep === 3 && nextState.label === "픽업 인증 필요") {
                     buttonLabel = "픽업 인증";
-                    buttonAction = `confirmDeliveryProof('${order.id}', 'pickup')`;
+                    buttonAction = `startDeliveryProofCapture('${order.id}', 'pickup')`;
                     buttonEnabled = canCurrentAdminManageOrder(order);
                   } else if (actionStep === 4 && nextState.label === "도착 인증 필요") {
                     buttonLabel = "도착 인증";
-                    buttonAction = `confirmDeliveryProof('${order.id}', 'arrival')`;
+                    buttonAction = `startDeliveryProofCapture('${order.id}', 'arrival')`;
                     buttonEnabled = canCurrentAdminManageOrder(order);
                   }
                   actionMarkup = `<div class="mini-actions order-detail-action"><button type="button" ${buttonEnabled ? "" : "disabled"} onclick="${buttonAction}">${buttonLabel}</button></div>`;
@@ -3988,6 +4073,8 @@ import {
           riderName: "",
           pickupConfirmedAt: "",
           arrivalConfirmedAt: "",
+          pickupProofPhoto: null,
+          arrivalProofPhoto: null,
           settlementStatus: "",
           settlementConfirmedAt: "",
           settlementPaidAt: "",
@@ -5535,13 +5622,13 @@ import {
             return '<div class="rider-primary-actions"><button type="button" disabled>배송사 배정 필요</button></div>';
           }
           if (!pickupAuthed) {
-            return '<div class="rider-primary-actions"><button type="button" ' + (proofActionReady ? "" : "disabled") + ' onclick="confirmDeliveryProofFromDetail(\'' + order.id + '\', \'pickup\')">지금 픽업 인증</button></div>';
+            return '<div class="rider-primary-actions"><button type="button" ' + (proofActionReady ? "" : "disabled") + ' onclick="startDeliveryProofCapture(\'' + order.id + '\', \'pickup\')">사진 찍고 픽업 인증</button></div>';
           }
           if (step < 3) {
             return '<div class="rider-primary-actions"><button type="button" ' + (deliveryActionReady ? "" : "disabled") + ' onclick="adminAdvanceOrderFromDetail(\'' + order.id + '\', 3)">배송 시작 처리</button></div>';
           }
           if (!arrivalAuthed) {
-            return '<div class="rider-primary-actions"><button type="button" ' + (proofActionReady ? "" : "disabled") + ' onclick="confirmDeliveryProofFromDetail(\'' + order.id + '\', \'arrival\')">지금 도착 인증</button></div>';
+            return '<div class="rider-primary-actions"><button type="button" ' + (proofActionReady ? "" : "disabled") + ' onclick="startDeliveryProofCapture(\'' + order.id + '\', \'arrival\')">사진 찍고 도착 인증</button></div>';
           }
           if (step < 4) {
             return '<div class="rider-primary-actions"><button type="button" ' + (deliveryCompleteReady ? "" : "disabled") + ' onclick="adminAdvanceOrderFromDetail(\'' + order.id + '\', 4)">배송완료 처리</button></div>';
@@ -5619,6 +5706,8 @@ import {
               <strong>픽업 · 도착 인증</strong>
               <span>픽업 인증: ${deliveryProofLabel(order, "pickup")}</span>
               <span>도착 인증: ${deliveryProofLabel(order, "arrival")}</span>
+              ${deliveryProofPhoto(order, "pickup") && deliveryProofPhoto(order, "pickup").dataUrl ? '<img class="delivery-proof-preview" src="' + deliveryProofPhoto(order, "pickup").dataUrl + '" alt="픽업 인증 사진">' : ""}
+              ${deliveryProofPhoto(order, "arrival") && deliveryProofPhoto(order, "arrival").dataUrl ? '<img class="delivery-proof-preview" src="' + deliveryProofPhoto(order, "arrival").dataUrl + '" alt="도착 인증 사진">' : ""}
             </div>
             <div class="order-detail-block">
               <strong>정산 처리 이력</strong>
@@ -5626,8 +5715,8 @@ import {
               ${renderSettlementAuditTrail(order)}
             </div>
             <div class="mini-actions">
-              <button type="button" ${proofActionReady && !pickupAuthed ? "" : "disabled"} onclick="confirmDeliveryProofFromDetail('${order.id}', 'pickup')">${pickupAuthed ? "픽업 인증됨" : "픽업 인증"}</button>
-              <button type="button" ${proofActionReady && step >= 3 && !arrivalAuthed ? "" : "disabled"} onclick="confirmDeliveryProofFromDetail('${order.id}', 'arrival')">${arrivalAuthed ? "도착 인증됨" : step < 3 ? "배송중 이후 가능" : "도착 인증"}</button>
+              <button type="button" ${proofActionReady && !pickupAuthed ? "" : "disabled"} onclick="startDeliveryProofCapture('${order.id}', 'pickup')">${pickupAuthed ? "픽업 인증됨" : "사진 픽업 인증"}</button>
+              <button type="button" ${proofActionReady && step >= 3 && !arrivalAuthed ? "" : "disabled"} onclick="startDeliveryProofCapture('${order.id}', 'arrival')">${arrivalAuthed ? "도착 인증됨" : step < 3 ? "배송중 이후 가능" : "사진 도착 인증"}</button>
             </div>
             ${cancelled ? `
               <div class="order-detail-block">
@@ -5667,7 +5756,7 @@ import {
         await openAdminOrderDetail(orderId);
       }
 
-      async function confirmDeliveryProof(orderId, type) {
+      async function confirmDeliveryProof(orderId, type, options = {}) {
         if (!currentAdmin) {
           openAdminLogin();
           return;
@@ -5703,7 +5792,14 @@ import {
           return;
         }
         order[field] = new Date().toISOString();
-        addDeliveryLog(order, type === "pickup" ? "픽업 인증" : "도착 인증", (order.deliveryPartnerName || "지금배송") + " · " + assignedRiderLabel(order));
+        const photoField = type === "pickup" ? "pickupProofPhoto" : "arrivalProofPhoto";
+        if (options.photo) order[photoField] = options.photo;
+        addDeliveryLog(
+          order,
+          type === "pickup" ? "픽업 인증" : "도착 인증",
+          (order.deliveryPartnerName || "지금배송") + " · " + assignedRiderLabel(order) + (options.photo ? " · 사진 포함" : ""),
+          { photo: options.photo || null }
+        );
         await persistDeliveryAssignment(order, (type === "pickup" ? "픽업 인증 완료" : "도착 인증 완료") + " - " + order.id);
       }
 
@@ -7961,6 +8057,7 @@ Object.assign(window, {
   focusDeliveryWorkShortcut,
   focusAdminTodo,
   highlightAdminTarget,
+  startDeliveryProofCapture,
   openAdminOrderDetail,
   openSettlementFlowCheckReport,
   openLatestSettlementFlowCheckReport,
@@ -8060,6 +8157,7 @@ exposeHandlers({
   confirmCheckout,
   confirmDeliveryProof,
   confirmDeliveryProofFromDetail,
+  startDeliveryProofCapture,
   confirmSettlementOrder,
   confirmSettlementBatch,
   createOrderSnapshot,

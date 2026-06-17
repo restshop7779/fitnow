@@ -449,6 +449,20 @@
       .store-head strong { padding: 8px 10px; border-radius: 999px; background: #effbc2; }
       .delivery-status { display: flex; align-items: center; gap: 10px; margin-top: 14px; color: var(--muted); font-size: 13px; font-weight: 800; }
       .delivery-status i { width: 10px; height: 10px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 0 7px rgba(28,168,145,.16); }
+      .delivery-proof-thumb,
+      .delivery-proof-preview {
+        width: 100%;
+        max-width: 220px;
+        aspect-ratio: 4 / 3;
+        margin-top: 8px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        object-fit: cover;
+        background: #f8f5ef;
+      }
+      .delivery-proof-thumb {
+        max-width: 160px;
+      }
       .catalog-controls { display: grid; gap: 10px; padding: 0 18px 14px; }
       .search input {
         width: 100%;
