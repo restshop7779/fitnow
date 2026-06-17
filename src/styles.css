@@ -1910,6 +1910,14 @@
         background: #fff0d2;
         color: #7c4d00;
       }
+      .admin-release-actions button:nth-child(3) {
+        background: var(--lime);
+        color: #171c05;
+      }
+      .admin-release-actions button:nth-child(4) {
+        background: #ffe3dc;
+        color: #9b321f;
+      }
       .admin-release-actions button:disabled {
         border-color: var(--line);
         background: #f3eee4;

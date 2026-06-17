@@ -4600,6 +4600,7 @@ import {
         const dataReady = !diagnostic.hasTestState;
         const checkReady = !!testMeta.lastCheckAt;
         const cleanupReady = !!testMeta.lastCleanupAt;
+        const settlementExportCount = settlementExportOrders("all").length;
         const readyCount = [qaReady, dataReady, checkReady, cleanupReady].filter(Boolean).length;
         const allReady = readyCount === 4;
         const itemMarkup = [
@@ -4627,6 +4628,8 @@ import {
             <div class="admin-release-actions">
               <button type="button" onclick="openAdminQaChecklist()">QA 체크리스트</button>
               <button type="button" ${diagnostic.hasTestState ? "" : "disabled"} onclick="clearAdminTestData()">테스트 데이터 정리</button>
+              <button type="button" onclick="openSettlementStatement()">정산서 미리보기</button>
+              <button type="button" ${settlementExportCount ? "" : "disabled"} onclick="downloadSettlementCsv('all')">정산 CSV ${settlementExportCount}건</button>
             </div>
           </div>
         `;

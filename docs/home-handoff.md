@@ -6,7 +6,7 @@ Updated: 2026-06-17 09:00 KST
 
 - Repository: `https://github.com/restshop7779/fitnow.git`
 - Branch: `main`
-- Latest app commit at handoff: `Add admin QA shortcut actions`
+- Latest app commit at handoff: `Add admin settlement shortcut actions`
 - Deployed app:
   - `https://restshop7779.github.io/fitnow/`
   - `https://restshop7779.github.io/fitnow/index.react.html`
@@ -18,7 +18,11 @@ Updated: 2026-06-17 09:00 KST
 - GitHub Pages deployment is working from the `gh-pages` branch workflow.
 - Total admin release readiness panel is live.
 - Admin QA checklist is live.
-- Total admin release readiness panel now includes top-level `QA 체크리스트` and `테스트 데이터 정리` shortcut buttons.
+- Total admin release readiness panel now includes top-level shortcut buttons:
+  - `QA 체크리스트`
+  - `테스트 데이터 정리`
+  - `정산서 미리보기`
+  - `정산 CSV`
 - QA checklist CSV download was verified in Chrome.
 - Settlement statement preview and settlement CSV download were verified with 6 test settlement rows.
 - Test data cleanup now auto-checks the QA cleanup items after cleanup succeeds:
@@ -70,6 +74,7 @@ https://restshop7779.github.io/fitnow/index.react.html
 2. `총관리자` 카드 `열기`
 3. PIN `0000`
 4. 상단 `배포 준비 상태` 패널의 `QA 체크리스트` 클릭
+5. 정산 출력 확인은 같은 패널의 `정산서 미리보기` 또는 `정산 CSV` 사용
 
 Nested fallback path:
 
@@ -89,7 +94,7 @@ Nested fallback path:
   - `테스트 데이터 정리`
   - confirm cleanup items auto-check
   - save QA report
-- After that, decide whether the same top-level shortcut pattern should be applied to settlement CSV/report actions.
+- After that, decide whether partner/delivery operator views need the same release-readiness shortcut pattern.
 
 ## Reference Docs
 
