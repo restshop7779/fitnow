@@ -4722,8 +4722,15 @@ import {
         };
       }
 
+      function isDiagnosticPreviewEnabled() {
+        const params = new URLSearchParams(window.location.search || "");
+        return ["1", "true", "delivery"].includes(params.get("test") || "")
+          || ["1", "true", "delivery"].includes(params.get("photo-proof-check") || "")
+          || ["1", "true"].includes(params.get("diagnostic") || "");
+      }
+
       function shouldIncludeDiagnosticAdminOrders() {
-        return storedDiagnosticStatusCount() > 0 || settlementFlowCheckLogs.length > 0 || orderHistory.some(isDiagnosticOrder);
+        return isDiagnosticPreviewEnabled() || storedDiagnosticStatusCount() > 0 || settlementFlowCheckLogs.length > 0 || orderHistory.some(isDiagnosticOrder);
       }
 
       function renderAdminModeBanner(orders = []) {
