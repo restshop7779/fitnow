@@ -1252,6 +1252,64 @@
         background: #fff0d2;
         color: #7c4d00;
       }
+      .vendor-detail-actions {
+        display: grid;
+        gap: 10px;
+      }
+      .vendor-detail-action-group {
+        display: grid;
+        gap: 8px;
+        padding: 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fffdf8;
+      }
+      .vendor-detail-action-group > strong {
+        font-size: 12px;
+        font-weight: 950;
+      }
+      .vendor-detail-action-group > span {
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 850;
+      }
+      .vendor-detail-action-buttons {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .vendor-detail-action-buttons button,
+      .refund-action-buttons button {
+        min-width: 0;
+        border-radius: 8px;
+        white-space: nowrap;
+      }
+      .refund-action-group {
+        border-color: #f1c7bd;
+        background: #fff7f3;
+      }
+      .refund-action-buttons {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+      }
+      .refund-action-buttons button {
+        min-height: 38px;
+        padding: 0 8px;
+        font-size: 12px;
+        font-weight: 950;
+      }
+      .refund-action-buttons .refund-approve {
+        background: #171717;
+        color: #fff;
+      }
+      .refund-action-buttons .refund-reject {
+        background: #ffe3dc;
+        color: #9b321f;
+      }
+      .refund-action-buttons .refund-complete {
+        background: var(--lime);
+        color: #171c05;
+      }
       .settlement-action-focus {
         border-color: #171717;
         background: #fff7cf;

@@ -2207,6 +2207,7 @@ import {
         const vendorTotal = vendorOrderTotal(order);
         const cancelled = isOrderCancelled(order);
         const paidAndActive = order.paid && !cancelled;
+        const returnRefundActive = order.cancelReasonCode === "return_refund";
         if (title) title.textContent = order.id;
         body.innerHTML = `
           <div class="order-detail-grid">
@@ -2237,13 +2238,26 @@ import {
                 ${order.refundMemo ? '<span>처리 메모: ' + order.refundMemo + '</span>' : ""}
               </div>
             ` : ""}
-            <div class="mini-actions">
-              <button type="button" ${paidAndActive ? "" : "disabled"} onclick="vendorAdvanceOrderFromDetail('${order.id}', 1)">${cancelled ? "취소됨" : !order.paid ? "결제 대기" : (order.progressStep || 0) >= 1 ? "재고 확인됨" : "재고 확인"}</button>
-              <button type="button" ${paidAndActive ? "" : "disabled"} onclick="vendorAdvanceOrderFromDetail('${order.id}', 2)">${cancelled ? "취소됨" : !order.paid ? "결제 대기" : (order.progressStep || 0) >= 2 ? "픽업 준비됨" : "픽업 준비"}</button>
-              <button class="danger" type="button" ${canCancelOrder(order) ? "" : "disabled"} onclick="cancelVendorOrderFromDetail('${order.id}')">${cancelled ? "취소됨" : "주문 취소"}</button>
-              <button type="button" ${canVendorManageRefund(order) && canReviewReturnRefund(order) ? "" : "disabled"} onclick="approveVendorReturnRefundFromDetail('${order.id}')">승인</button>
-              <button type="button" ${canVendorManageRefund(order) && canReviewReturnRefund(order) ? "" : "disabled"} onclick="rejectVendorReturnRefundFromDetail('${order.id}')">거절</button>
-              <button type="button" ${canVendorManageRefund(order) && canCompleteRefund(order) ? "" : "disabled"} onclick="completeVendorRefundFromDetail('${order.id}')">${canVendorManageRefund(order) && canCompleteRefund(order) ? "환불 완료" : paymentLabelForOrder(order)}</button>
+            <div class="vendor-detail-actions">
+              <div class="vendor-detail-action-group">
+                <strong>주문 처리</strong>
+                <div class="mini-actions vendor-detail-action-buttons">
+                  <button type="button" ${paidAndActive ? "" : "disabled"} onclick="vendorAdvanceOrderFromDetail('${order.id}', 1)">${cancelled ? "취소됨" : !order.paid ? "결제 대기" : (order.progressStep || 0) >= 1 ? "재고 확인됨" : "재고 확인"}</button>
+                  <button type="button" ${paidAndActive ? "" : "disabled"} onclick="vendorAdvanceOrderFromDetail('${order.id}', 2)">${cancelled ? "취소됨" : !order.paid ? "결제 대기" : (order.progressStep || 0) >= 2 ? "픽업 준비됨" : "픽업 준비"}</button>
+                  <button class="danger" type="button" ${canCancelOrder(order) ? "" : "disabled"} onclick="cancelVendorOrderFromDetail('${order.id}')">${cancelled ? "취소됨" : "주문 취소"}</button>
+                </div>
+              </div>
+              ${returnRefundActive ? `
+                <div class="vendor-detail-action-group refund-action-group">
+                  <strong>반품/환불 처리</strong>
+                  <span>${customerRefundStatusLabel(order) || paymentLabelForOrder(order)} · ${isOpenRefundStatus(order) ? returnRefundProcessInfo(order).label : "처리 완료"}</span>
+                  <div class="refund-action-buttons">
+                    <button class="refund-approve" type="button" ${canVendorManageRefund(order) && canReviewReturnRefund(order) ? "" : "disabled"} onclick="approveVendorReturnRefundFromDetail('${order.id}')">승인</button>
+                    <button class="refund-reject" type="button" ${canVendorManageRefund(order) && canReviewReturnRefund(order) ? "" : "disabled"} onclick="rejectVendorReturnRefundFromDetail('${order.id}')">거절</button>
+                    <button class="refund-complete" type="button" ${canVendorManageRefund(order) && canCompleteRefund(order) ? "" : "disabled"} onclick="completeVendorRefundFromDetail('${order.id}')">${canVendorManageRefund(order) && canCompleteRefund(order) ? "환불 완료" : paymentLabelForOrder(order)}</button>
+                  </div>
+                </div>
+              ` : ""}
             </div>
           </div>
         `;
