@@ -4086,6 +4086,16 @@ import {
                 <div>
                   <strong>${section.title}</strong>
                   ${section.id === "final-scenario" ? `
+                    <div class="admin-qa-scenario-guide">
+                      <strong>권장 실행 순서</strong>
+                      <ol>
+                        <li><b>1~2</b><span>배송 주문 생성 후 배송 플로우 자동 점검</span></li>
+                        <li><b>3~4</b><span>반품/환불 테스트 주문 생성 후 화면 표시 점검</span></li>
+                        <li><b>5</b><span>정산 플로우 점검으로 주문/로그 상태 확인</span></li>
+                        <li><b>6~7</b><span>테스트 데이터 정리 후 0건 상태 확인</span></li>
+                        <li><b>8~9</b><span>필요할 때 엑셀 샘플과 DB 삭제권한 별도 점검</span></li>
+                      </ol>
+                    </div>
                     <div class="admin-qa-scenario-actions">
                       ${scenarioButton(1, "deliveryOrder", "배송 테스트 주문 생성", "delivery-order")}
                       ${scenarioButton(2, "deliveryFlow", "배송 플로우 자동 점검", "delivery-proof")}

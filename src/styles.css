@@ -1918,6 +1918,48 @@
         background: #fffaf0;
         box-shadow: 0 0 0 2px rgba(23, 23, 23, .08) inset;
       }
+      .admin-qa-scenario-guide {
+        margin-top: 8px;
+        padding: 10px;
+        border: 1px solid rgba(23, 23, 23, .12);
+        border-radius: 8px;
+        background: #f7f8f4;
+      }
+      .admin-qa-scenario-guide strong {
+        margin-bottom: 7px;
+      }
+      .admin-qa-scenario-guide ol {
+        display: grid;
+        gap: 6px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .admin-qa-scenario-guide li {
+        display: grid;
+        grid-template-columns: 44px 1fr;
+        gap: 8px;
+        align-items: center;
+        min-width: 0;
+        color: #4a5149;
+        font-size: 11px;
+        font-weight: 850;
+        line-height: 1.35;
+      }
+      .admin-qa-scenario-guide b {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 24px;
+        border-radius: 999px;
+        background: #171717;
+        color: #fff;
+        font-size: 10px;
+        font-weight: 950;
+      }
+      .admin-qa-scenario-guide span {
+        min-width: 0;
+      }
       .admin-qa-scenario-actions {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
