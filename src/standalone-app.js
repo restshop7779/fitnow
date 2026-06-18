@@ -4248,6 +4248,24 @@ import {
         );
       }
 
+      function downloadAdminPreReleaseReport() {
+        const text = adminPreReleaseReportText();
+        if (!text) return;
+        const blob = new Blob(["\ufeff" + text], { type: "text/plain;charset=utf-8;" });
+        const link = document.createElement("a");
+        const today = new Date().toISOString().slice(0, 10);
+        const status = adminPreReleaseReportData().allReady ? "배포가능" : "확인필요";
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.download = "fitnow-운영전-최종점검-" + status + "-" + today + ".txt";
+        link.style.display = "none";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        setSyncStatus("운영 전 최종 점검 리포트 다운로드 완료 - " + status);
+      }
+
       function openAdminPreReleaseCheck() {
         if (!currentAdmin || currentAdmin.role !== "total") {
           setSyncStatus("최종 배포 전 점검은 총관리자만 가능합니다");
@@ -4303,6 +4321,7 @@ import {
               <button class="primary" type="button" onclick="openAdminFinalQaScenario()">QA 시나리오</button>
               <button class="success" type="button" ${report.diagnostic.hasTestState ? "" : "disabled"} onclick="clearAdminTestData()">테스트 데이터 정리</button>
               <button class="warning" type="button" onclick="copyAdminPreReleaseReport()">점검 리포트 복사</button>
+              <button class="primary" type="button" onclick="downloadAdminPreReleaseReport()">점검 리포트 다운로드</button>
             </div>
           </div>
         `;
@@ -9439,6 +9458,7 @@ Object.assign(window, {
   copyAdminQaChecklistReport,
   copyAdminPreReleaseReport,
   downloadAdminQaChecklistCsv,
+  downloadAdminPreReleaseReport,
   runPreReleaseQaAction,
   approveReturnRefundFromDetail,
   rejectReturnRefundFromDetail,
@@ -9662,6 +9682,7 @@ exposeHandlers({
   copyAdminQaChecklistReport,
   copyAdminPreReleaseReport,
   downloadAdminQaChecklistCsv,
+  downloadAdminPreReleaseReport,
   runPreReleaseQaAction,
   openSettlementStatement,
   openTotalAdminFromManagement,
