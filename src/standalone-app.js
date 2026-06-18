@@ -3342,6 +3342,18 @@ import {
             ],
           },
           {
+            id: "final-scenario",
+            title: "최종 운영 시나리오",
+            items: [
+              { id: "delivery-order", label: "배송 테스트 주문 생성" },
+              { id: "delivery-proof", label: "픽업/도착 인증 흐름 확인" },
+              { id: "return-refund-visible", label: "반품/환불 표시 점검 4/4 통과" },
+              { id: "vendor-refund-action", label: "입점업체 승인/거절 버튼 확인" },
+              { id: "admin-refund-action", label: "총관리자 환불 완료 버튼 확인" },
+              { id: "cleanup-zero", label: "정리 상태 점검 0건 확인" },
+            ],
+          },
+          {
             id: "regression",
             title: "회귀 확인",
             items: [
@@ -4111,6 +4123,11 @@ import {
             </div>
             <em>${qaProgress.done ? testToolTimeLabel(qaStore.completedAt || qaStore.updatedAt) : qaProgress.checked + "/" + qaProgress.total}</em>
           </div>
+          <div class="admin-qa-scenario">
+            <span>최종 QA 순서</span>
+            <strong>배송 테스트 주문 생성 → 반품/환불 표시 점검 → 테스트 데이터 정리 → 정리 상태 점검</strong>
+            <p>마지막 결과가 반품/환불 4/4 통과, 정리 상태 0건이면 운영 전 핵심 흐름 확인이 끝난 상태입니다.</p>
+          </div>
           <div class="settlement-test-retention">
             <span>테스트 데이터 보관 기간</span>
             <div>
@@ -4128,6 +4145,7 @@ import {
           </div>
           <button class="admin-tool-action primary" type="button" onclick="runSettlementFlowAutoCheck()">정산 플로우 점검</button>
           <button class="admin-tool-action" type="button" onclick="openAdminQaChecklist()">QA 체크리스트</button>
+          <button class="admin-tool-action primary" type="button" onclick="openAdminQaChecklist()">최종 QA 시나리오</button>
           <button class="admin-tool-action primary" type="button" onclick="runReturnRefundVisibilityCheck()">반품/환불 표시 점검</button>
           <button class="admin-tool-action" type="button" onclick="createSettlementExcelDemoOrders()">엑셀 테스트 6건 생성</button>
           <button class="admin-tool-action settlement-cleanup-action danger" type="button" onclick="clearAdminTestData()">테스트 데이터 정리</button>
