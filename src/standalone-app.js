@@ -8917,19 +8917,59 @@ import {
       function readFitProfile() {
         try {
           const parsed = JSON.parse(localStorage.getItem(FIT_PROFILE_STORAGE_KEY) || "{}");
+          const sampleKeys = fitBodySamples().map((sample) => sample.key);
           return {
             height: Math.min(205, Math.max(130, Number(parsed.height) || 168)),
             weight: Math.min(140, Math.max(35, Number(parsed.weight) || 58)),
-            bodyType: parsed.bodyType || "regular",
+            topSize: parsed.topSize || "M",
+            bottomSize: parsed.bottomSize || "M",
+            bodyType: sampleKeys.includes(parsed.bodyType) ? parsed.bodyType : "regular",
           };
         } catch (error) {
           localStorage.removeItem(FIT_PROFILE_STORAGE_KEY);
-          return { height: 168, weight: 58, bodyType: "regular" };
+          return { height: 168, weight: 58, topSize: "M", bottomSize: "M", bodyType: "regular" };
         }
       }
 
       function writeFitProfile(profile) {
         localStorage.setItem(FIT_PROFILE_STORAGE_KEY, JSON.stringify(profile));
+      }
+
+      function fitSizeOptions(kind) {
+        return kind === "bottom" ? ["XS", "S", "M", "L", "XL", "XXL", "28", "30", "32", "34", "36"] : ["XS", "S", "M", "L", "XL", "XXL", "FREE"];
+      }
+
+      function fitSizeSelectOptions(kind, selected) {
+        return fitSizeOptions(kind).map((size) => '<option value="' + size + '" ' + (size === selected ? "selected" : "") + '>' + size + '</option>').join("");
+      }
+
+      function fitBodySamples() {
+        return [
+          { key: "slim", label: "슬림형", desc: "어깨·허리 얇은 체형", shoulder: -5, waist: -6, leg: 2 },
+          { key: "regular", label: "표준형", desc: "평균 균형 체형", shoulder: 0, waist: 0, leg: 0 },
+          { key: "athletic", label: "운동형", desc: "어깨 넓고 상체 발달", shoulder: 8, waist: -2, leg: 1 },
+          { key: "straight", label: "일자형", desc: "상하체 폭이 비슷함", shoulder: 2, waist: 5, leg: 0 },
+          { key: "pear", label: "하체형", desc: "골반·하체 볼륨형", shoulder: -2, waist: 4, leg: 8 },
+          { key: "plus", label: "볼륨형", desc: "전체적으로 여유 있는 체형", shoulder: 6, waist: 11, leg: 6 },
+        ];
+      }
+
+      function fitBodySample(profile) {
+        return fitBodySamples().find((sample) => sample.key === profile.bodyType) || fitBodySamples()[1];
+      }
+
+      function fitSizeAdjustment(size) {
+        const map = { XS: -7, S: -4, M: 0, L: 4, XL: 8, XXL: 12, FREE: 2, 28: -3, 30: 0, 32: 4, 34: 8, 36: 12 };
+        return map[size] || 0;
+      }
+
+      function fitBodySampleMarkup(profile) {
+        return fitBodySamples().map((sample) => `
+          <button class="fit-body-sample ${sample.key === profile.bodyType ? "active-control" : ""}" type="button" data-body-type="${sample.key}" onclick="selectFitBodySample('${sample.key}')">
+            <strong>${sample.label}</strong>
+            <span>${sample.desc}</span>
+          </button>
+        `).join("");
       }
 
       function fitPreviewItems() {
@@ -8938,11 +8978,15 @@ import {
 
       function fitProfileMetrics(profile) {
         const bmi = profile.weight / Math.pow(profile.height / 100, 2);
-        const shoulder = Math.min(112, Math.max(82, 88 + (profile.height - 160) * 0.16 + (bmi - 21) * 1.4));
-        const waist = Math.min(104, Math.max(72, 80 + (bmi - 21) * 2.1));
-        const leg = Math.min(116, Math.max(82, 88 + (profile.height - 160) * 0.45));
-        const label = bmi < 18.5 ? "슬림" : bmi < 23 ? "레귤러" : bmi < 27 ? "릴랙스" : "오버핏 추천";
-        return { bmi, shoulder, waist, leg, label };
+        const sample = fitBodySample(profile);
+        const topAdjust = fitSizeAdjustment(profile.topSize);
+        const bottomAdjust = fitSizeAdjustment(profile.bottomSize);
+        const shoulder = Math.min(120, Math.max(78, 88 + (profile.height - 160) * 0.16 + (bmi - 21) * 1.4 + sample.shoulder + topAdjust * 0.45));
+        const waist = Math.min(116, Math.max(68, 80 + (bmi - 21) * 2.1 + sample.waist + topAdjust * 0.2 + bottomAdjust * 0.35));
+        const leg = Math.min(124, Math.max(80, 88 + (profile.height - 160) * 0.45 + sample.leg + bottomAdjust * 0.55));
+        const bmiLabel = bmi < 18.5 ? "슬림" : bmi < 23 ? "레귤러" : bmi < 27 ? "릴랙스" : "오버핏 추천";
+        const label = sample.label + " · " + bmiLabel;
+        return { bmi, shoulder, waist, leg, label, sample };
       }
 
       function garmentSpecs(item = {}) {
@@ -9326,10 +9370,11 @@ import {
           "--avatar-waist:" + Math.round(metrics.waist) + "px",
           "--avatar-leg:" + Math.round(metrics.leg) + "px",
         ].join(";");
+        const avatarBodyClass = "fit-body-" + profile.bodyType;
         body.innerHTML = `
           <section class="fit-room-layout">
             <div class="fit-avatar-stage">
-              <div class="fit-avatar" style="${avatarStyle}">
+              <div class="fit-avatar ${avatarBodyClass}" style="${avatarStyle}">
                 <div class="fit-head"></div>
                 <div class="fit-arms"></div>
                 <div class="fit-torso">${fitPreviewLayers(avatarItems)}</div>
@@ -9344,7 +9389,17 @@ import {
                 <label>몸무게
                   <input id="fitWeight" type="number" inputmode="numeric" min="35" max="140" value="${profile.weight}" />
                 </label>
+                <label>평소 상의
+                  <select id="fitTopSize">${fitSizeSelectOptions("top", profile.topSize)}</select>
+                </label>
+                <label>평소 하의
+                  <select id="fitBottomSize">${fitSizeSelectOptions("bottom", profile.bottomSize)}</select>
+                </label>
               </div>
+              <section class="fit-body-sample-panel">
+                <p>한국인 체형 샘플</p>
+                <div class="fit-body-sample-grid">${fitBodySampleMarkup(profile)}</div>
+              </section>
               <label class="fit-select-label">입어볼 상품
                 <select id="fitPreviewItem" ${items.length ? "" : "disabled"} onchange="selectFitPreviewItem(this.value)">
                   ${items.map((candidate) => '<option value="' + candidate.key + '" ' + (candidate.key === (item && item.key) ? "selected" : "") + '>' + candidate.name + ' · ' + candidate.showroom + '</option>').join("")}
@@ -9358,6 +9413,7 @@ import {
           <section class="summary-card fit-result-card">
             <h3>${cart.length ? "장바구니 아바타 착용" : (mainItem ? mainItem.name : "상품 선택 대기")}</h3>
             <div class="line-item"><span>체형 타입</span><strong>${metrics.label}</strong></div>
+            <div class="line-item"><span>평소 사이즈</span><strong>상의 ${profile.topSize} · 하의 ${profile.bottomSize}</strong></div>
             <div class="line-item"><span>가상 핏 매칭</span><strong>${match}%</strong></div>
             <div class="line-item"><span>착용 상품</span><strong>${avatarItems.length}개</strong></div>
             <div class="line-item"><span>노출 입점업체</span><strong>${avatarLookStores(avatarItems).join(" · ") || "-"}</strong></div>
@@ -9403,7 +9459,23 @@ import {
         const profile = {
           height: Number(document.getElementById("fitHeight")?.value) || 168,
           weight: Number(document.getElementById("fitWeight")?.value) || 58,
-          bodyType: "regular",
+          topSize: document.getElementById("fitTopSize")?.value || "M",
+          bottomSize: document.getElementById("fitBottomSize")?.value || "M",
+          bodyType: document.querySelector(".fit-body-sample.active-control")?.dataset.bodyType || readFitProfile().bodyType || "regular",
+        };
+        writeFitProfile(profile);
+        renderFitRoom();
+      }
+
+      function selectFitBodySample(bodyType) {
+        const current = readFitProfile();
+        const profile = {
+          ...current,
+          height: Number(document.getElementById("fitHeight")?.value) || current.height,
+          weight: Number(document.getElementById("fitWeight")?.value) || current.weight,
+          topSize: document.getElementById("fitTopSize")?.value || current.topSize,
+          bottomSize: document.getElementById("fitBottomSize")?.value || current.bottomSize,
+          bodyType,
         };
         writeFitProfile(profile);
         renderFitRoom();
@@ -9440,10 +9512,17 @@ import {
         const stores = avatarLookStores(items);
         const total = items.reduce((sum, item) => sum + itemSalePrice(item), 0);
         const ownerName = qaScenarioStatusEscape(snapshot?.name || currentCustomer.name || "나");
+        const avatarStyle = [
+          "--avatar-height:" + Math.round(190 + (profile.height - 168) * 1.4) + "px",
+          "--avatar-shoulder:" + Math.round(metrics.shoulder) + "px",
+          "--avatar-waist:" + Math.round(metrics.waist) + "px",
+          "--avatar-leg:" + Math.round(metrics.leg) + "px",
+        ].join(";");
+        const avatarBodyClass = "fit-body-" + (profile.bodyType || "regular");
         return `
           <section class="avatar-look-card">
             <div class="avatar-look-stage">
-              <div class="fit-avatar">
+              <div class="fit-avatar ${avatarBodyClass}" style="${avatarStyle}">
                 <div class="fit-head"></div>
                 <div class="fit-arms"></div>
                 <div class="fit-torso">${fitPreviewLayers(items)}</div>
@@ -10418,6 +10497,7 @@ Object.assign(window, {
   clearAdminTestData,
   clearExpiredDeliveryProofPhotos,
   setTestDataRetention,
+  selectFitBodySample,
   downloadSettlementCsv,
   openSettlementStatement,
   closeSettlementPeriod,
@@ -10786,6 +10866,7 @@ exposeHandlers({
   saveWishlistStore,
   selectAddressSuggestion,
   selectDetailSize,
+  selectFitBodySample,
   selectFitPreviewItem,
   selectedLookSize,
   selectedValue,
