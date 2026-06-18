@@ -4061,16 +4061,17 @@ import {
                   <strong>${section.title}</strong>
                   ${section.id === "final-scenario" ? `
                     <div class="admin-qa-scenario-actions">
-                      <button class="admin-tool-action primary" type="button" onclick="createDeliveryFlowTestOrder()">배송 테스트 주문 생성</button>
-                      <button class="admin-tool-action primary" type="button" onclick="runDeliveryFlowAutoCheck()">배송 플로우 자동 점검</button>
-                      <button class="admin-tool-action primary" type="button" onclick="runSettlementFlowAutoCheck()">정산 플로우 점검</button>
-                      <button class="admin-tool-action primary" type="button" onclick="createReturnRefundTestOrders()">반품/환불 테스트 4건 생성</button>
-                      <button class="admin-tool-action primary" type="button" onclick="runReturnRefundVisibilityCheck()">반품/환불 표시 점검</button>
-                      <button class="admin-tool-action" type="button" onclick="createSettlementExcelDemoOrders()">엑셀 테스트 6건 생성</button>
-                      <button class="admin-tool-action danger" type="button" onclick="clearAdminTestData()">테스트 데이터 정리</button>
-                      <button class="admin-tool-action" type="button" onclick="checkAdminTestDataCleanupState()">정리 상태 점검</button>
-                      <button class="admin-tool-action" type="button" onclick="checkSupabaseCleanupPermission()">DB 삭제권한 점검</button>
+                      <button class="admin-tool-action primary" type="button" onclick="runQaScenarioAction('deliveryOrder')">배송 테스트 주문 생성</button>
+                      <button class="admin-tool-action primary" type="button" onclick="runQaScenarioAction('deliveryFlow')">배송 플로우 자동 점검</button>
+                      <button class="admin-tool-action primary" type="button" onclick="runQaScenarioAction('settlementFlow')">정산 플로우 점검</button>
+                      <button class="admin-tool-action primary" type="button" onclick="runQaScenarioAction('returnOrders')">반품/환불 테스트 4건 생성</button>
+                      <button class="admin-tool-action primary" type="button" onclick="runQaScenarioAction('returnVisibility')">반품/환불 표시 점검</button>
+                      <button class="admin-tool-action" type="button" onclick="runQaScenarioAction('excelDemo')">엑셀 테스트 6건 생성</button>
+                      <button class="admin-tool-action danger" type="button" onclick="runQaScenarioAction('cleanup')">테스트 데이터 정리</button>
+                      <button class="admin-tool-action" type="button" onclick="runQaScenarioAction('cleanupState')">정리 상태 점검</button>
+                      <button class="admin-tool-action" type="button" onclick="runQaScenarioAction('dbCleanup')">DB 삭제권한 점검</button>
                     </div>
+                    <div class="admin-utility-status" data-qa-scenario-action-status aria-live="polite">QA 시나리오 버튼 실행 결과가 여기에 표시됩니다.</div>
                     <div class="admin-utility-status" data-return-refund-visibility-status aria-live="polite">반품/환불 표시 점검 결과가 여기에 표시됩니다.</div>
                     <div class="admin-utility-status" data-admin-cleanup-status aria-live="polite">정리/DB 권한 점검 결과가 여기에 표시됩니다.</div>
                   ` : ""}
@@ -4111,6 +4112,45 @@ import {
       function openAdminFinalQaScenario() {
         openAdminQaChecklist("final-scenario");
         setSyncStatus("최종 QA 시나리오 섹션으로 이동했습니다");
+      }
+
+      function setQaScenarioActionStatus(message) {
+        setSyncStatus(message);
+        document.querySelectorAll("[data-qa-scenario-action-status]").forEach((node) => {
+          node.textContent = message;
+        });
+      }
+
+      async function runQaScenarioAction(action) {
+        const labels = {
+          deliveryOrder: "배송 테스트 주문 생성",
+          deliveryFlow: "배송 플로우 자동 점검",
+          settlementFlow: "정산 플로우 점검",
+          returnOrders: "반품/환불 테스트 4건 생성",
+          returnVisibility: "반품/환불 표시 점검",
+          excelDemo: "엑셀 테스트 6건 생성",
+          cleanup: "테스트 데이터 정리",
+          cleanupState: "정리 상태 점검",
+          dbCleanup: "DB 삭제권한 점검",
+        };
+        const label = labels[action] || "QA 작업";
+        setQaScenarioActionStatus(label + " 실행 중...");
+        try {
+          if (action === "deliveryOrder") await createDeliveryFlowTestOrder();
+          else if (action === "deliveryFlow") await runDeliveryFlowAutoCheck();
+          else if (action === "settlementFlow") await runSettlementFlowAutoCheck();
+          else if (action === "returnOrders") await createReturnRefundTestOrders();
+          else if (action === "returnVisibility") await runReturnRefundVisibilityCheck();
+          else if (action === "excelDemo") await createSettlementExcelDemoOrders();
+          else if (action === "cleanup") await clearAdminTestData();
+          else if (action === "cleanupState") await checkAdminTestDataCleanupState();
+          else if (action === "dbCleanup") await checkSupabaseCleanupPermission();
+          else throw new Error("알 수 없는 QA 작업입니다");
+          const latestStatus = document.getElementById("syncStatus")?.textContent || "";
+          setQaScenarioActionStatus(label + " 실행 완료" + (latestStatus ? " - " + latestStatus : ""));
+        } catch (error) {
+          setQaScenarioActionStatus(label + " 실행 오류 - " + shortSupabaseError(error));
+        }
       }
 
       function renderSettlementExportActions() {
@@ -9135,6 +9175,7 @@ Object.assign(window, {
   paySettlementBatch,
   holdSettlementBatch,
   releaseSettlementHold,
+  runQaScenarioAction,
   runSettlementConfirmAction,
   runSettlementFlowAutoCheck,
   runReturnRefundVisibilityCheck,
@@ -9397,6 +9438,7 @@ exposeHandlers({
   rejectReturnRefundFromDetail,
   rejectVendorReturnRefundFromDetail,
   releaseSettlementHold,
+  runQaScenarioAction,
   runSettlementConfirmAction,
   runSettlementFlowAutoCheck,
   runReturnRefundVisibilityCheck,
