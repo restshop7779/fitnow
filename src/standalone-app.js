@@ -1937,6 +1937,8 @@ import {
         const vendorItems = products.filter((item) => item.showroom === currentVendor.store);
         const vendorOrders = (orders || []).filter((order) => vendorOrderItems(order).length);
         const activeOrders = vendorOrders.filter((order) => !isOrderCancelled(order) && (order.progressStep || 0) < 2);
+        const returnRefundRequests = vendorOrders.filter(isVendorReturnRefundRequest);
+        const approvedRefunds = vendorOrders.filter(isVendorRefundApproved);
         const lowStock = vendorItems.filter((item) => productStatus(item) === "selling" && totalSizeStock(item) <= 2).length;
         const stoppedItems = vendorItems.filter((item) => productStatus(item) !== "selling").length;
         const todaySales = vendorOrders
@@ -1945,6 +1947,8 @@ import {
         const recentReviews = storeReviews(currentVendor.store).filter((review) => isTodayOrder(review)).length;
         const alerts = [];
         if (activeOrders.length) alerts.push({ text: "새 주문 " + activeOrders.length + "건이 재고 확인 또는 픽업 준비를 기다리고 있어요.", good: false });
+        if (returnRefundRequests.length) alerts.push({ text: "반품/환불 요청 " + returnRefundRequests.length + "건이 승인 또는 거절 처리를 기다리고 있어요.", good: false });
+        if (approvedRefunds.length) alerts.push({ text: "승인된 환불 " + approvedRefunds.length + "건은 환불 완료 처리가 필요해요.", good: false });
         if (lowStock) alerts.push({ text: "재고 2개 이하 상품 " + lowStock + "개가 있어요. 상품 관리에서 재고를 확인해 주세요.", good: false });
         if (stoppedItems) alerts.push({ text: "품절/숨김 상품 " + stoppedItems + "개는 고객에게 노출되지 않고 있어요.", good: false });
         if (todaySales > 0) alerts.push({ text: "오늘 배송완료 매출은 " + formatKRW(todaySales) + "입니다.", good: true });
@@ -1953,6 +1957,8 @@ import {
         board.innerHTML = `
           <div class="vendor-home-grid">
             <div class="vendor-home-tile"><span>처리할 주문</span><strong>${activeOrders.length}건</strong></div>
+            <div class="vendor-home-tile"><span>반품요청</span><strong>${returnRefundRequests.length}건</strong></div>
+            <div class="vendor-home-tile"><span>환불승인</span><strong>${approvedRefunds.length}건</strong></div>
             <div class="vendor-home-tile"><span>재고 부족</span><strong>${lowStock}개</strong></div>
             <div class="vendor-home-tile"><span>품절/숨김</span><strong>${stoppedItems}개</strong></div>
             <div class="vendor-home-tile"><span>오늘 매출</span><strong>${formatKRW(todaySales)}</strong></div>
@@ -1961,6 +1967,8 @@ import {
             ${alerts.map((alert) => '<div class="vendor-alert-row ' + (alert.good ? 'good' : '') + '">' + alert.text + '</div>').join("")}
           </div>
           <div class="vendor-home-actions">
+            <button type="button" ${returnRefundRequests.length ? "" : "disabled"} onclick="setVendorOrderFilter('return_refund_requested')">반품요청 보기</button>
+            <button type="button" ${approvedRefunds.length ? "" : "disabled"} onclick="setVendorOrderFilter('refund_approved')">환불승인 보기</button>
             <button type="button" onclick="focusVendorSection('vendorProductFormSection')">상품 등록</button>
             <button type="button" onclick="focusVendorSection('vendorOrderSection')">주문 보기</button>
             <button type="button" onclick="focusVendorSection('vendorProductManageSection')">상품 관리</button>
@@ -2004,9 +2012,19 @@ import {
         return vendorOrderItems(order).reduce((sum, item) => sum + itemSalePrice(item) * (item.quantity || 0), 0);
       }
 
+      function isVendorReturnRefundRequest(order) {
+        return !!(vendorOrderItems(order).length && isOrderCancelled(order) && order.cancelReasonCode === "return_refund" && refundStatusFromOrder(order) === "requested");
+      }
+
+      function isVendorRefundApproved(order) {
+        return !!(vendorOrderItems(order).length && isOrderCancelled(order) && order.cancelReasonCode === "return_refund" && refundStatusFromOrder(order) === "approved");
+      }
+
       function vendorOrderFilterMatches(order, filter) {
         const step = order.progressStep || 0;
         const cancelled = isOrderCancelled(order);
+        if (filter === "return_refund_requested") return isVendorReturnRefundRequest(order);
+        if (filter === "refund_approved") return isVendorRefundApproved(order);
         if (filter === "cancelled") return cancelled;
         if (filter === "completed") return !cancelled && step >= 4;
         if (filter === "all") return true;
@@ -2018,6 +2036,8 @@ import {
         if (!node) return;
         const filters = [
           { key: "active", label: "처리할 주문" },
+          { key: "return_refund_requested", label: "반품요청" },
+          { key: "refund_approved", label: "환불승인" },
           { key: "completed", label: "완료" },
           { key: "cancelled", label: "취소·환불" },
           { key: "all", label: "전체" },
@@ -2031,6 +2051,7 @@ import {
       async function setVendorOrderFilter(filter) {
         vendorOrderFilter = filter;
         await renderVendorOrders();
+        focusVendorSection("vendorOrderSection");
       }
 
       function renderVendorSettlement(orders = []) {
@@ -2101,8 +2122,8 @@ import {
         }
         renderVendorOrderFilters(orders);
         const visibleOrders = orders.filter((order) => vendorOrderFilterMatches(order, vendorOrderFilter));
-        const emptyLabel = vendorOrderFilter === "cancelled" ? "취소·환불 주문이 없습니다" : vendorOrderFilter === "completed" ? "완료된 주문이 없습니다" : vendorOrderFilter === "all" ? "아직 이 매장 주문이 없습니다" : "처리할 주문이 없습니다";
-        const emptyStatus = vendorOrderFilter === "active" ? "현재 깔끔함" : "주문 대기";
+        const emptyLabel = vendorOrderFilter === "return_refund_requested" ? "반품/환불 요청 주문이 없습니다" : vendorOrderFilter === "refund_approved" ? "환불 승인 주문이 없습니다" : vendorOrderFilter === "cancelled" ? "취소·환불 주문이 없습니다" : vendorOrderFilter === "completed" ? "완료된 주문이 없습니다" : vendorOrderFilter === "all" ? "아직 이 매장 주문이 없습니다" : "처리할 주문이 없습니다";
+        const emptyStatus = vendorOrderFilter === "active" || vendorOrderFilter === "return_refund_requested" || vendorOrderFilter === "refund_approved" ? "현재 깔끔함" : "주문 대기";
         list.innerHTML = visibleOrders.length ? visibleOrders.map((order) => {
           const vendorItems = order.items.filter((item) => item.showroom === currentVendor.store);
           const vendorTotal = vendorItems.reduce((sum, item) => sum + itemSalePrice(item) * item.quantity, 0);
@@ -2112,6 +2133,7 @@ import {
                 <strong>${order.id} · ${orderDisplayLabel(order)}</strong>
                 <span>${vendorItems.length}개 상품 · ${vendorItems.map((item) => item.name).join(", ")}</span>
                 <span>${formatKRW(vendorTotal)} · ${paymentLabelForOrder(order)}</span>
+                ${order.cancelReasonCode === "return_refund" ? '<span>반품/환불: ' + customerRefundStatusLabel(order) + '</span>' : ""}
               </div>
               <div class="mini-actions order-detail-action">
                 <button type="button" onclick="openVendorOrderDetail('${order.id}')">상세보기</button>
