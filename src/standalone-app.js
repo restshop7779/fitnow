@@ -1364,7 +1364,11 @@ import {
           setSyncStatus("Supabase SQL 확인 완료");
         } else {
           const tableText = failed.length ? "실패 테이블: " + failed.map((item) => item.name).join(", ") + ". " : "";
-          const storageText = failedStorage.length ? "이미지 저장소 실패: " + failedStorage.map((item) => item.name + " " + item.error).join(", ") : "";
+          const storageText = failedStorage.length ? "이미지 저장소 실패: " + failedStorage.map((item) => {
+            const missingBucket = /bucket not found/i.test(item.error || "");
+            if (missingBucket) return item.name + " 버킷 없음 - docs/supabase-schema.sql 전체 실행 또는 Storage에서 Public 버킷 생성 필요";
+            return item.name + " " + item.error;
+          }).join(", ") : "";
           resultNode.textContent = tableText + storageText;
           setSyncStatus("Supabase SQL 확인 필요");
         }
