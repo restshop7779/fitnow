@@ -933,6 +933,7 @@ import {
 
       const cancelReasonOptions = [
         { key: "customer", label: "고객 요청" },
+        { key: "return_refund", label: "반품/환불 요청" },
         { key: "stock", label: "재고 부족" },
         { key: "delay", label: "배송 지연" },
         { key: "operator", label: "운영자 취소" },
@@ -954,6 +955,7 @@ import {
         const text = String(value || "").trim().toLowerCase();
         if (!text) return fallback;
         if (["1", "customer", "고객", "고객 요청", "고객요청"].includes(text)) return "customer";
+        if (["return_refund", "return", "refund", "반품", "환불", "반품/환불", "반품환불", "반품/환불 요청", "반품환불요청"].includes(text)) return "return_refund";
         if (["2", "stock", "재고", "재고 부족", "재고부족"].includes(text)) return "stock";
         if (["3", "delay", "배송", "배송 지연", "배송지연"].includes(text)) return "delay";
         if (["4", "operator", "운영", "운영자", "운영자 취소", "운영자취소"].includes(text)) return "operator";
@@ -2116,6 +2118,7 @@ import {
                 <strong>취소 · 환불</strong>
                 <span>취소 분류: ${cancelReasonLabel(order)}</span>
                 <span>취소 사유: ${order.cancelReason || "사유 미입력"}</span>
+                ${order.cancelReasonCode === "return_refund" ? '<span>반품/환불 기준: 배송완료 후 ' + RETURN_REFUND_WINDOW_DAYS + '일 이내 요청</span>' : ""}
                 <span>환불 상태: ${paymentLabelForOrder(order)}</span>
               </div>
             ` : ""}
@@ -5262,6 +5265,7 @@ import {
         const warningCount = deliveryWarningOrders(deliveryOrders).length;
         const pickupWaitingCount = activeOrders.filter((order) => (order.progressStep || 0) < 2).length;
         const refundPendingCount = orders.filter((order) => refundStatusFromOrder(order) === "pending").length;
+        const returnRefundCount = orders.filter((order) => refundStatusFromOrder(order) === "pending" && order.cancelReasonCode === "return_refund").length;
         const settlementReady = activeOrders.map(applyStoredSettlementStatus).filter((order) =>
           (order.progressStep || 0) >= 4 &&
           hasDeliveryProof(order, "arrival") &&
@@ -5302,6 +5306,14 @@ import {
             detail: "정산확정 후 지급 필요",
             action: "지급 보기",
             cls: paymentReady ? "moving" : "done",
+          },
+          {
+            key: "return_refund",
+            label: "반품환불",
+            count: returnRefundCount,
+            detail: "고객 반품/환불 요청",
+            action: "요청 보기",
+            cls: returnRefundCount ? "refund" : "done",
           },
           {
             key: "refund_pending",
@@ -5530,6 +5542,7 @@ import {
         const step = order.progressStep || 0;
         const cancelled = isOrderCancelled(order);
         if (filter === "cancelled") return cancelled;
+        if (filter === "return_refund") return refundStatusFromOrder(order) === "pending" && order.cancelReasonCode === "return_refund";
         if (filter === "refund_pending") return refundStatusFromOrder(order) === "pending";
         if (filter.indexOf("cancel_") === 0) return cancelled && (order.cancelReasonCode || "other") === filter.replace("cancel_", "");
         if (filter === "waiting") return !cancelled && step < 2;
@@ -5570,6 +5583,7 @@ import {
 
       function adminOrderBadge(order) {
         const step = order.progressStep || 0;
+        if (refundStatusFromOrder(order) === "pending" && order.cancelReasonCode === "return_refund") return { label: "반품환불", cls: "refund" };
         if (refundStatusFromOrder(order) === "pending") return { label: "환불대기", cls: "refund" };
         if (isOrderCancelled(order)) return { label: "취소됨", cls: "cancelled" };
         if (step >= 4) return { label: "완료", cls: "done" };
@@ -5611,6 +5625,7 @@ import {
           { key: "arrival_proof", label: "도착 인증" },
           { key: "delivery_finish", label: "완료 처리" },
           { key: "done", label: "완료" },
+          { key: "return_refund", label: "반품환불" },
           { key: "refund_pending", label: "환불대기" },
           { key: "cancelled", label: "취소" },
           ...cancelReasonOptions.map((item) => ({ key: "cancel_" + item.key, label: item.label })),
@@ -5636,6 +5651,13 @@ import {
             title: "환불대기 주문만 보는 중",
             detail: "취소 후 환불 완료 처리가 필요한 주문입니다.",
             action: "결제 취소 여부 확인 후 환불 완료 처리",
+          },
+          return_refund: {
+            area: "orders",
+            label: "반품환불",
+            title: "반품/환불 요청 주문만 보는 중",
+            detail: "배송완료 후 14일 이내 고객이 요청한 반품/환불 건입니다.",
+            action: "상품 상태와 결제 취소 여부 확인 후 환불 완료 처리",
           },
           delivery_warning: {
             area: "warning",
@@ -5708,6 +5730,7 @@ import {
           delivery_finish: "배송완료 가능",
           done: "완료",
           refund_pending: "환불대기",
+          return_refund: "반품환불",
           cancelled: "취소",
         };
         if (filter && filter.indexOf("cancel_") === 0) {
@@ -5764,6 +5787,15 @@ import {
           if (orderControl && orderControl.scrollIntoView) orderControl.scrollIntoView({ behavior: "smooth", block: "start" });
           highlightAdminTarget(orderControl);
           setSyncStatus("TODO · 환불대기 주문 필터 적용 완료");
+          return;
+        }
+        if (type === "return_refund") {
+          adminStatusFilter = "return_refund";
+          if (orderControl) orderControl.style.display = "";
+          await renderAdminOrders();
+          if (orderControl && orderControl.scrollIntoView) orderControl.scrollIntoView({ behavior: "smooth", block: "start" });
+          highlightAdminTarget(orderControl);
+          setSyncStatus("TODO · 반품/환불 요청 주문 필터 적용 완료");
           return;
         }
         if (type === "delivery_warning") {
@@ -7780,7 +7812,7 @@ import {
           setSyncStatus((order.progressStep || 0) >= 4 ? "반품/환불 가능 기간이 지났습니다" : "배송 중 이후에는 앱에서 바로 취소할 수 없습니다");
           return;
         }
-        const defaultReasonCode = defaultCancelReasonCode(source);
+        const defaultReasonCode = customerReturnRequest ? "return_refund" : defaultCancelReasonCode(source);
         const defaultReasonLabel = cancelReasonOptions.find((item) => item.key === defaultReasonCode).label;
         const reasonChoice = window.prompt((customerReturnRequest ? "반품/환불 분류를 선택해 주세요" : "취소 분류를 선택해 주세요") + "\n1 고객 요청\n2 재고 부족\n3 배송 지연\n4 운영자 취소\n5 기타", defaultReasonLabel);
         if (reasonChoice === null) return;
