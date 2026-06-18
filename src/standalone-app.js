@@ -4523,9 +4523,9 @@ import {
             deliveryFee,
             total: subtotal + deliveryFee,
             fastest: product.minutes || 36,
-            customerId: "return-refund-test",
-            customerName: "반품환불 테스트 고객",
-            customerContact: "01000000000",
+            customerId: customerId(),
+            customerName: currentCustomer && currentCustomer.name ? currentCustomer.name : "반품환불 테스트 고객",
+            customerContact: currentCustomer && currentCustomer.phone ? currentCustomer.phone : "01000000000",
             progressStep: 4,
             statusCode: "cancelled",
             statusLabel: "취소됨",
@@ -6835,7 +6835,7 @@ import {
         const showroomId = firstStore ? (firstStore.dbId || await syncStoreToSupabase(firstStore)) : null;
         const orderResult = await supabaseClient.from("orders").upsert({
           order_code: order.id,
-          user_id: customerId(),
+          user_id: order.customerId || customerId(),
           showroom_id: showroomId,
           status: order.statusCode || "reserved",
           item_total: order.subtotal,
