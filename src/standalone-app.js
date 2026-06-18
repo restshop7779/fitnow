@@ -4154,6 +4154,34 @@ import {
         setSyncStatus("최종 QA 시나리오 섹션으로 이동했습니다");
       }
 
+      function adminPreReleaseQuickActions(qaStore, diagnostic, testMeta) {
+        const checked = qaStore.checked || {};
+        const actions = [];
+        const addAction = (action, label, detail, variant = "primary") => {
+          if (!actions.some((item) => item.action === action)) {
+            actions.push({ action, label, detail, variant });
+          }
+        };
+        const hasDeliveryOrder = !!checked[adminQaChecklistItemKey("final-scenario", "delivery-order")];
+        const hasDeliveryProof = !!checked[adminQaChecklistItemKey("final-scenario", "delivery-proof")];
+        const hasReturnVisible = !!checked[adminQaChecklistItemKey("final-scenario", "return-refund-visible")];
+        const hasCleanupZero = !!checked[adminQaChecklistItemKey("final-scenario", "cleanup-zero")];
+        const settlementReady = ["test-order-created", "paid", "paid-tab", "logs-updated"].every((itemId) =>
+          !!checked[adminQaChecklistItemKey("settlement-flow", itemId)]
+        );
+        if (!hasDeliveryOrder) addAction("deliveryOrder", "배송 테스트 주문 생성", "배송 QA 시작용 주문을 만듭니다");
+        if (!hasDeliveryProof) addAction("deliveryFlow", "배송 플로우 자동 점검", "배정, 픽업, 도착 인증까지 자동 확인합니다");
+        if (!hasReturnVisible) {
+          addAction("returnOrders", "반품/환불 테스트 4건 생성", "표시 점검용 고객/업체 주문을 준비합니다", "neutral");
+          addAction("returnVisibility", "반품/환불 표시 점검", "고객, 업체, 관리자 화면 노출을 확인합니다");
+        }
+        if (!settlementReady) addAction("settlementFlow", "정산 플로우 점검", "정산 주문, 지급 상태, 로그를 확인합니다");
+        if (diagnostic.hasTestState) addAction("cleanup", "테스트 데이터 정리", "진단 주문과 테스트 로그를 정리합니다", "warning");
+        if (!hasCleanupZero || !testMeta.lastCleanupAt) addAction("cleanupState", "정리 상태 점검", "남은 테스트 데이터 0건 여부를 확인합니다");
+        if (!testMeta.lastCheckAt) addAction("dbCleanup", "DB 삭제권한 점검", "정리 버튼 실행 권한을 확인합니다", "neutral");
+        return actions.slice(0, 6);
+      }
+
       function openAdminPreReleaseCheck() {
         if (!currentAdmin || currentAdmin.role !== "total") {
           setSyncStatus("최종 배포 전 점검은 총관리자만 가능합니다");
@@ -4167,6 +4195,7 @@ import {
         const qaProgress = adminQaChecklistProgress(qaStore);
         const remainingRows = adminQaChecklistRemainingRows(qaStore);
         const testMeta = readTestToolMeta();
+        const quickActions = adminPreReleaseQuickActions(qaStore, diagnostic, testMeta);
         const checks = [
           { label: "QA 체크리스트", detail: qaProgress.checked + "/" + qaProgress.total + "개", ready: qaProgress.done },
           { label: "테스트 데이터", detail: diagnostic.hasTestState ? "주문 " + diagnostic.orders + "건 · 로그 " + diagnostic.logs + "건" : "잔여 없음", ready: !diagnostic.hasTestState },
@@ -4203,6 +4232,19 @@ import {
                 </ul>
                 ${remainingRows.length > 8 ? '<p>외 ' + (remainingRows.length - 8) + '개 항목은 QA 체크리스트에서 확인하세요.</p>' : ""}
               ` : '<p>미완료 QA 항목이 없습니다.</p>'}
+            </div>
+            <div class="admin-pre-release-section">
+              <strong>바로 실행</strong>
+              ${quickActions.length ? `
+                <div class="admin-pre-release-quick-actions">
+                  ${quickActions.map((item) => `
+                    <button class="${item.variant}" type="button" onclick="runPreReleaseQaAction('${item.action}')">
+                      <span>${qaScenarioStatusEscape(item.label)}</span>
+                      <em>${qaScenarioStatusEscape(item.detail)}</em>
+                    </button>
+                  `).join("")}
+                </div>
+              ` : '<p>현재 바로 실행할 추천 점검이 없습니다.</p>'}
             </div>
             <div class="admin-release-actions">
               <button class="neutral" type="button" onclick="openAdminQaChecklist()">QA 체크리스트</button>
@@ -4319,6 +4361,13 @@ import {
           });
         } catch (error) {
           setQaScenarioActionStatus(label + " 실행 오류 - " + shortSupabaseError(error));
+        }
+      }
+
+      async function runPreReleaseQaAction(action) {
+        await runQaScenarioAction(action);
+        if (document.getElementById("adminOrderDetailModal").classList.contains("open")) {
+          openAdminPreReleaseCheck();
         }
       }
 
@@ -9337,6 +9386,7 @@ Object.assign(window, {
   clearAdminQaChecklist,
   copyAdminQaChecklistReport,
   downloadAdminQaChecklistCsv,
+  runPreReleaseQaAction,
   approveReturnRefundFromDetail,
   rejectReturnRefundFromDetail,
   closeAdminOrderDetail,
@@ -9558,6 +9608,7 @@ exposeHandlers({
   clearAdminQaChecklist,
   copyAdminQaChecklistReport,
   downloadAdminQaChecklistCsv,
+  runPreReleaseQaAction,
   openSettlementStatement,
   openTotalAdminFromManagement,
   openTracking,
