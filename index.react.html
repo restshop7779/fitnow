@@ -275,6 +275,34 @@
             <label>소재
               <input id="vendorMaterial" type="text" value="코튼 니트" required />
             </label>
+            <details class="vendor-form-section">
+              <summary>가상착용 실측 정보</summary>
+              <div class="form-grid">
+                <label>총기장 cm
+                  <input id="vendorGarmentLength" type="number" min="0" step="0.5" value="54" />
+                </label>
+                <label>어깨 cm
+                  <input id="vendorShoulderWidth" type="number" min="0" step="0.5" value="42" />
+                </label>
+              </div>
+              <div class="form-grid">
+                <label>가슴단면 cm
+                  <input id="vendorChestWidth" type="number" min="0" step="0.5" value="48" />
+                </label>
+                <label>허리단면 cm
+                  <input id="vendorWaistWidth" type="number" min="0" step="0.5" value="44" />
+                </label>
+              </div>
+              <div class="form-grid">
+                <label>모델 키 cm
+                  <input id="vendorModelHeight" type="number" min="0" step="1" value="168" />
+                </label>
+                <label>모델 몸무게 kg
+                  <input id="vendorModelWeight" type="number" min="0" step="1" value="55" />
+                </label>
+              </div>
+              <p class="section-hint">입력값은 고객 체형 아바타와 가상 핏 매칭에 사용됩니다.</p>
+            </details>
             <label>상품 설명
               <textarea id="vendorNote" required>동탄, 오산 퇴근길에 바로 받기 좋은 레이어드 아이템이에요.</textarea>
             </label>

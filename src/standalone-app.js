@@ -1452,7 +1452,20 @@ import {
         };
       }
 
+      function productMetaData(meta) {
+        if (!meta) return {};
+        if (typeof meta === "object") return meta;
+        try {
+          const parsed = JSON.parse(meta);
+          return parsed && typeof parsed === "object" ? parsed : { note: String(meta) };
+        } catch (error) {
+          return { note: String(meta) };
+        }
+      }
+
       function productToItem(row) {
+        const meta = productMetaData(row.meta);
+        const fitMeasurements = meta.fitMeasurements || {};
         return {
           dbId: row.id,
           key: row.slug,
@@ -1470,7 +1483,13 @@ import {
           image: row.image_url || "",
           fit: row.fit || "업체 등록 상품",
           size: row.size_label || "Free",
-          note: row.description || row.meta || "입점업체가 등록한 상품입니다.",
+          garmentLength: Number(fitMeasurements.garmentLength) || 0,
+          shoulderWidth: Number(fitMeasurements.shoulderWidth) || 0,
+          chestWidth: Number(fitMeasurements.chestWidth) || 0,
+          waistWidth: Number(fitMeasurements.waistWidth) || 0,
+          modelHeight: Number(fitMeasurements.modelHeight) || 0,
+          modelWeight: Number(fitMeasurements.modelWeight) || 0,
+          note: row.description || meta.note || "입점업체가 등록한 상품입니다.",
           vendorAdded: true,
         };
       }
@@ -2393,6 +2412,7 @@ import {
         document.getElementById("vendorMaterial").value = "코튼 니트";
         document.getElementById("vendorSize").value = "Free / 44-66";
         document.getElementById("vendorNote").value = "동탄, 오산 퇴근길에 바로 받기 좋은 레이어드 아이템이에요.";
+        writeVendorFitMeasurements();
         document.getElementById("vendorImage").value = "";
         vendorImageData = "";
         vendorImageFile = null;
@@ -2429,6 +2449,44 @@ import {
         document.getElementById("vendorStock").value = total;
       }
 
+      function vendorMeasurementValue(id) {
+        return Math.max(0, Number(document.getElementById(id)?.value) || 0);
+      }
+
+      function readVendorFitMeasurements() {
+        return {
+          garmentLength: vendorMeasurementValue("vendorGarmentLength"),
+          shoulderWidth: vendorMeasurementValue("vendorShoulderWidth"),
+          chestWidth: vendorMeasurementValue("vendorChestWidth"),
+          waistWidth: vendorMeasurementValue("vendorWaistWidth"),
+          modelHeight: vendorMeasurementValue("vendorModelHeight"),
+          modelWeight: vendorMeasurementValue("vendorModelWeight"),
+        };
+      }
+
+      function writeVendorFitMeasurements(item = {}) {
+        const defaults = {
+          garmentLength: item.garmentLength || 54,
+          shoulderWidth: item.shoulderWidth || 42,
+          chestWidth: item.chestWidth || 48,
+          waistWidth: item.waistWidth || 44,
+          modelHeight: item.modelHeight || 168,
+          modelWeight: item.modelWeight || 55,
+        };
+        Object.entries(defaults).forEach(([key, value]) => {
+          const id = {
+            garmentLength: "vendorGarmentLength",
+            shoulderWidth: "vendorShoulderWidth",
+            chestWidth: "vendorChestWidth",
+            waistWidth: "vendorWaistWidth",
+            modelHeight: "vendorModelHeight",
+            modelWeight: "vendorModelWeight",
+          }[key];
+          const input = document.getElementById(id);
+          if (input) input.value = value;
+        });
+      }
+
       function editVendorProduct(key) {
         const item = products.find((product) => product.key === key);
         if (!item) return;
@@ -2448,6 +2506,7 @@ import {
         document.getElementById("vendorMatch").value = item.match;
         document.getElementById("vendorMaterial").value = item.material;
         document.getElementById("vendorSize").value = item.size;
+        writeVendorFitMeasurements(item);
         ensureSizeStock(item);
         renderVendorSizeStockInputs(item.sizeStock);
         document.getElementById("vendorNote").value = item.note;
@@ -2489,6 +2548,11 @@ import {
               <strong>상세 설명</strong>
               <span>${item.material || "소재 미입력"} · ${item.size || "One size"}</span>
               <span>${item.note || "상품 설명이 없습니다"}</span>
+            </div>
+            <div class="order-detail-block">
+              <strong>가상착용 데이터</strong>
+              <span>${garmentSpecSummary(item)}</span>
+              <span>모델 기준 ${modelSpecSummary(item)}</span>
             </div>
             <div class="mini-actions">
               <button type="button" class="${productStatus(item) === "selling" ? "active-control" : ""}" onclick="setVendorProductStatus('${item.key}', 'selling')">판매중</button>
@@ -7642,7 +7706,17 @@ import {
           name: item.name,
           price: item.price,
           category: item.category || "상의",
-          meta: item.note,
+          meta: JSON.stringify({
+            note: item.note,
+            fitMeasurements: {
+              garmentLength: Number(item.garmentLength) || 0,
+              shoulderWidth: Number(item.shoulderWidth) || 0,
+              chestWidth: Number(item.chestWidth) || 0,
+              waistWidth: Number(item.waistWidth) || 0,
+              modelHeight: Number(item.modelHeight) || 0,
+              modelWeight: Number(item.modelWeight) || 0,
+            },
+          }),
           discount_rate: normalizedDiscount(item.discountRate),
           material: item.material,
           fit: item.fit,
@@ -8288,6 +8362,7 @@ import {
           fit: existing ? existing.fit : "업체 등록 상품",
           size: document.getElementById("vendorSize").value.trim(),
           note: document.getElementById("vendorNote").value.trim(),
+          ...readVendorFitMeasurements(),
           vendorAdded: true,
           status: existing ? existing.status : "selling",
           dbId: existing ? existing.dbId : undefined,
@@ -8716,6 +8791,11 @@ import {
             <div class="meta-box"><span>재고</span><strong>${item.stock}개</strong></div>
           </div>
           <div class="summary-card">
+            <h3>가상착용 기준</h3>
+            <div class="line-item"><span>상품 실측</span><strong>${garmentSpecSummary(item)}</strong></div>
+            <div class="line-item"><span>모델 기준</span><strong>${modelSpecSummary(item)}</strong></div>
+          </div>
+          <div class="summary-card">
             <h3>사이즈 선택</h3>
             <div class="size-chip-list">${sizes.map((size) => {
               const count = sizeStock(item, size);
@@ -8822,12 +8902,47 @@ import {
         return { bmi, shoulder, waist, leg, label };
       }
 
+      function garmentSpecs(item = {}) {
+        return {
+          length: Number(item.garmentLength) || 0,
+          shoulder: Number(item.shoulderWidth) || 0,
+          chest: Number(item.chestWidth) || 0,
+          waist: Number(item.waistWidth) || 0,
+          modelHeight: Number(item.modelHeight) || 0,
+          modelWeight: Number(item.modelWeight) || 0,
+        };
+      }
+
+      function garmentSpecSummary(item = {}) {
+        const specs = garmentSpecs(item);
+        const parts = [];
+        if (specs.length) parts.push("총기장 " + specs.length + "cm");
+        if (specs.shoulder) parts.push("어깨 " + specs.shoulder + "cm");
+        if (specs.chest) parts.push("가슴 " + specs.chest + "cm");
+        if (specs.waist) parts.push("허리 " + specs.waist + "cm");
+        return parts.join(" · ") || "실측 미입력";
+      }
+
+      function modelSpecSummary(item = {}) {
+        const specs = garmentSpecs(item);
+        if (!specs.modelHeight && !specs.modelWeight) return "모델 정보 미입력";
+        return [specs.modelHeight ? specs.modelHeight + "cm" : "", specs.modelWeight ? specs.modelWeight + "kg" : ""].filter(Boolean).join(" · ");
+      }
+
       function fitMatchForItem(item, profile) {
         const metrics = fitProfileMetrics(profile);
+        const specs = garmentSpecs(item);
         const itemFit = (item.fit || "").toLowerCase();
         let score = item.match || 82;
         if (metrics.bmi < 19 && /slim|크롭|슬림/i.test(itemFit + item.name)) score += 5;
         if (metrics.bmi >= 23 && /relaxed|오버|와이드|루즈|릴랙스/i.test(itemFit + item.name)) score += 6;
+        if (specs.shoulder) score -= Math.min(8, Math.abs(metrics.shoulder / 2 - specs.shoulder) * 0.35);
+        if (specs.chest) score -= Math.min(8, Math.max(0, metrics.waist / 2 - specs.chest) * 0.45);
+        if (specs.length) {
+          const idealLength = item.category === "하의" ? metrics.leg * 0.92 : profile.height * 0.32;
+          score -= Math.min(6, Math.abs(idealLength - specs.length) * 0.18);
+        }
+        if (specs.modelHeight) score -= Math.min(4, Math.abs(profile.height - specs.modelHeight) * 0.05);
         if (item.category === "신발") score = Math.min(94, score - 3);
         if (item.category === "잡화") score = Math.min(96, score + 2);
         return Math.min(98, Math.max(62, Math.round(score)));
@@ -8888,6 +9003,8 @@ import {
             <div class="line-item"><span>체형 타입</span><strong>${metrics.label}</strong></div>
             <div class="line-item"><span>가상 핏 매칭</span><strong>${match}%</strong></div>
             <div class="line-item"><span>예상 느낌</span><strong>${item ? item.fit || "기본 핏" : "-"}</strong></div>
+            <div class="line-item"><span>상품 실측</span><strong>${item ? garmentSpecSummary(item) : "-"}</strong></div>
+            <div class="line-item"><span>모델 기준</span><strong>${item ? modelSpecSummary(item) : "-"}</strong></div>
             <p class="fit-note">사진 합성형 3D가 아닌 1차 체형 비율 미리보기입니다. 실제 색감과 기장은 상품 사진, 사이즈표, 리뷰와 함께 확인해 주세요.</p>
           </section>
           <div class="detail-actions" style="margin-top: 12px;">
