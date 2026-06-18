@@ -8948,11 +8948,44 @@ import {
         return Math.min(98, Math.max(62, Math.round(score)));
       }
 
-      function fitPreviewLayer(item) {
-        if (!item) return '<div class="fit-garment empty-fit">상품 선택</div>';
-        if (item.image) return '<div class="fit-garment has-photo"><img src="' + item.image + '" alt="' + item.name + '" /></div>';
-        const category = item.category || "상의";
-        return '<div class="fit-garment fit-' + category + '"><span>' + category + '</span></div>';
+      function cartLookItems() {
+        const seen = new Set();
+        return cart.map((line) => products.find((product) => product.key === line.key) || line)
+          .filter((item) => {
+            if (!item || seen.has(item.key)) return false;
+            seen.add(item.key);
+            return true;
+          });
+      }
+
+      function activeAvatarItems(primaryItem) {
+        const cartItems = cartLookItems();
+        return cartItems.length ? cartItems : (primaryItem ? [primaryItem] : []);
+      }
+
+      function avatarLookStores(items = []) {
+        return [...new Set(items.map((item) => item.showroom).filter(Boolean))];
+      }
+
+      function fitPreviewLayers(items = []) {
+        if (!items.length) return '<div class="fit-garment empty-fit">상품 선택</div>';
+        return items.map((item, index) => {
+          const category = item.category || "상의";
+          const name = item.name || category;
+          const photoClass = item.image ? " has-photo" : "";
+          const image = item.image ? '<img src="' + item.image + '" alt="' + name + '" />' : '<span>' + category + '</span>';
+          return '<div class="fit-garment fit-layer-' + index + ' fit-' + category + photoClass + '" title="' + name + '">' + image + '</div>';
+        }).join("");
+      }
+
+      function avatarLookListMarkup(items = []) {
+        if (!items.length) return '<div class="line-item"><span>착용 아이템</span><strong>장바구니에 상품을 담아보세요</strong></div>';
+        return items.map((item) => `
+          <div class="line-item">
+            <span>${item.name}</span>
+            <strong>${item.showroom}</strong>
+          </div>
+        `).join("");
       }
 
       function renderFitRoom() {
@@ -8964,8 +8997,12 @@ import {
           activeFitPreviewKey = (cart[0] && cart[0].key) || (items[0] && items[0].key) || "";
         }
         const item = products.find((product) => product.key === activeFitPreviewKey) || items[0];
+        const avatarItems = activeAvatarItems(item);
+        const mainItem = avatarItems[0] || item;
         const metrics = fitProfileMetrics(profile);
-        const match = item ? fitMatchForItem(item, profile) : 0;
+        const match = avatarItems.length
+          ? Math.round(avatarItems.reduce((sum, candidate) => sum + fitMatchForItem(candidate, profile), 0) / avatarItems.length)
+          : (item ? fitMatchForItem(item, profile) : 0);
         const avatarStyle = [
           "--avatar-height:" + Math.round(190 + (profile.height - 168) * 1.4) + "px",
           "--avatar-shoulder:" + Math.round(metrics.shoulder) + "px",
@@ -8977,7 +9014,7 @@ import {
             <div class="fit-avatar-stage">
               <div class="fit-avatar" style="${avatarStyle}">
                 <div class="fit-head"></div>
-                <div class="fit-torso">${fitPreviewLayer(item)}</div>
+                <div class="fit-torso">${fitPreviewLayers(avatarItems)}</div>
                 <div class="fit-legs"></div>
               </div>
             </div>
@@ -8999,17 +9036,23 @@ import {
             </div>
           </section>
           <section class="summary-card fit-result-card">
-            <h3>${item ? item.name : "상품 선택 대기"}</h3>
+            <h3>${cart.length ? "장바구니 아바타 착용" : (mainItem ? mainItem.name : "상품 선택 대기")}</h3>
             <div class="line-item"><span>체형 타입</span><strong>${metrics.label}</strong></div>
             <div class="line-item"><span>가상 핏 매칭</span><strong>${match}%</strong></div>
-            <div class="line-item"><span>예상 느낌</span><strong>${item ? item.fit || "기본 핏" : "-"}</strong></div>
-            <div class="line-item"><span>상품 실측</span><strong>${item ? garmentSpecSummary(item) : "-"}</strong></div>
-            <div class="line-item"><span>모델 기준</span><strong>${item ? modelSpecSummary(item) : "-"}</strong></div>
+            <div class="line-item"><span>착용 상품</span><strong>${avatarItems.length}개</strong></div>
+            <div class="line-item"><span>노출 입점업체</span><strong>${avatarLookStores(avatarItems).join(" · ") || "-"}</strong></div>
+            <div class="line-item"><span>예상 느낌</span><strong>${mainItem ? mainItem.fit || "기본 핏" : "-"}</strong></div>
+            <div class="line-item"><span>상품 실측</span><strong>${mainItem ? garmentSpecSummary(mainItem) : "-"}</strong></div>
+            <div class="line-item"><span>모델 기준</span><strong>${mainItem ? modelSpecSummary(mainItem) : "-"}</strong></div>
+            ${avatarLookListMarkup(avatarItems)}
             <p class="fit-note">사진 합성형 3D가 아닌 1차 체형 비율 미리보기입니다. 실제 색감과 기장은 상품 사진, 사이즈표, 리뷰와 함께 확인해 주세요.</p>
           </section>
           <div class="detail-actions" style="margin-top: 12px;">
             <button class="secondary" type="button" ${item ? "" : "disabled"} onclick="addFitPreviewToCart()">이 상품 담기</button>
             <button class="primary" type="button" ${item ? "" : "disabled"} onclick="reserveFitPreviewItem()">이 상품 예약</button>
+          </div>
+          <div class="detail-actions" style="margin-top: 8px;">
+            <button class="secondary" type="button" onclick="openMyAvatarLook()">마이아바타룩 보기</button>
           </div>
         `;
       }
@@ -9021,6 +9064,14 @@ import {
         renderFitRoom();
         document.getElementById("fitRoomModal").classList.add("open");
         document.getElementById("fitRoomModal").setAttribute("aria-hidden", "false");
+      }
+
+      function openMyAvatar() {
+        const avatarLookModal = document.getElementById("avatarLookModal");
+        if (avatarLookModal && avatarLookModal.classList.contains("open")) closeMyAvatarLook();
+        const cartItems = cartLookItems();
+        if (cartItems.length) activeFitPreviewKey = cartItems[0].key;
+        openFitRoom(activeFitPreviewKey);
       }
 
       function closeFitRoom() {
@@ -9054,6 +9105,59 @@ import {
         addItemByKey(activeFitPreviewKey);
         closeFitRoom();
         checkout();
+      }
+
+      function checkoutAvatarLook() {
+        closeMyAvatarLook();
+        checkout();
+      }
+
+      function avatarLookCardMarkup() {
+        const profile = readFitProfile();
+        const fallbackItem = products.find((product) => product.key === activeFitPreviewKey) || fitPreviewItems()[0];
+        const items = activeAvatarItems(fallbackItem);
+        const metrics = fitProfileMetrics(profile);
+        const stores = avatarLookStores(items);
+        const total = items.reduce((sum, item) => sum + itemSalePrice(item), 0);
+        return `
+          <section class="avatar-look-card">
+            <div class="avatar-look-stage">
+              <div class="fit-avatar">
+                <div class="fit-head"></div>
+                <div class="fit-torso">${fitPreviewLayers(items)}</div>
+                <div class="fit-legs"></div>
+              </div>
+            </div>
+            <div class="avatar-look-info">
+              <p class="eyebrow">FITNOW AVATAR LOOK</p>
+              <h3>${currentCustomer.name || "나"}의 지금배송 룩</h3>
+              <span>${metrics.label} 체형 · ${items.length}개 아이템 · ${formatKRW(total)}</span>
+            </div>
+          </section>
+          <section class="summary-card fit-result-card">
+            <h3>착용 아이템과 입점업체</h3>
+            ${avatarLookListMarkup(items)}
+            <div class="line-item"><span>노출 입점업체</span><strong>${stores.join(" · ") || "-"}</strong></div>
+            <p class="fit-note">공유 카드에는 착용 아이템, 입점업체, 구매 진입 버튼이 함께 노출됩니다. 다음 단계에서 실제 공유 링크와 무료 이용 횟수를 연결할 수 있습니다.</p>
+          </section>
+          <div class="detail-actions" style="margin-top: 12px;">
+            <button class="secondary" type="button" onclick="openMyAvatar()">아바타 수정</button>
+            <button class="primary" type="button" ${items.length ? "" : "disabled"} onclick="checkoutAvatarLook()">이 룩 구매</button>
+          </div>
+        `;
+      }
+
+      function openMyAvatarLook() {
+        const fitRoomModal = document.getElementById("fitRoomModal");
+        if (fitRoomModal && fitRoomModal.classList.contains("open")) closeFitRoom();
+        document.getElementById("avatarLookBody").innerHTML = avatarLookCardMarkup();
+        document.getElementById("avatarLookModal").classList.add("open");
+        document.getElementById("avatarLookModal").setAttribute("aria-hidden", "false");
+      }
+
+      function closeMyAvatarLook() {
+        document.getElementById("avatarLookModal").classList.remove("open");
+        document.getElementById("avatarLookModal").setAttribute("aria-hidden", "true");
       }
 
       function renderCartDetail() {
@@ -10023,6 +10127,7 @@ exposeHandlers({
   canUseSupabase,
   cartTotals,
   checkout,
+  checkoutAvatarLook,
   checkoutFromCart,
   checkAdminTestDataCleanupState,
   checkSupabaseSetup,
@@ -10042,6 +10147,7 @@ exposeHandlers({
   closeLooks,
   closeManagement,
   closeModal,
+  closeMyAvatarLook,
   closeMyPage,
   closeOrders,
   closeSettlementConfirm,
@@ -10164,6 +10270,8 @@ exposeHandlers({
   openFitRoom,
   openLooks,
   openManagement,
+  openMyAvatar,
+  openMyAvatarLook,
   openMyPage,
   openOrders,
   openOrdersFromMy,

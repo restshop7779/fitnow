@@ -10,9 +10,9 @@
 <main class="app-shell">
       <section class="phone-frame">
         <header class="top-bar">
-          <button class="icon-button" type="button" onclick="openMyPage()" aria-label="마이페이지 열기" title="마이페이지">MY</button>
+          <button class="icon-button avatar-menu" type="button" onclick="openMyAvatar()" aria-label="마이아바타 열기" title="마이아바타">마이<br />아바타</button>
           <button class="brand" type="button" onclick="goHome()" aria-label="홈으로 이동">FITNOW<small>오산, 동탄 지금배송</small></button>
-          <button class="icon-button" type="button" onclick="openFitRoom()" aria-label="가상 착용실 열기" title="가상 착용실">FIT</button>
+          <button class="icon-button avatar-menu" type="button" onclick="openMyAvatarLook()" aria-label="마이아바타룩 열기" title="마이아바타룩">마이<br />아바타룩</button>
         </header>
 
         <p class="status admin-only" id="syncStatus">FITNOW_STANDALONE_OK - Supabase 연결 준비 중</p>
@@ -160,6 +160,19 @@
           <button class="close" type="button" onclick="closeFitRoom()">X</button>
         </div>
         <div id="fitRoomBody"></div>
+      </div>
+    </section>
+
+    <section class="modal" id="avatarLookModal" aria-hidden="true">
+      <div class="receipt">
+        <div class="receipt-head">
+          <div>
+            <p class="eyebrow">MY AVATAR LOOK</p>
+            <h2>마이아바타룩</h2>
+          </div>
+          <button class="close" type="button" onclick="closeMyAvatarLook()">X</button>
+        </div>
+        <div id="avatarLookBody"></div>
       </div>
     </section>
 
