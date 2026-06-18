@@ -1857,6 +1857,12 @@
         background: #fffaf0;
         box-shadow: 0 0 0 2px rgba(23, 23, 23, .08) inset;
       }
+      .admin-qa-scenario-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 9px;
+      }
       .admin-qa-section strong {
         display: block;
         color: #171717;
@@ -3082,6 +3088,7 @@
         .settlement-test-retention { grid-template-columns: 1fr; }
         .settlement-test-actions { grid-template-columns: 1fr; }
         .admin-tool-actions { grid-template-columns: 1fr; }
+        .admin-qa-scenario-actions { grid-template-columns: 1fr; }
         .vendor-detail-action-buttons,
         .refund-action-buttons { grid-template-columns: 1fr; }
       }

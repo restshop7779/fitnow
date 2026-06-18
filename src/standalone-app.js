@@ -4059,6 +4059,21 @@ import {
                 <div class="settlement-audit-step">${sectionIndex + 1}</div>
                 <div>
                   <strong>${section.title}</strong>
+                  ${section.id === "final-scenario" ? `
+                    <div class="admin-qa-scenario-actions">
+                      <button class="admin-tool-action primary" type="button" onclick="createDeliveryFlowTestOrder()">배송 테스트 주문 생성</button>
+                      <button class="admin-tool-action primary" type="button" onclick="runDeliveryFlowAutoCheck()">배송 플로우 자동 점검</button>
+                      <button class="admin-tool-action primary" type="button" onclick="runSettlementFlowAutoCheck()">정산 플로우 점검</button>
+                      <button class="admin-tool-action primary" type="button" onclick="createReturnRefundTestOrders()">반품/환불 테스트 4건 생성</button>
+                      <button class="admin-tool-action primary" type="button" onclick="runReturnRefundVisibilityCheck()">반품/환불 표시 점검</button>
+                      <button class="admin-tool-action" type="button" onclick="createSettlementExcelDemoOrders()">엑셀 테스트 6건 생성</button>
+                      <button class="admin-tool-action danger" type="button" onclick="clearAdminTestData()">테스트 데이터 정리</button>
+                      <button class="admin-tool-action" type="button" onclick="checkAdminTestDataCleanupState()">정리 상태 점검</button>
+                      <button class="admin-tool-action" type="button" onclick="checkSupabaseCleanupPermission()">DB 삭제권한 점검</button>
+                    </div>
+                    <div class="admin-utility-status" data-return-refund-visibility-status aria-live="polite">반품/환불 표시 점검 결과가 여기에 표시됩니다.</div>
+                    <div class="admin-utility-status" data-admin-cleanup-status aria-live="polite">정리/DB 권한 점검 결과가 여기에 표시됩니다.</div>
+                  ` : ""}
                   <div class="admin-qa-items">
                     ${section.items.map((item) => {
                       const key = adminQaChecklistItemKey(section.id, item.id);
@@ -4166,13 +4181,8 @@ import {
               <button type="button" ${expiredProofCount ? "" : "disabled"} onclick="clearExpiredDeliveryProofPhotos()">만료 사진 정리 ${expiredProofCount}건</button>
             </div>
           </div>
-          <button class="admin-tool-action primary" type="button" onclick="runSettlementFlowAutoCheck()">정산 플로우 점검</button>
           <button class="admin-tool-action" type="button" onclick="openAdminQaChecklist()">QA 체크리스트</button>
           <button class="admin-tool-action primary" type="button" onclick="openAdminFinalQaScenario()">QA 시나리오</button>
-          <button class="admin-tool-action primary" type="button" onclick="runReturnRefundVisibilityCheck()">반품/환불 표시 점검</button>
-          <button class="admin-tool-action" type="button" onclick="createSettlementExcelDemoOrders()">엑셀 테스트 6건 생성</button>
-          <button class="admin-tool-action settlement-cleanup-action danger" type="button" onclick="clearAdminTestData()">테스트 데이터 정리</button>
-          <button class="admin-tool-action" type="button" onclick="checkAdminTestDataCleanupState()">정리 상태 점검</button>
           <div class="admin-utility-status" data-return-refund-visibility-status aria-live="polite">반품/환불 표시 점검 결과가 여기에 표시됩니다.</div>
           <div class="admin-utility-status" data-admin-cleanup-status aria-live="polite">테스트 데이터 정리 상태가 여기에 표시됩니다.</div>
         `;
@@ -5970,12 +5980,7 @@ import {
             ${alerts.map((alert) => '<div class="vendor-alert-row ' + (alert.good ? 'good' : '') + '">' + alert.text + '</div>').join("")}
           </div>
           <div class="admin-tool-actions">
-            <button class="admin-tool-action primary" type="button" onclick="createDeliveryFlowTestOrder()">배송 테스트 주문 생성</button>
-            <button class="admin-tool-action primary" type="button" onclick="createReturnRefundTestOrders()">반품/환불 테스트 4건 생성</button>
             <button class="admin-tool-action primary" type="button" onclick="openAdminFinalQaScenario()">QA 시나리오</button>
-            <button class="admin-tool-action primary" type="button" onclick="runReturnRefundVisibilityCheck()">반품/환불 표시 점검</button>
-            <button class="admin-tool-action" type="button" onclick="runDeliveryFlowAutoCheck()">배송 플로우 자동 점검</button>
-            <button class="admin-tool-action" type="button" onclick="checkAdminTestDataCleanupState()">정리 상태 점검</button>
             <button class="admin-tool-action" type="button" data-admin-cleanup-check="true">DB 삭제권한 점검</button>
           </div>
           <div class="admin-utility-status" data-return-refund-visibility-status aria-live="polite">반품/환불 표시 점검 결과가 여기에 표시됩니다.</div>
