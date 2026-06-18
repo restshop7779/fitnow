@@ -3438,6 +3438,12 @@ import {
         }
       }
 
+      function markFinalQaScenarioItem(itemId, options = {}) {
+        markAdminQaChecklistItems({
+          [adminQaChecklistItemKey("final-scenario", itemId)]: true,
+        }, options);
+      }
+
       function clearAdminQaChecklist() {
         localStorage.removeItem(ADMIN_QA_CHECKLIST_KEY);
         renderSettlementExportActions();
@@ -3705,6 +3711,7 @@ import {
           }
         }
         const clean = !localDiagnostic.hasTestState && dbDiagnosticOrders === 0 && !dbError;
+        if (clean) markFinalQaScenarioItem("cleanup-zero", { render: false });
         setAdminCleanupCheckStatus(
           "테스트 데이터 정리 상태 " + (clean ? "정상" : "확인 필요") +
           " - 화면 주문 " + localDiagnostic.orders + "건" +
@@ -4736,6 +4743,7 @@ import {
           await renderAdminOrders(orderHistory);
           setSyncStatus("배송 테스트 주문 생성 완료 - 화면 반영, DB 저장 확인 필요");
         }
+        markFinalQaScenarioItem("delivery-order", { render: false });
         renderOrders();
         renderTracking();
         return order;
@@ -4903,6 +4911,7 @@ import {
         renderSettlementExportActions();
         saveTestToolMeta({ lastCheckAt: new Date().toISOString(), lastCheckType: "return_refund_visibility" });
         const ok = adminVisible.length === testIds.length && customerVisible.length === testIds.length && vendorVisible.length === testIds.length;
+        if (ok) markFinalQaScenarioItem("return-refund-visible", { render: false });
         setReturnRefundVisibilityStatus(
           "반품/환불 표시 점검 " + (ok ? "통과" : "확인 필요") +
           " - 관리자 " + adminVisible.length + "/" + testIds.length +
@@ -4928,6 +4937,10 @@ import {
         await adminAdvanceOrder(order.id, 4);
         const checkedOrder = await findAdminOrder(order.id);
         if (checkedOrder && (checkedOrder.progressStep || 0) >= 4 && hasDeliveryProof(checkedOrder, "pickup") && hasDeliveryProof(checkedOrder, "arrival")) {
+          markAdminQaChecklistItems({
+            [adminQaChecklistItemKey("final-scenario", "delivery-order")]: true,
+            [adminQaChecklistItemKey("final-scenario", "delivery-proof")]: true,
+          }, { render: false });
           saveTestToolMeta({ lastCheckAt: new Date().toISOString(), lastCheckType: "delivery" });
           renderSettlementExportActions();
           renderAdminReleaseReadiness(adminRenderedOrders.length ? adminRenderedOrders : orderHistory);
@@ -8599,6 +8612,7 @@ import {
         if (document.getElementById("myModal").classList.contains("open")) renderMyPage();
         if (document.getElementById("vendorModal").classList.contains("open")) renderVendorOrders();
         if (document.getElementById("adminModal").classList.contains("open")) renderAdminOrders();
+        if (source !== "vendor") markFinalQaScenarioItem("admin-refund-action", { render: false });
         try {
           await syncOrderStatusToSupabase(order);
           setSyncStatus((source === "vendor" ? "입점업체 환불 완료 상태" : "환불 완료 상태") + "가 Supabase에 저장됨 - " + order.id);
@@ -8663,6 +8677,8 @@ import {
         if (document.getElementById("myModal").classList.contains("open")) renderMyPage();
         if (document.getElementById("vendorModal").classList.contains("open")) renderVendorOrders();
         if (document.getElementById("adminModal").classList.contains("open")) renderAdminOrders();
+        if (source === "vendor") markFinalQaScenarioItem("vendor-refund-action", { render: false });
+        else markFinalQaScenarioItem("admin-refund-action", { render: false });
         try {
           await syncOrderStatusToSupabase(order);
           setSyncStatus("반품/환불 " + (approving ? "승인" : "거절") + " 상태가 Supabase에 저장됨 - " + order.id);
