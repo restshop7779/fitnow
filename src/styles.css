@@ -1401,12 +1401,39 @@
       .vendor-detail-action-buttons {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
       }
       .vendor-detail-action-buttons button,
       .refund-action-buttons button {
         min-width: 0;
         border-radius: 8px;
-        white-space: nowrap;
+        white-space: normal;
+      }
+      .vendor-detail-action-buttons button {
+        min-height: 44px;
+        padding: 9px 10px;
+        border: 1px solid rgba(23, 23, 23, .14);
+        background: #171717;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 950;
+        line-height: 1.25;
+        text-align: left;
+      }
+      .vendor-detail-action-buttons button:disabled {
+        background: #eee8de;
+        color: #7d766d;
+        border-color: #e1d8ca;
+      }
+      .vendor-detail-action-buttons button.danger {
+        background: #fff0ec;
+        color: #9b321f;
+        border-color: #f1c7bd;
+      }
+      .vendor-detail-action-buttons button.danger:disabled {
+        background: #f4eee8;
+        color: #9f8f87;
+        border-color: #e6d8cf;
       }
       .refund-action-group {
         border-color: #f1c7bd;
@@ -1415,13 +1442,15 @@
       .refund-action-buttons {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 6px;
+        gap: 8px;
       }
       .refund-action-buttons button {
-        min-height: 38px;
-        padding: 0 8px;
+        min-height: 44px;
+        padding: 9px 10px;
         font-size: 12px;
         font-weight: 950;
+        line-height: 1.25;
+        text-align: left;
       }
       .refund-action-buttons .refund-approve {
         background: #171717;
@@ -2960,4 +2989,6 @@
         .settlement-test-retention { grid-template-columns: 1fr; }
         .settlement-test-actions { grid-template-columns: 1fr; }
         .admin-tool-actions { grid-template-columns: 1fr; }
+        .vendor-detail-action-buttons,
+        .refund-action-buttons { grid-template-columns: 1fr; }
       }
