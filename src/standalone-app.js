@@ -3493,6 +3493,17 @@ import {
         setSyncStatus("QA 체크리스트를 초기화했습니다");
       }
 
+      function startNewAdminQaChecklist() {
+        const store = readAdminQaChecklistStore();
+        const progress = adminQaChecklistProgress(store);
+        if (progress.done && !window.confirm("완료된 QA 체크리스트를 초기화하고 새 점검을 시작할까요? 기존 완료 기록은 리포트로 먼저 보관하는 것을 권장합니다.")) {
+          setSyncStatus("새 QA 점검 시작을 취소했습니다");
+          return;
+        }
+        clearAdminQaChecklist();
+        setSyncStatus("새 QA 점검을 시작했습니다");
+      }
+
       function adminQaChecklistReportRows(store = readAdminQaChecklistStore()) {
         return adminQaChecklistSections().flatMap((section, sectionIndex) => (
           section.items.map((item, itemIndex) => {
@@ -4130,6 +4141,12 @@ import {
               <strong>${progress.done ? "QA 점검 완료" : "QA 점검 진행 중"}</strong>
               <span>${progress.checked}/${progress.total}개 완료 · 마지막 저장 ${testToolTimeLabel(store.updatedAt)}</span>
             </div>
+            ${progress.done ? `
+              <div class="admin-qa-lock-notice">
+                <strong>완료된 QA 체크리스트</strong>
+                <span>현재 점검 결과는 완료 상태로 보관됩니다. 새 배포 점검을 시작할 때만 초기화하세요.</span>
+              </div>
+            ` : ""}
             ${sections.map((section, sectionIndex) => `
               <div class="admin-qa-section ${section.id === focusSectionId ? "focused" : ""}" data-admin-qa-section="${section.id}">
                 <div class="settlement-audit-step">${sectionIndex + 1}</div>
@@ -4179,7 +4196,9 @@ import {
             <div class="mini-actions settlement-check-report-actions">
               <button type="button" onclick="copyAdminQaChecklistReport()">리포트 복사</button>
               <button type="button" onclick="downloadAdminQaChecklistCsv()">CSV 다운로드</button>
-              <button type="button" onclick="clearAdminQaChecklist()">체크 초기화</button>
+              ${progress.done
+                ? '<button type="button" onclick="startNewAdminQaChecklist()">새 점검 시작</button>'
+                : '<button type="button" onclick="clearAdminQaChecklist()">체크 초기화</button>'}
               <button type="button" onclick="closeAdminOrderDetail()">닫기</button>
             </div>
           </div>
@@ -9597,6 +9616,7 @@ Object.assign(window, {
   completePreReleaseManualQa,
   setAdminQaChecklistItem,
   clearAdminQaChecklist,
+  startNewAdminQaChecklist,
   copyAdminQaChecklistReport,
   copyAdminPreReleaseReport,
   downloadAdminQaChecklistCsv,
@@ -9824,6 +9844,7 @@ exposeHandlers({
   completePreReleaseManualQa,
   setAdminQaChecklistItem,
   clearAdminQaChecklist,
+  startNewAdminQaChecklist,
   copyAdminQaChecklistReport,
   copyAdminPreReleaseReport,
   downloadAdminQaChecklistCsv,
