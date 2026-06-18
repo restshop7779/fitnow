@@ -10,9 +10,9 @@
 <main class="app-shell">
       <section class="phone-frame">
         <header class="top-bar">
-          <button class="icon-button" type="button">M</button>
-          <div class="brand">FITNOW<small>오산, 동탄 지금배송</small></div>
-          <button class="icon-button" type="button">B</button>
+          <button class="icon-button" type="button" onclick="openMyPage()" aria-label="마이페이지 열기" title="마이페이지">MY</button>
+          <button class="brand" type="button" onclick="goHome()" aria-label="홈으로 이동">FITNOW<small>오산, 동탄 지금배송</small></button>
+          <button class="icon-button" type="button" onclick="openCartDetail()" aria-label="장바구니 열기" title="장바구니">BAG</button>
         </header>
 
         <p class="status admin-only" id="syncStatus">FITNOW_STANDALONE_OK - Supabase 연결 준비 중</p>
@@ -113,7 +113,7 @@
         </aside>
 
         <nav class="bottom-tabs">
-          <button class="active" type="button">홈</button>
+          <button class="active" type="button" onclick="goHome()">홈</button>
           <button type="button" onclick="openLooks()">룩</button>
           <button class="admin-only" type="button" onclick="openManagement()">관리</button>
           <button type="button" onclick="openMyPage()">마이</button>

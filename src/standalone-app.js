@@ -292,6 +292,18 @@ import {
         if (node) node.textContent = message;
       }
 
+      function goHome() {
+        document.querySelectorAll(".modal.open").forEach((modal) => {
+          modal.classList.remove("open");
+          modal.setAttribute("aria-hidden", "true");
+        });
+        document.querySelectorAll(".bottom-tabs button").forEach((button) => {
+          button.classList.toggle("active", button.textContent.trim() === "홈");
+        });
+        const frame = document.querySelector(".phone-frame");
+        if (frame) frame.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
       function customerId() {
         return currentCustomer ? currentCustomer.id : "guest-preview";
       }
@@ -9828,6 +9840,7 @@ exposeHandlers({
   formatKRW,
   getAuthReturnParams,
   getOAuthRedirectUrl,
+  goHome,
   groupedPickups,
   hasDeliveryProof,
   highlightAdminTarget,
