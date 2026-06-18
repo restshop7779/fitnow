@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FitNow Preview</title>
+    <title>FitNow</title>
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
@@ -15,8 +15,8 @@
           <button class="icon-button" type="button">B</button>
         </header>
 
-        <p class="status" id="syncStatus">FITNOW_STANDALONE_OK - Supabase 연결 준비 중</p>
-        <section class="sync-check">
+        <p class="status admin-only" id="syncStatus">FITNOW_STANDALONE_OK - Supabase 연결 준비 중</p>
+        <section class="sync-check admin-only">
           <button type="button" onclick="checkSupabaseSetup()">DB 연결 확인</button>
           <p id="setupCheckResult">SQL 실행 후 이 버튼을 누르면 테이블과 이미지 저장소를 확인합니다.</p>
         </section>
@@ -115,7 +115,7 @@
         <nav class="bottom-tabs">
           <button class="active" type="button">홈</button>
           <button type="button" onclick="openLooks()">룩</button>
-          <button type="button" onclick="openManagement()">관리</button>
+          <button class="admin-only" type="button" onclick="openManagement()">관리</button>
           <button type="button" onclick="openMyPage()">마이</button>
         </nav>
       </section>
@@ -329,10 +329,10 @@
             <select id="loginStore"></select>
           </label>
           <label>관리 PIN
-            <input id="loginPin" type="password" inputmode="numeric" value="1111" />
+            <input id="loginPin" type="password" inputmode="numeric" />
           </label>
           <button class="primary" type="submit">로그인</button>
-          <p class="status" id="loginHint">데모 PIN: 어반클로젯 1111, 그레인룸 2222, 비트 아카이브 3333</p>
+          <p class="status" id="loginHint">입점 매장에 발급된 관리 PIN을 입력해 주세요.</p>
         </form>
       </div>
     </section>
@@ -473,10 +473,10 @@
         </div>
         <form class="vendor-form" onsubmit="loginAdmin(event)">
           <label><span id="adminPinLabel">운영 PIN</span>
-            <input id="adminPin" type="password" inputmode="numeric" value="0000" required />
+            <input id="adminPin" type="password" inputmode="numeric" required />
           </label>
           <button class="primary" type="submit" id="adminLoginButton">운영 관리 열기</button>
-          <p class="hint" id="adminLoginHint">데모 운영자 PIN은 0000입니다.</p>
+          <p class="hint" id="adminLoginHint">운영 권한에 발급된 PIN을 입력해 주세요.</p>
         </form>
       </div>
     </section>
@@ -523,7 +523,7 @@
             <div class="chips" id="adminSettlementPeriodFilters" style="margin-top: 9px;"></div>
             <div class="mini-actions settlement-export-actions" id="adminSettlementExportActions" style="margin-top: 9px;"></div>
             <details class="settlement-test-tools" id="adminSettlementTestToolsSection">
-              <summary>관리자 테스트 도구 <span>점검/데모/정리</span></summary>
+              <summary>관리자 테스트 도구 <span>점검/정리</span></summary>
               <div class="mini-actions settlement-test-actions" id="adminSettlementTestActions"></div>
             </details>
             <div class="settlement-view-tabs" id="adminSettlementViewTabs"></div>

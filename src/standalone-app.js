@@ -84,6 +84,26 @@ import {
         "7d": { label: "7일", ms: 7 * 24 * 60 * 60 * 1000 },
       };
 
+      function isAdminAccessEnabled() {
+        const params = new URLSearchParams(window.location.search || "");
+        return ["1", "true", "yes"].includes(params.get("admin") || "")
+          || ["1", "true", "yes"].includes(params.get("manage") || "")
+          || ["1", "true", "yes"].includes(params.get("operator") || "")
+          || ["1", "true"].includes(params.get("diagnostic") || "")
+          || ["1", "true", "delivery"].includes(params.get("test") || "")
+          || ["1", "true", "delivery"].includes(params.get("photo-proof-check") || "");
+      }
+
+      function applyAdminAccessVisibility() {
+        document.body.classList.toggle("admin-access-enabled", isAdminAccessEnabled());
+      }
+
+      function requireAdminAccess() {
+        if (isAdminAccessEnabled()) return true;
+        setSyncStatus("관리 기능은 관리자 전용 주소에서만 열 수 있습니다.");
+        return false;
+      }
+
       let selectedShowroom = "전체";
       let selectedLookKeys = [];
       let selectedCategory = "전체";
@@ -268,7 +288,8 @@ import {
         return reviews.filter((review) => review.orderId === order.id).length;
       }
       function setSyncStatus(message) {
-        document.getElementById("syncStatus").textContent = message;
+        const node = document.getElementById("syncStatus");
+        if (node) node.textContent = message;
       }
 
       function customerId() {
@@ -1238,6 +1259,7 @@ import {
       }
 
       function restoreSavedVendor() {
+        if (!isAdminAccessEnabled()) return;
         const saved = localStorage.getItem(VENDOR_STORAGE_KEY);
         if (!saved) return;
         try {
@@ -1258,6 +1280,7 @@ import {
       }
 
       function restoreSavedAdmin() {
+        if (!isAdminAccessEnabled()) return;
         const saved = localStorage.getItem(ADMIN_STORAGE_KEY);
         if (!saved) return;
         try {
@@ -7861,6 +7884,7 @@ import {
       }
 
       function openVendor() {
+        if (!requireAdminAccess()) return;
         if (!currentVendor) {
           openVendorLogin();
           return;
@@ -7887,6 +7911,7 @@ import {
       }
 
       function openVendorLogin() {
+        if (!requireAdminAccess()) return;
         renderLoginStores();
         document.getElementById("vendorLoginModal").classList.add("open");
         document.getElementById("vendorLoginModal").setAttribute("aria-hidden", "false");
@@ -7903,7 +7928,7 @@ import {
         const pin = document.getElementById("loginPin").value.trim();
         const account = vendorAccounts.find((item) => item.store === store && item.pin === pin);
         if (!account) {
-          document.getElementById("loginHint").textContent = "PIN이 맞지 않습니다. 매장별 데모 PIN을 확인해 주세요.";
+          document.getElementById("loginHint").textContent = "PIN이 맞지 않습니다. 발급된 매장 PIN을 다시 확인해 주세요.";
           return;
         }
         currentVendor = account;
@@ -7939,6 +7964,7 @@ import {
       }
 
       function openManagement() {
+        if (!requireAdminAccess()) return;
         renderManagementHub();
         document.getElementById("managementModal").classList.add("open");
         document.getElementById("managementModal").setAttribute("aria-hidden", "false");
@@ -9209,6 +9235,7 @@ import {
       }
 
       function openAdminLogin() {
+        if (!requireAdminAccess()) return;
         const hint = document.getElementById("adminLoginHint");
         const deliveryMode = pendingAdminMode !== "total";
         const title = document.getElementById("adminLoginTitle");
@@ -9218,10 +9245,10 @@ import {
         if (title) title.textContent = deliveryMode ? "배송사 로그인" : "총관리자 로그인";
         if (label) label.textContent = deliveryMode ? "배송사 PIN" : "총관리자 PIN";
         if (button) button.textContent = deliveryMode ? "배송관리 열기" : "총관리자 열기";
-        if (input) input.value = deliveryMode ? "7701" : "0000";
+        if (input) input.value = "";
         if (hint) hint.textContent = deliveryMode
-          ? "데모 배송사 PIN: 지금배송 동탄센터 7701 / 지금배송 오산센터 7702"
-          : "데모 총관리자 PIN은 0000입니다.";
+          ? "배송사에 발급된 운영 PIN을 입력해 주세요."
+          : "총관리자에게 발급된 운영 PIN을 입력해 주세요.";
         document.getElementById("adminLoginModal").classList.add("open");
         document.getElementById("adminLoginModal").setAttribute("aria-hidden", "false");
       }
@@ -9265,6 +9292,7 @@ import {
       }
 
       async function openAdmin(mode = "delivery") {
+        if (!requireAdminAccess()) return;
         if (!currentAdmin) {
           pendingAdminMode = mode;
           openAdminLogin();
@@ -9325,9 +9353,9 @@ import {
           await syncOrderStatusToSupabase(lastOrder);
           await loadSupabaseOrders().catch(() => null);
           lastOrder = orderHistory.find((order) => order.id === lastOrder.id) || lastOrder;
-          setSyncStatus("데모 결제 완료 - Supabase 결제 상태 반영");
+          setSyncStatus("결제 완료 - Supabase 결제 상태 반영");
         } catch (error) {
-          setSyncStatus("데모 결제 완료 - 화면 상태 우선 반영");
+          setSyncStatus("결제 완료 - 화면 상태 우선 반영");
         }
         renderOrderSummary();
         renderTracking();
@@ -9595,6 +9623,7 @@ import {
       wishlist = readWishlistStore();
       recentViews = readRecentViewStore();
       reviews = readReviewStore();
+      applyAdminAccessVisibility();
       restoreSavedCustomer();
       restoreSavedVendor();
       restoreSavedAdmin();
