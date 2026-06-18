@@ -1171,6 +1171,44 @@
         font-weight: 850;
         line-height: 1.45;
       }
+      .admin-utility-status strong {
+        display: block;
+        color: #171717;
+      }
+      .admin-utility-status span {
+        display: block;
+        margin-top: 6px;
+        color: #5f675c;
+      }
+      .qa-scenario-status-list {
+        display: grid;
+        gap: 4px;
+        margin: 8px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+      .qa-scenario-status-list li {
+        position: relative;
+        padding-left: 16px;
+        color: #5b4637;
+        font-size: 11px;
+      }
+      .qa-scenario-status-list li::before {
+        content: "";
+        position: absolute;
+        left: 2px;
+        top: .62em;
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+        background: #b7791f;
+      }
+      .qa-scenario-status-list.success li {
+        color: #1f5f55;
+      }
+      .qa-scenario-status-list.success li::before {
+        background: #1f7d6d;
+      }
       .admin-tool-actions {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));

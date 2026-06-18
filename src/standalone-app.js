@@ -3370,6 +3370,17 @@ import {
         return sectionId + "." + itemId;
       }
 
+      function adminQaChecklistLabelByKey(key) {
+        for (const section of adminQaChecklistSections()) {
+          for (const item of section.items) {
+            if (adminQaChecklistItemKey(section.id, item.id) === key) {
+              return section.title + " - " + item.label;
+            }
+          }
+        }
+        return key;
+      }
+
       function readAdminQaChecklistStore() {
         try {
           const parsed = JSON.parse(localStorage.getItem(ADMIN_QA_CHECKLIST_KEY) || "{}");
@@ -3439,6 +3450,16 @@ import {
         keys.forEach((key) => {
           const input = document.querySelector('[data-admin-qa-key="' + key + '"]');
           if (input) input.checked = !!store.checked[key];
+          document.querySelectorAll('[data-admin-qa-item-key="' + key + '"]').forEach((button) => {
+            const checked = !!store.checked[key];
+            button.classList.toggle("done", checked);
+            const badge = button.querySelector("em");
+            if (checked && !badge) {
+              button.insertAdjacentHTML("beforeend", "<em>완료</em>");
+            } else if (!checked && badge) {
+              badge.remove();
+            }
+          });
         });
       }
 
@@ -4043,8 +4064,9 @@ import {
         const store = readAdminQaChecklistStore();
         const progress = adminQaChecklistProgress(store);
         const scenarioButton = (index, action, label, itemId = "", variant = "primary") => {
-          const done = itemId ? !!store.checked[adminQaChecklistItemKey("final-scenario", itemId)] : false;
-          return '<button class="admin-tool-action ' + variant + (done ? ' done' : '') + '" type="button" onclick="runQaScenarioAction(\'' + action + '\')"><span>' + index + '. ' + label + '</span>' + (done ? '<em>완료</em>' : '') + '</button>';
+          const itemKey = itemId ? adminQaChecklistItemKey("final-scenario", itemId) : "";
+          const done = itemKey ? !!store.checked[itemKey] : false;
+          return '<button class="admin-tool-action ' + variant + (done ? ' done' : '') + '" type="button" data-admin-qa-action="' + action + '"' + (itemKey ? ' data-admin-qa-item-key="' + itemKey + '"' : '') + ' onclick="runQaScenarioAction(\'' + action + '\')"><span>' + index + '. ' + label + '</span>' + (done ? '<em>완료</em>' : '') + '</button>';
         };
         if (title) title.textContent = "관리자 QA 체크리스트";
         body.innerHTML = `
@@ -4118,10 +4140,47 @@ import {
         setSyncStatus("최종 QA 시나리오 섹션으로 이동했습니다");
       }
 
-      function setQaScenarioActionStatus(message) {
+      function qaScenarioStatusEscape(value) {
+        return String(value || "").replace(/[&<>"']/g, (match) => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        })[match]);
+      }
+
+      function qaScenarioActionManualItems(action) {
+        if (action === "returnOrders") {
+          return ["고객/입점업체/관리자 화면에서 생성된 4건 노출 확인"];
+        }
+        if (action === "settlementFlow") {
+          return ["정산 플로우 체크리스트 항목은 자동 체크됨", "최종 QA 시나리오 버튼 완료 표시는 수동 확인"];
+        }
+        if (action === "cleanup") {
+          return ["정리 후 7번 정리 상태 점검을 실행해 0건 확인"];
+        }
+        if (action === "excelDemo") {
+          return ["엑셀 다운로드 파일 열림/금액/상태값 수동 확인"];
+        }
+        if (action === "dbCleanup") {
+          return ["권한 점검 결과 메시지가 성공인지 확인"];
+        }
+        return [];
+      }
+
+      function setQaScenarioActionStatus(message, details = {}) {
         setSyncStatus(message);
+        const checkedItems = details.checkedItems || [];
+        const manualItems = details.manualItems || [];
+        const html = `
+          <strong>${qaScenarioStatusEscape(message)}</strong>
+          ${checkedItems.length ? '<ul class="qa-scenario-status-list success">' + checkedItems.map((item) => '<li>자동 체크: ' + qaScenarioStatusEscape(item) + '</li>').join("") + '</ul>' : ""}
+          ${manualItems.length ? '<ul class="qa-scenario-status-list">' + manualItems.map((item) => '<li>확인 필요: ' + qaScenarioStatusEscape(item) + '</li>').join("") + '</ul>' : ""}
+          ${details.note ? '<span>' + qaScenarioStatusEscape(details.note) + '</span>' : ""}
+        `;
         document.querySelectorAll("[data-qa-scenario-action-status]").forEach((node) => {
-          node.textContent = message;
+          node.innerHTML = html;
         });
       }
 
@@ -4140,6 +4199,7 @@ import {
           updates[adminQaChecklistItemKey("final-scenario", "return-refund-visible")] = true;
         }
         markAdminQaChecklistItems(updates);
+        return Object.keys(updates);
       }
 
       async function runQaScenarioAction(action) {
@@ -4155,6 +4215,7 @@ import {
           dbCleanup: "DB 삭제권한 점검",
         };
         const label = labels[action] || "QA 작업";
+        const beforeStore = readAdminQaChecklistStore();
         setQaScenarioActionStatus(label + " 실행 중...");
         try {
           if (action === "deliveryOrder") await createDeliveryFlowTestOrder();
@@ -4167,9 +4228,18 @@ import {
           else if (action === "cleanupState") await checkAdminTestDataCleanupState();
           else if (action === "dbCleanup") await checkSupabaseCleanupPermission();
           else throw new Error("알 수 없는 QA 작업입니다");
-          markQaScenarioActionSuccess(action);
+          const forcedKeys = markQaScenarioActionSuccess(action);
+          const afterStore = readAdminQaChecklistStore();
+          const changedKeys = Object.keys(afterStore.checked || {}).filter((key) => (
+            afterStore.checked[key] && (!beforeStore.checked || !beforeStore.checked[key])
+          ));
+          const checkedKeys = Array.from(new Set([...forcedKeys, ...changedKeys])).filter((key) => !!afterStore.checked[key]);
           const latestStatus = document.getElementById("syncStatus")?.textContent || "";
-          setQaScenarioActionStatus(label + " 실행 완료" + (latestStatus ? " - " + latestStatus : ""));
+          setQaScenarioActionStatus(label + " 실행 완료" + (latestStatus ? " - " + latestStatus : ""), {
+            checkedItems: checkedKeys.map(adminQaChecklistLabelByKey),
+            manualItems: qaScenarioActionManualItems(action),
+            note: checkedKeys.length ? "" : "이번 실행에서 새로 자동 체크된 항목은 없습니다.",
+          });
         } catch (error) {
           setQaScenarioActionStatus(label + " 실행 오류 - " + shortSupabaseError(error));
         }
