@@ -4212,13 +4212,14 @@ import {
         const hasDeliveryProof = !!checked[adminQaChecklistItemKey("final-scenario", "delivery-proof")];
         const hasReturnVisible = !!checked[adminQaChecklistItemKey("final-scenario", "return-refund-visible")];
         const hasCleanupZero = !!checked[adminQaChecklistItemKey("final-scenario", "cleanup-zero")];
+        const hasReturnOrdersToday = testMeta.lastCheckType === "return_refund" && isTodayTestToolTime(testMeta.lastCheckAt);
         const settlementReady = ["test-order-created", "paid", "paid-tab", "logs-updated"].every((itemId) =>
           !!checked[adminQaChecklistItemKey("settlement-flow", itemId)]
         );
         if (!hasDeliveryOrder) addAction("deliveryOrder", "배송 테스트 주문 생성", "배송 QA 시작용 주문을 만듭니다");
         if (!hasDeliveryProof) addAction("deliveryFlow", "배송 플로우 자동 점검", "배정, 픽업, 도착 인증까지 자동 확인합니다");
         if (!hasReturnVisible) {
-          addAction("returnOrders", "반품/환불 테스트 4건 생성", "표시 점검용 고객/업체 주문을 준비합니다", "neutral");
+          if (!hasReturnOrdersToday) addAction("returnOrders", "반품/환불 테스트 4건 생성", "표시 점검용 고객/업체 주문을 준비합니다", "neutral");
           addAction("returnVisibility", "반품/환불 표시 점검", "고객, 업체, 관리자 화면 노출을 확인합니다");
         }
         if (!settlementReady) addAction("settlementFlow", "정산 플로우 점검", "정산 주문, 지급 상태, 로그를 확인합니다");
