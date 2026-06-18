@@ -4264,6 +4264,13 @@ import {
         );
       }
 
+      async function clearAdminTestDataFromPreRelease() {
+        await clearAdminTestData();
+        if (document.getElementById("adminOrderDetailModal").classList.contains("open")) {
+          openAdminPreReleaseCheck();
+        }
+      }
+
       function downloadAdminPreReleaseReport() {
         const text = adminPreReleaseReportText();
         if (!text) return;
@@ -4335,7 +4342,7 @@ import {
             <div class="admin-release-actions">
               <button class="neutral" type="button" onclick="openAdminQaChecklist()">QA 체크리스트</button>
               <button class="primary" type="button" onclick="openAdminFinalQaScenario()">QA 시나리오</button>
-              <button class="success" type="button" ${report.diagnostic.hasTestState ? "" : "disabled"} onclick="clearAdminTestData()">테스트 데이터 정리</button>
+              <button class="success" type="button" ${report.diagnostic.hasTestState ? "" : "disabled"} onclick="clearAdminTestDataFromPreRelease()">테스트 데이터 정리</button>
               <button class="warning" type="button" onclick="copyAdminPreReleaseReport()">점검 리포트 복사</button>
               <button class="primary" type="button" onclick="downloadAdminPreReleaseReport()">점검 리포트 다운로드</button>
             </div>
@@ -9449,6 +9456,7 @@ Object.assign(window, {
   checkAdminTestDataCleanupState,
   checkSupabaseSetup,
   checkSupabaseCleanupPermission,
+  clearAdminTestDataFromPreRelease,
   openManagement,
   closeManagement,
   openAdmin,
@@ -9548,6 +9556,7 @@ exposeHandlers({
   checkAdminTestDataCleanupState,
   checkSupabaseSetup,
   checkSupabaseCleanupPermission,
+  clearAdminTestDataFromPreRelease,
   claimDeliveryOrder,
   claimDeliveryOrderFromDetail,
   clearDeliveryForm,
