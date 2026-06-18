@@ -4071,8 +4071,10 @@ import {
           </div>
           <button type="button" onclick="runSettlementFlowAutoCheck()">정산 플로우 점검</button>
           <button type="button" onclick="openAdminQaChecklist()">QA 체크리스트</button>
+          <button type="button" onclick="runReturnRefundVisibilityCheck()">반품/환불 표시 점검</button>
           <button type="button" onclick="createSettlementExcelDemoOrders()">엑셀 테스트 6건 생성</button>
           <button class="settlement-cleanup-action" type="button" onclick="clearAdminTestData()">테스트 데이터 정리</button>
+          <div class="admin-utility-status" data-return-refund-visibility-status aria-live="polite">반품/환불 표시 점검 결과가 여기에 표시됩니다.</div>
         `;
       }
 
@@ -4754,6 +4756,71 @@ import {
         renderOrders();
         renderTracking();
         saveTestToolMeta({ lastCheckAt: new Date().toISOString(), lastCheckType: "return_refund" });
+      }
+
+      function setReturnRefundVisibilityStatus(message) {
+        setSyncStatus(message);
+        document.querySelectorAll("[data-return-refund-visibility-status]").forEach((node) => {
+          node.textContent = message;
+        });
+      }
+
+      async function runReturnRefundVisibilityCheck() {
+        setReturnRefundVisibilityStatus("반품/환불 표시 점검 중...");
+        if (!currentAdmin || currentAdmin.role !== "total") {
+          setReturnRefundVisibilityStatus("반품/환불 표시 점검은 총관리자만 가능합니다");
+          return;
+        }
+        if (!products.length) {
+          setReturnRefundVisibilityStatus("반품/환불 표시 점검에 사용할 상품이 없습니다");
+          return;
+        }
+        const demoOrders = buildReturnRefundTestOrders();
+        const testIds = demoOrders.map((order) => order.id);
+        demoOrders.forEach((order) => {
+          saveOrderStatusOverride(order, { allowStepBack: true });
+          saveOrderHistory(order);
+        });
+        lastOrder = demoOrders[0];
+        let sourceOrders = orderHistory;
+        let customerRows = demoOrders;
+        let dbSaved = false;
+        let dbError = "";
+        if (setupClientIfNeeded()) {
+          try {
+            for (const order of demoOrders) await syncOrderToSupabase(order);
+            sourceOrders = await loadAdminOrders({ includeDiagnostic: true });
+            const customerResult = await supabaseClient
+              .from("orders")
+              .select("*, order_items(*)")
+              .eq("user_id", demoOrders[0].customerId)
+              .in("order_code", testIds);
+            if (customerResult.error) throw customerResult.error;
+            customerRows = (customerResult.data || []).map(orderRowToHistory);
+            dbSaved = true;
+          } catch (error) {
+            dbError = shortSupabaseError(error);
+            sourceOrders = orderHistory;
+          }
+        }
+        const adminVisible = sourceOrders.filter((order) => testIds.includes(order.id) && isReturnRefundTestOrder(order));
+        const customerVisible = customerRows.filter((order) => testIds.includes(order.id) && (!isDiagnosticOrder(order) || isReturnRefundTestOrder(order)));
+        const vendorVisible = adminVisible.filter((order) =>
+          vendorAccounts.some((account) => (order.items || []).some((item) => item.showroom === account.store))
+        );
+        await renderAdminOrders(sourceOrders);
+        renderOrders();
+        renderTracking();
+        renderSettlementExportActions();
+        saveTestToolMeta({ lastCheckAt: new Date().toISOString(), lastCheckType: "return_refund_visibility" });
+        const ok = adminVisible.length === testIds.length && customerVisible.length === testIds.length && vendorVisible.length === testIds.length;
+        setReturnRefundVisibilityStatus(
+          "반품/환불 표시 점검 " + (ok ? "통과" : "확인 필요") +
+          " - 관리자 " + adminVisible.length + "/" + testIds.length +
+          " · 고객 " + customerVisible.length + "/" + testIds.length +
+          " · 업체 " + vendorVisible.length + "/" + testIds.length +
+          (dbSaved ? " · Supabase 반영" : " · 화면 기준" + (dbError ? " · DB 확인 필요: " + dbError : ""))
+        );
       }
 
       async function runDeliveryFlowAutoCheck() {
@@ -5799,9 +5866,11 @@ import {
           <div class="mini-actions order-detail-action">
             <button type="button" onclick="createDeliveryFlowTestOrder()">배송 테스트 주문 생성</button>
             <button type="button" onclick="createReturnRefundTestOrders()">반품/환불 테스트 4건 생성</button>
+            <button type="button" onclick="runReturnRefundVisibilityCheck()">반품/환불 표시 점검</button>
             <button type="button" onclick="runDeliveryFlowAutoCheck()">배송 플로우 자동 점검</button>
             <button type="button" data-admin-cleanup-check="true">DB 삭제권한 점검</button>
           </div>
+          <div class="admin-utility-status" data-return-refund-visibility-status aria-live="polite">반품/환불 표시 점검 결과가 여기에 표시됩니다.</div>
           <div class="admin-utility-status" id="adminCleanupCheckStatus" aria-live="polite">DB 삭제권한 점검 결과가 여기에 표시됩니다.</div>
         `;
         bindAdminTodoButtons(body);
@@ -8949,6 +9018,7 @@ Object.assign(window, {
   releaseSettlementHold,
   runSettlementConfirmAction,
   runSettlementFlowAutoCheck,
+  runReturnRefundVisibilityCheck,
   clearSettlementFlowCheckLogs,
   clearAdminTestData,
   clearExpiredDeliveryProofPhotos,
@@ -9208,6 +9278,7 @@ exposeHandlers({
   releaseSettlementHold,
   runSettlementConfirmAction,
   runSettlementFlowAutoCheck,
+  runReturnRefundVisibilityCheck,
   clearSettlementFlowCheckLogs,
   clearAdminTestData,
   setTestDataRetention,
