@@ -72,6 +72,7 @@ import {
       const TEST_DATA_RETENTION_KEY = "fitnow_test_data_retention";
       const TEST_TOOL_META_KEY = "fitnow_test_tool_meta";
       const ADMIN_QA_CHECKLIST_KEY = "fitnow_admin_qa_checklist";
+      const FIT_PROFILE_STORAGE_KEY = "fitnow_fit_profile";
       const DELIVERY_PROOF_RETENTION_DAYS = 30;
       const DELIVERY_PROOF_RETENTION_MS = DELIVERY_PROOF_RETENTION_DAYS * 24 * 60 * 60 * 1000;
       const RETURN_REFUND_WINDOW_DAYS = 14;
@@ -146,6 +147,7 @@ import {
       let wishlist = [];
       let recentViews = [];
       let reviews = [];
+      let activeFitPreviewKey = "";
       function readReviewStore() {
         try {
           const parsed = JSON.parse(localStorage.getItem(REVIEW_STORAGE_KEY) || "[]");
@@ -8730,8 +8732,11 @@ import {
           ${detailRecommendationMarkup(item)}
           <div class="detail-actions three-actions">
             <button class="wish-button ${isWishlisted(item.key) ? "active-control" : ""}" type="button" onclick="toggleWishlist('${item.key}')">${isWishlisted(item.key) ? "♥" : "♡"}</button>
-            <button class="secondary" type="button" onclick="addDetailToCart('${item.key}')">담기</button>
+            <button class="secondary" type="button" onclick="openFitRoom('${item.key}')">가상 착용</button>
             <button class="primary" type="button" onclick="reserveFromDetail('${item.key}')">바로 예약</button>
+          </div>
+          <div class="detail-actions" style="margin-top: 8px;">
+            <button class="secondary" type="button" onclick="addDetailToCart('${item.key}')">장바구니 담기</button>
           </div>
         `;
         document.getElementById("detailModal").classList.add("open");
@@ -8784,6 +8789,154 @@ import {
 
       function cartTotals() {
         return calculateCartTotals(cart);
+      }
+
+      function readFitProfile() {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(FIT_PROFILE_STORAGE_KEY) || "{}");
+          return {
+            height: Math.min(205, Math.max(130, Number(parsed.height) || 168)),
+            weight: Math.min(140, Math.max(35, Number(parsed.weight) || 58)),
+            bodyType: parsed.bodyType || "regular",
+          };
+        } catch (error) {
+          localStorage.removeItem(FIT_PROFILE_STORAGE_KEY);
+          return { height: 168, weight: 58, bodyType: "regular" };
+        }
+      }
+
+      function writeFitProfile(profile) {
+        localStorage.setItem(FIT_PROFILE_STORAGE_KEY, JSON.stringify(profile));
+      }
+
+      function fitPreviewItems() {
+        return products.filter((item) => storeIsVisible(item)).slice(0, 30);
+      }
+
+      function fitProfileMetrics(profile) {
+        const bmi = profile.weight / Math.pow(profile.height / 100, 2);
+        const shoulder = Math.min(112, Math.max(82, 88 + (profile.height - 160) * 0.16 + (bmi - 21) * 1.4));
+        const waist = Math.min(104, Math.max(72, 80 + (bmi - 21) * 2.1));
+        const leg = Math.min(116, Math.max(82, 88 + (profile.height - 160) * 0.45));
+        const label = bmi < 18.5 ? "슬림" : bmi < 23 ? "레귤러" : bmi < 27 ? "릴랙스" : "오버핏 추천";
+        return { bmi, shoulder, waist, leg, label };
+      }
+
+      function fitMatchForItem(item, profile) {
+        const metrics = fitProfileMetrics(profile);
+        const itemFit = (item.fit || "").toLowerCase();
+        let score = item.match || 82;
+        if (metrics.bmi < 19 && /slim|크롭|슬림/i.test(itemFit + item.name)) score += 5;
+        if (metrics.bmi >= 23 && /relaxed|오버|와이드|루즈|릴랙스/i.test(itemFit + item.name)) score += 6;
+        if (item.category === "신발") score = Math.min(94, score - 3);
+        if (item.category === "잡화") score = Math.min(96, score + 2);
+        return Math.min(98, Math.max(62, Math.round(score)));
+      }
+
+      function fitPreviewLayer(item) {
+        if (!item) return '<div class="fit-garment empty-fit">상품 선택</div>';
+        if (item.image) return '<div class="fit-garment has-photo"><img src="' + item.image + '" alt="' + item.name + '" /></div>';
+        const category = item.category || "상의";
+        return '<div class="fit-garment fit-' + category + '"><span>' + category + '</span></div>';
+      }
+
+      function renderFitRoom() {
+        const body = document.getElementById("fitRoomBody");
+        if (!body) return;
+        const profile = readFitProfile();
+        const items = fitPreviewItems();
+        if (!activeFitPreviewKey || !items.some((item) => item.key === activeFitPreviewKey)) {
+          activeFitPreviewKey = (cart[0] && cart[0].key) || (items[0] && items[0].key) || "";
+        }
+        const item = products.find((product) => product.key === activeFitPreviewKey) || items[0];
+        const metrics = fitProfileMetrics(profile);
+        const match = item ? fitMatchForItem(item, profile) : 0;
+        const avatarStyle = [
+          "--avatar-height:" + Math.round(190 + (profile.height - 168) * 1.4) + "px",
+          "--avatar-shoulder:" + Math.round(metrics.shoulder) + "px",
+          "--avatar-waist:" + Math.round(metrics.waist) + "px",
+          "--avatar-leg:" + Math.round(metrics.leg) + "px",
+        ].join(";");
+        body.innerHTML = `
+          <section class="fit-room-layout">
+            <div class="fit-avatar-stage">
+              <div class="fit-avatar" style="${avatarStyle}">
+                <div class="fit-head"></div>
+                <div class="fit-torso">${fitPreviewLayer(item)}</div>
+                <div class="fit-legs"></div>
+              </div>
+            </div>
+            <div class="fit-room-controls">
+              <div class="fit-profile-grid">
+                <label>키
+                  <input id="fitHeight" type="number" inputmode="numeric" min="130" max="205" value="${profile.height}" />
+                </label>
+                <label>몸무게
+                  <input id="fitWeight" type="number" inputmode="numeric" min="35" max="140" value="${profile.weight}" />
+                </label>
+              </div>
+              <label class="fit-select-label">입어볼 상품
+                <select id="fitPreviewItem" onchange="selectFitPreviewItem(this.value)">
+                  ${items.map((candidate) => '<option value="' + candidate.key + '" ' + (candidate.key === (item && item.key) ? "selected" : "") + '>' + candidate.name + ' · ' + candidate.showroom + '</option>').join("")}
+                </select>
+              </label>
+              <button class="primary" type="button" onclick="saveFitProfile()">내 체형 저장</button>
+            </div>
+          </section>
+          <section class="summary-card fit-result-card">
+            <h3>${item ? item.name : "상품 선택 대기"}</h3>
+            <div class="line-item"><span>체형 타입</span><strong>${metrics.label}</strong></div>
+            <div class="line-item"><span>가상 핏 매칭</span><strong>${match}%</strong></div>
+            <div class="line-item"><span>예상 느낌</span><strong>${item ? item.fit || "기본 핏" : "-"}</strong></div>
+            <p class="fit-note">사진 합성형 3D가 아닌 1차 체형 비율 미리보기입니다. 실제 색감과 기장은 상품 사진, 사이즈표, 리뷰와 함께 확인해 주세요.</p>
+          </section>
+          <div class="detail-actions" style="margin-top: 12px;">
+            <button class="secondary" type="button" ${item ? "" : "disabled"} onclick="addFitPreviewToCart()">이 상품 담기</button>
+            <button class="primary" type="button" ${item ? "" : "disabled"} onclick="reserveFitPreviewItem()">이 상품 예약</button>
+          </div>
+        `;
+      }
+
+      function openFitRoom(key = "") {
+        if (key) activeFitPreviewKey = key;
+        const detailModal = document.getElementById("detailModal");
+        if (detailModal && detailModal.classList.contains("open")) closeDetail();
+        renderFitRoom();
+        document.getElementById("fitRoomModal").classList.add("open");
+        document.getElementById("fitRoomModal").setAttribute("aria-hidden", "false");
+      }
+
+      function closeFitRoom() {
+        document.getElementById("fitRoomModal").classList.remove("open");
+        document.getElementById("fitRoomModal").setAttribute("aria-hidden", "true");
+      }
+
+      function saveFitProfile() {
+        const profile = {
+          height: Number(document.getElementById("fitHeight")?.value) || 168,
+          weight: Number(document.getElementById("fitWeight")?.value) || 58,
+          bodyType: "regular",
+        };
+        writeFitProfile(profile);
+        renderFitRoom();
+      }
+
+      function selectFitPreviewItem(key) {
+        activeFitPreviewKey = key;
+        renderFitRoom();
+      }
+
+      function addFitPreviewToCart() {
+        if (!activeFitPreviewKey) return;
+        addItemByKey(activeFitPreviewKey);
+        renderCart();
+      }
+
+      function reserveFitPreviewItem() {
+        if (!activeFitPreviewKey) return;
+        addItemByKey(activeFitPreviewKey);
+        closeFitRoom();
+        checkout();
       }
 
       function renderCartDetail() {
@@ -9712,6 +9865,7 @@ exposeHandlers({
   addDeliveryLog,
   addDetailToCart,
   addItemByKey,
+  addFitPreviewToCart,
   addLookToCart,
   addSet,
   addToCart,
@@ -9767,6 +9921,7 @@ exposeHandlers({
   closeCartDetail,
   closeCustomerLogin,
   closeDetail,
+  closeFitRoom,
   closeLooks,
   closeManagement,
   closeModal,
@@ -9889,6 +10044,7 @@ exposeHandlers({
   openCartDetail,
   openCustomerLogin,
   openDetail,
+  openFitRoom,
   openLooks,
   openManagement,
   openMyPage,
@@ -10024,6 +10180,7 @@ exposeHandlers({
   renderVendorSizeStockInputs,
   renderVendorStores,
   reserveFromDetail,
+  reserveFitPreviewItem,
   reserveOrderStock,
   runDeliveryFlowAutoCheck,
   runOrderPersistenceCheck,
@@ -10047,6 +10204,7 @@ exposeHandlers({
   saveCurrentAdmin,
   saveCurrentCustomer,
   saveCurrentVendor,
+  saveFitProfile,
   saveOrderHistory,
   saveOrderStatusOverride,
   saveRecentViewStore,
@@ -10057,6 +10215,7 @@ exposeHandlers({
   saveWishlistStore,
   selectAddressSuggestion,
   selectDetailSize,
+  selectFitPreviewItem,
   selectedLookSize,
   selectedValue,
   selectOrder,

@@ -12,7 +12,7 @@
         <header class="top-bar">
           <button class="icon-button" type="button" onclick="openMyPage()" aria-label="마이페이지 열기" title="마이페이지">MY</button>
           <button class="brand" type="button" onclick="goHome()" aria-label="홈으로 이동">FITNOW<small>오산, 동탄 지금배송</small></button>
-          <button class="icon-button" type="button" onclick="openCartDetail()" aria-label="장바구니 열기" title="장바구니">BAG</button>
+          <button class="icon-button" type="button" onclick="openFitRoom()" aria-label="가상 착용실 열기" title="가상 착용실">FIT</button>
         </header>
 
         <p class="status admin-only" id="syncStatus">FITNOW_STANDALONE_OK - Supabase 연결 준비 중</p>
@@ -147,6 +147,19 @@
           <button class="close" type="button" onclick="closeCartDetail()">X</button>
         </div>
         <div id="cartDetailBody"></div>
+      </div>
+    </section>
+
+    <section class="modal" id="fitRoomModal" aria-hidden="true">
+      <div class="receipt">
+        <div class="receipt-head">
+          <div>
+            <p class="eyebrow">BODY FIT</p>
+            <h2>가상 착용실</h2>
+          </div>
+          <button class="close" type="button" onclick="closeFitRoom()">X</button>
+        </div>
+        <div id="fitRoomBody"></div>
       </div>
     </section>
 
