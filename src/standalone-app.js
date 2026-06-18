@@ -73,6 +73,7 @@ import {
       const TEST_TOOL_META_KEY = "fitnow_test_tool_meta";
       const ADMIN_QA_CHECKLIST_KEY = "fitnow_admin_qa_checklist";
       const FIT_PROFILE_STORAGE_KEY = "fitnow_fit_profile";
+      const AVATAR_LOOK_SHARE_PARAM = "avatarLook";
       const DELIVERY_PROOF_RETENTION_DAYS = 30;
       const DELIVERY_PROOF_RETENTION_MS = DELIVERY_PROOF_RETENTION_DAYS * 24 * 60 * 60 * 1000;
       const RETURN_REFUND_WINDOW_DAYS = 14;
@@ -148,6 +149,7 @@ import {
       let recentViews = [];
       let reviews = [];
       let activeFitPreviewKey = "";
+      let activeAvatarLookSnapshot = null;
       function readReviewStore() {
         try {
           const parsed = JSON.parse(localStorage.getItem(REVIEW_STORAGE_KEY) || "[]");
@@ -3641,7 +3643,10 @@ import {
       }
 
       function showCopyFallbackText(text, label = "리포트") {
-        const body = document.getElementById("adminOrderDetailBody");
+        const avatarLookModal = document.getElementById("avatarLookModal");
+        const body = avatarLookModal && avatarLookModal.classList.contains("open")
+          ? document.getElementById("avatarLookBody")
+          : document.getElementById("adminOrderDetailBody");
         if (!body) return false;
         const existing = body.querySelector("[data-copy-fallback-text]");
         if (existing) existing.remove();
@@ -8970,8 +8975,8 @@ import {
       function fitPreviewLayers(items = []) {
         if (!items.length) return '<div class="fit-garment empty-fit">상품 선택</div>';
         return items.map((item, index) => {
-          const category = item.category || "상의";
-          const name = item.name || category;
+          const category = qaScenarioStatusEscape(item.category || "상의");
+          const name = qaScenarioStatusEscape(item.name || category);
           const photoClass = item.image ? " has-photo" : "";
           const image = item.image ? '<img src="' + item.image + '" alt="' + name + '" />' : '<span>' + category + '</span>';
           return '<div class="fit-garment fit-layer-' + index + ' fit-' + category + photoClass + '" title="' + name + '">' + image + '</div>';
@@ -8982,10 +8987,193 @@ import {
         if (!items.length) return '<div class="line-item"><span>착용 아이템</span><strong>장바구니에 상품을 담아보세요</strong></div>';
         return items.map((item) => `
           <div class="line-item">
-            <span>${item.name}</span>
-            <strong>${item.showroom}</strong>
+            <span>${qaScenarioStatusEscape(item.name)}</span>
+            <strong>${qaScenarioStatusEscape(item.showroom)}</strong>
           </div>
         `).join("");
+      }
+
+      function encodeAvatarLookPayload(payload) {
+        try {
+          const json = JSON.stringify(payload);
+          return btoa(unescape(encodeURIComponent(json))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+        } catch (error) {
+          return "";
+        }
+      }
+
+      function decodeAvatarLookPayload(value) {
+        if (!value) return null;
+        try {
+          const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+          const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
+          return JSON.parse(decodeURIComponent(escape(atob(padded))));
+        } catch (error) {
+          return null;
+        }
+      }
+
+      function sharedAvatarLookFromUrl() {
+        return decodeAvatarLookPayload(new URLSearchParams(window.location.search).get(AVATAR_LOOK_SHARE_PARAM));
+      }
+
+      function avatarLookSnapshot(fallbackItem) {
+        const profile = readFitProfile();
+        const items = activeAvatarItems(fallbackItem).slice(0, 4);
+        return {
+          version: 1,
+          name: currentCustomer.name || "게스트",
+          profile,
+          itemKeys: items.map((item) => item.key).filter(Boolean),
+          createdAt: new Date().toISOString(),
+        };
+      }
+
+      function currentAvatarLookSnapshot() {
+        if (activeAvatarLookSnapshot) return activeAvatarLookSnapshot;
+        const fallbackItem = products.find((product) => product.key === activeFitPreviewKey) || fitPreviewItems()[0];
+        return avatarLookSnapshot(fallbackItem);
+      }
+
+      function avatarLookItemsFromSnapshot(snapshot, fallbackItem) {
+        const keys = Array.isArray(snapshot?.itemKeys) ? snapshot.itemKeys : [];
+        const items = keys
+          .map((key) => products.find((product) => product.key === key))
+          .filter(Boolean);
+        return items.length ? items : activeAvatarItems(fallbackItem);
+      }
+
+      function avatarLookShareUrl(snapshot = avatarLookSnapshot()) {
+        const url = new URL(window.location.href);
+        url.search = "";
+        url.searchParams.set(AVATAR_LOOK_SHARE_PARAM, encodeAvatarLookPayload(snapshot));
+        return url.toString();
+      }
+
+      function avatarLookShareText(snapshot = avatarLookSnapshot()) {
+        const fallbackItem = products.find((product) => product.key === activeFitPreviewKey) || fitPreviewItems()[0];
+        const items = avatarLookItemsFromSnapshot(snapshot, fallbackItem);
+        const stores = avatarLookStores(items);
+        const total = items.reduce((sum, item) => sum + itemSalePrice(item), 0);
+        return [
+          "FITNOW 마이아바타룩",
+          (snapshot.name || "게스트") + "의 지금배송 룩",
+          "착용 아이템: " + (items.map((item) => item.name).join(", ") || "선택 없음"),
+          "입점업체: " + (stores.join(", ") || "-"),
+          "예상 금액: " + formatKRW(total),
+          avatarLookShareUrl(snapshot),
+        ].join("\n");
+      }
+
+      async function copyAvatarLookShareLink() {
+        const snapshot = currentAvatarLookSnapshot();
+        await copyTextWithFallback(
+          avatarLookShareUrl(snapshot),
+          "마이아바타룩 공유 링크 복사 완료",
+          "마이아바타룩 링크 복사 실패 - 브라우저 권한을 확인하세요",
+          "마이아바타룩 공유 링크"
+        );
+      }
+
+      async function copyAvatarLookShareText() {
+        const snapshot = currentAvatarLookSnapshot();
+        await copyTextWithFallback(
+          avatarLookShareText(snapshot),
+          "마이아바타룩 공유 문구 복사 완료",
+          "마이아바타룩 공유 문구 복사 실패 - 브라우저 권한을 확인하세요",
+          "마이아바타룩 공유 문구"
+        );
+      }
+
+      function wrapCanvasText(context, text, x, y, maxWidth, lineHeight, maxLines = 4) {
+        const words = String(text || "").split(/\s+/);
+        const lines = [];
+        let line = "";
+        words.forEach((word) => {
+          const next = line ? line + " " + word : word;
+          if (context.measureText(next).width > maxWidth && line) {
+            lines.push(line);
+            line = word;
+          } else {
+            line = next;
+          }
+        });
+        if (line) lines.push(line);
+        lines.slice(0, maxLines).forEach((row, index) => context.fillText(row, x, y + index * lineHeight));
+        return y + Math.min(lines.length, maxLines) * lineHeight;
+      }
+
+      function downloadAvatarLookImage() {
+        const fallbackItem = products.find((product) => product.key === activeFitPreviewKey) || fitPreviewItems()[0];
+        const snapshot = currentAvatarLookSnapshot();
+        const profile = snapshot.profile || readFitProfile();
+        const metrics = fitProfileMetrics(profile);
+        const items = avatarLookItemsFromSnapshot(snapshot, fallbackItem);
+        const stores = avatarLookStores(items);
+        const total = items.reduce((sum, item) => sum + itemSalePrice(item), 0);
+        const canvas = document.createElement("canvas");
+        canvas.width = 1080;
+        canvas.height = 1350;
+        const context = canvas.getContext("2d");
+        context.fillStyle = "#171717";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.fillStyle = "#f7f0df";
+        context.fillRect(60, 60, 960, 1230);
+        context.fillStyle = "#171717";
+        context.font = "900 42px sans-serif";
+        context.fillText("FITNOW AVATAR LOOK", 100, 145);
+        context.font = "900 72px sans-serif";
+        wrapCanvasText(context, (snapshot.name || "게스트") + "의 지금배송 룩", 100, 245, 660, 82, 2);
+        context.font = "800 34px sans-serif";
+        context.fillStyle = "#5f5a50";
+        context.fillText(metrics.label + " 체형 · " + items.length + "개 아이템 · " + formatKRW(total), 100, 410);
+        context.fillStyle = "#ffffff";
+        context.fillRect(100, 470, 360, 500);
+        context.fillStyle = "#202020";
+        context.beginPath();
+        context.arc(280, 570, 58, 0, Math.PI * 2);
+        context.fill();
+        context.fillRect(210, 635, 140, 220);
+        context.fillRect(230, 845, 42, 95);
+        context.fillRect(288, 845, 42, 95);
+        const colors = ["#d8f36a", "#f26d5b", "#4f7cff", "#171717"];
+        items.slice(0, 4).forEach((item, index) => {
+          context.fillStyle = colors[index % colors.length];
+          context.globalAlpha = 0.9;
+          const y = 660 + index * 54;
+          context.fillRect(180 + index * 18, y, 200 - index * 18, 42);
+          context.globalAlpha = 1;
+        });
+        context.fillStyle = "#171717";
+        context.font = "900 42px sans-serif";
+        context.fillText("착용 아이템", 520, 510);
+        context.font = "800 34px sans-serif";
+        let y = 580;
+        items.slice(0, 5).forEach((item) => {
+          context.fillStyle = "#171717";
+          y = wrapCanvasText(context, item.name, 520, y, 430, 42, 2) + 4;
+          context.fillStyle = "#6d675d";
+          context.font = "800 28px sans-serif";
+          context.fillText(item.showroom || "입점업체", 520, y);
+          y += 58;
+          context.font = "800 34px sans-serif";
+        });
+        context.fillStyle = "#171717";
+        context.font = "900 34px sans-serif";
+        context.fillText("노출 입점업체", 100, 1060);
+        context.font = "800 32px sans-serif";
+        context.fillStyle = "#5f5a50";
+        wrapCanvasText(context, stores.join(" · ") || "-", 100, 1110, 860, 40, 3);
+        context.fillStyle = "#171717";
+        context.font = "900 28px sans-serif";
+        context.fillText("fitnow · 지금배송 룩 공유", 100, 1230);
+        const link = document.createElement("a");
+        link.href = canvas.toDataURL("image/png");
+        link.download = "fitnow-avatar-look-" + new Date().toISOString().slice(0, 10) + ".png";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setSyncStatus("마이아바타룩 이미지 저장 완료");
       }
 
       function renderFitRoom() {
@@ -9112,13 +9300,14 @@ import {
         checkout();
       }
 
-      function avatarLookCardMarkup() {
-        const profile = readFitProfile();
+      function avatarLookCardMarkup(snapshot = null) {
+        const profile = snapshot?.profile || readFitProfile();
         const fallbackItem = products.find((product) => product.key === activeFitPreviewKey) || fitPreviewItems()[0];
-        const items = activeAvatarItems(fallbackItem);
+        const items = avatarLookItemsFromSnapshot(snapshot, fallbackItem);
         const metrics = fitProfileMetrics(profile);
         const stores = avatarLookStores(items);
         const total = items.reduce((sum, item) => sum + itemSalePrice(item), 0);
+        const ownerName = qaScenarioStatusEscape(snapshot?.name || currentCustomer.name || "나");
         return `
           <section class="avatar-look-card">
             <div class="avatar-look-stage">
@@ -9130,16 +9319,21 @@ import {
             </div>
             <div class="avatar-look-info">
               <p class="eyebrow">FITNOW AVATAR LOOK</p>
-              <h3>${currentCustomer.name || "나"}의 지금배송 룩</h3>
+              <h3>${ownerName}의 지금배송 룩</h3>
               <span>${metrics.label} 체형 · ${items.length}개 아이템 · ${formatKRW(total)}</span>
             </div>
           </section>
           <section class="summary-card fit-result-card">
             <h3>착용 아이템과 입점업체</h3>
             ${avatarLookListMarkup(items)}
-            <div class="line-item"><span>노출 입점업체</span><strong>${stores.join(" · ") || "-"}</strong></div>
-            <p class="fit-note">공유 카드에는 착용 아이템, 입점업체, 구매 진입 버튼이 함께 노출됩니다. 다음 단계에서 실제 공유 링크와 무료 이용 횟수를 연결할 수 있습니다.</p>
+            <div class="line-item"><span>노출 입점업체</span><strong>${qaScenarioStatusEscape(stores.join(" · ") || "-")}</strong></div>
+            <p class="fit-note">공유 링크와 이미지에는 착용 아이템, 입점업체, 구매 진입 정보가 함께 노출됩니다. 다음 단계에서 무료 이용 횟수와 월정액 결제를 연결할 수 있습니다.</p>
           </section>
+          <div class="avatar-share-actions" style="margin-top: 12px;">
+            <button class="secondary" type="button" ${items.length ? "" : "disabled"} onclick="copyAvatarLookShareLink()">링크 복사</button>
+            <button class="secondary" type="button" ${items.length ? "" : "disabled"} onclick="copyAvatarLookShareText()">문구 복사</button>
+            <button class="secondary" type="button" ${items.length ? "" : "disabled"} onclick="downloadAvatarLookImage()">이미지 저장</button>
+          </div>
           <div class="detail-actions" style="margin-top: 12px;">
             <button class="secondary" type="button" onclick="openMyAvatar()">아바타 수정</button>
             <button class="primary" type="button" ${items.length ? "" : "disabled"} onclick="checkoutAvatarLook()">이 룩 구매</button>
@@ -9147,10 +9341,12 @@ import {
         `;
       }
 
-      function openMyAvatarLook() {
+      function openMyAvatarLook(snapshot = null) {
         const fitRoomModal = document.getElementById("fitRoomModal");
         if (fitRoomModal && fitRoomModal.classList.contains("open")) closeFitRoom();
-        document.getElementById("avatarLookBody").innerHTML = avatarLookCardMarkup();
+        const fallbackItem = products.find((product) => product.key === activeFitPreviewKey) || fitPreviewItems()[0];
+        activeAvatarLookSnapshot = snapshot || avatarLookSnapshot(fallbackItem);
+        document.getElementById("avatarLookBody").innerHTML = avatarLookCardMarkup(activeAvatarLookSnapshot);
         document.getElementById("avatarLookModal").classList.add("open");
         document.getElementById("avatarLookModal").setAttribute("aria-hidden", "false");
       }
@@ -9158,6 +9354,14 @@ import {
       function closeMyAvatarLook() {
         document.getElementById("avatarLookModal").classList.remove("open");
         document.getElementById("avatarLookModal").setAttribute("aria-hidden", "true");
+        activeAvatarLookSnapshot = null;
+      }
+
+      function openSharedAvatarLookFromUrl() {
+        const snapshot = sharedAvatarLookFromUrl();
+        if (!snapshot || !Array.isArray(snapshot.itemKeys) || !snapshot.itemKeys.length) return;
+        openMyAvatarLook(snapshot);
+        setSyncStatus("공유받은 마이아바타룩을 열었습니다");
       }
 
       function renderCartDetail() {
@@ -10018,6 +10222,7 @@ import {
       setupAdminSettlementViewHandlers();
       renderProducts();
       renderCart();
+      openSharedAvatarLookFromUrl();
       initSupabase().then(() => {
         renderProducts();
         renderCart();
@@ -10055,7 +10260,10 @@ Object.assign(window, {
   startNewAdminQaChecklist,
   copyAdminQaChecklistReport,
   copyAdminPreReleaseReport,
+  copyAvatarLookShareLink,
+  copyAvatarLookShareText,
   downloadAdminQaChecklistCsv,
+  downloadAvatarLookImage,
   downloadAdminPreReleaseReport,
   runPreReleaseQaAction,
   approveReturnRefundFromDetail,
@@ -10132,6 +10340,8 @@ exposeHandlers({
   checkAdminTestDataCleanupState,
   checkSupabaseSetup,
   checkSupabaseCleanupPermission,
+  copyAvatarLookShareLink,
+  copyAvatarLookShareText,
   clearAdminTestDataFromPreRelease,
   claimDeliveryOrder,
   claimDeliveryOrderFromDetail,
@@ -10196,6 +10406,7 @@ exposeHandlers({
   deliveryWarningForOrder,
   deliveryWarningOrders,
   detailRecommendationMarkup,
+  downloadAvatarLookImage,
   detailRecommendations,
   detailSelectedSize,
   discountedPrice,

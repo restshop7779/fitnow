@@ -3132,6 +3132,19 @@
       .fit-layer-1 { inset: 38px 10px 12px; opacity: .92; }
       .fit-layer-2 { inset: 18px auto auto 58%; width: 48px; height: 48px; border-radius: 50%; }
       .fit-layer-3 { inset: auto 18px 6px 18px; height: 24px; border-radius: 999px; }
+      .avatar-share-actions {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .avatar-share-actions button {
+        min-height: 42px;
+        padding: 10px 8px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 950;
+        line-height: 1.25;
+      }
       .detail-actions {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -3139,6 +3152,9 @@
         margin-top: 14px;
       }
       .detail-actions.three-actions { grid-template-columns: .72fr 1fr 1fr; }
+      @media (max-width: 380px) {
+        .avatar-share-actions { grid-template-columns: 1fr; }
+      }
       .size-chip-list {
         display: flex;
         flex-wrap: wrap;
