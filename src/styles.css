@@ -910,6 +910,42 @@
         border-radius: 8px;
         white-space: nowrap;
       }
+      .vendor-order-action-panel {
+        display: grid;
+        gap: 7px;
+      }
+      .vendor-order-detail-button {
+        min-height: 38px;
+        width: 100%;
+        border-radius: 8px;
+        background: #171717;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 950;
+      }
+      .vendor-order-quick-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+      }
+      .vendor-order-quick-actions button {
+        min-width: 0;
+        min-height: 34px;
+        padding: 0 8px;
+        border-radius: 8px;
+        background: #eee8de;
+        color: #171717;
+        font-size: 11px;
+        font-weight: 950;
+        white-space: nowrap;
+      }
+      .vendor-order-refund-actions {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .vendor-order-refund-actions button {
+        min-height: 34px;
+        font-size: 11px;
+      }
       .admin-order-row {
         grid-template-columns: 1fr;
         align-items: stretch;

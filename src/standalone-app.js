@@ -2158,6 +2158,18 @@ import {
         list.innerHTML = visibleOrders.length ? visibleOrders.map((order) => {
           const vendorItems = order.items.filter((item) => item.showroom === currentVendor.store);
           const vendorTotal = vendorItems.reduce((sum, item) => sum + itemSalePrice(item) * item.quantity, 0);
+          const cancelled = isOrderCancelled(order);
+          const paidAndActive = order.paid && !cancelled;
+          const returnRefundActive = order.cancelReasonCode === "return_refund";
+          const quickOrderActions = !returnRefundActive && !cancelled ? `
+            <button type="button" ${paidAndActive ? "" : "disabled"} onclick="vendorAdvanceOrder('${order.id}', 1)">${!order.paid ? "결제 대기" : (order.progressStep || 0) >= 1 ? "재고 확인됨" : "재고 확인"}</button>
+            <button type="button" ${paidAndActive ? "" : "disabled"} onclick="vendorAdvanceOrder('${order.id}', 2)">${!order.paid ? "결제 대기" : (order.progressStep || 0) >= 2 ? "픽업 준비됨" : "픽업 준비"}</button>
+          ` : "";
+          const quickRefundActions = returnRefundActive ? `
+            <button class="refund-approve" type="button" ${canVendorManageRefund(order) && canReviewReturnRefund(order) ? "" : "disabled"} onclick="approveVendorReturnRefundFromDetail('${order.id}')">승인</button>
+            <button class="refund-reject" type="button" ${canVendorManageRefund(order) && canReviewReturnRefund(order) ? "" : "disabled"} onclick="rejectVendorReturnRefundFromDetail('${order.id}')">거절</button>
+            <button class="refund-complete" type="button" ${canVendorManageRefund(order) && canCompleteRefund(order) ? "" : "disabled"} onclick="completeVendorRefundFromDetail('${order.id}')">${canCompleteRefund(order) ? "환불 완료" : paymentLabelForOrder(order)}</button>
+          ` : "";
           return `
             <div class="vendor-product-row vendor-order-row">
               <div>
@@ -2167,8 +2179,10 @@ import {
                 ${order.cancelReasonCode === "return_refund" ? '<span>반품/환불: ' + customerRefundStatusLabel(order) + '</span>' : ""}
                 ${order.cancelReasonCode === "return_refund" && isOpenRefundStatus(order) ? '<span>처리 기한: ' + returnRefundProcessInfo(order).label + '</span>' : ""}
               </div>
-              <div class="mini-actions order-detail-action">
-                <button type="button" onclick="openVendorOrderDetail('${order.id}')">상세보기</button>
+              <div class="vendor-order-action-panel">
+                <button class="vendor-order-detail-button" type="button" onclick="openVendorOrderDetail('${order.id}')">상세 확인</button>
+                ${quickOrderActions ? '<div class="vendor-order-quick-actions">' + quickOrderActions + '</div>' : ""}
+                ${quickRefundActions ? '<div class="refund-action-buttons vendor-order-refund-actions">' + quickRefundActions + '</div>' : ""}
               </div>
             </div>
           `;
