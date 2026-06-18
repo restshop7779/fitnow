@@ -150,6 +150,7 @@ import {
       let reviews = [];
       let activeFitPreviewKey = "";
       let activeAvatarLookSnapshot = null;
+      let lastFitRoomAvatarSnapshot = null;
       function readReviewStore() {
         try {
           const parsed = JSON.parse(localStorage.getItem(REVIEW_STORAGE_KEY) || "[]");
@@ -9020,11 +9021,15 @@ import {
       function avatarLookSnapshot(fallbackItem) {
         const profile = readFitProfile();
         const items = activeAvatarItems(fallbackItem).slice(0, 4);
+        return avatarLookSnapshotFromItems(items, profile);
+      }
+
+      function avatarLookSnapshotFromItems(items = [], profile = readFitProfile()) {
         return {
           version: 1,
           name: currentCustomer.name || "게스트",
           profile,
-          itemKeys: items.map((item) => item.key).filter(Boolean),
+          itemKeys: items.slice(0, 4).map((item) => item.key).filter(Boolean),
           createdAt: new Date().toISOString(),
         };
       }
@@ -9115,10 +9120,32 @@ import {
         canvas.width = 1080;
         canvas.height = 1350;
         const context = canvas.getContext("2d");
-        context.fillStyle = "#171717";
+        const drawRoundRect = (x, y, width, height, radius) => {
+          context.beginPath();
+          context.moveTo(x + radius, y);
+          context.lineTo(x + width - radius, y);
+          context.quadraticCurveTo(x + width, y, x + width, y + radius);
+          context.lineTo(x + width, y + height - radius);
+          context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+          context.lineTo(x + radius, y + height);
+          context.quadraticCurveTo(x, y + height, x, y + height - radius);
+          context.lineTo(x, y + radius);
+          context.quadraticCurveTo(x, y, x + radius, y);
+          context.closePath();
+        };
+        const bg = context.createLinearGradient(0, 0, canvas.width, canvas.height);
+        bg.addColorStop(0, "#111111");
+        bg.addColorStop(.52, "#2a261f");
+        bg.addColorStop(1, "#0d0d0d");
+        context.fillStyle = bg;
         context.fillRect(0, 0, canvas.width, canvas.height);
+        context.fillStyle = "rgba(216,243,106,.16)";
+        context.beginPath();
+        context.arc(230, 220, 210, 0, Math.PI * 2);
+        context.fill();
         context.fillStyle = "#f7f0df";
-        context.fillRect(60, 60, 960, 1230);
+        drawRoundRect(60, 60, 960, 1230, 42);
+        context.fill();
         context.fillStyle = "#171717";
         context.font = "900 42px sans-serif";
         context.fillText("FITNOW AVATAR LOOK", 100, 145);
@@ -9127,21 +9154,56 @@ import {
         context.font = "800 34px sans-serif";
         context.fillStyle = "#5f5a50";
         context.fillText(metrics.label + " 체형 · " + items.length + "개 아이템 · " + formatKRW(total), 100, 410);
-        context.fillStyle = "#ffffff";
-        context.fillRect(100, 470, 360, 500);
-        context.fillStyle = "#202020";
-        context.beginPath();
-        context.arc(280, 570, 58, 0, Math.PI * 2);
+        const stageGradient = context.createLinearGradient(100, 470, 460, 990);
+        stageGradient.addColorStop(0, "#ffffff");
+        stageGradient.addColorStop(1, "#e8e1d4");
+        context.fillStyle = stageGradient;
+        drawRoundRect(100, 470, 360, 520, 34);
         context.fill();
-        context.fillRect(210, 635, 140, 220);
-        context.fillRect(230, 845, 42, 95);
-        context.fillRect(288, 845, 42, 95);
-        const colors = ["#d8f36a", "#f26d5b", "#4f7cff", "#171717"];
+        context.fillStyle = "rgba(23,23,23,.12)";
+        context.beginPath();
+        context.ellipse(280, 956, 130, 26, 0, 0, Math.PI * 2);
+        context.fill();
+        context.fillStyle = "#191614";
+        context.beginPath();
+        context.ellipse(280, 545, 58, 64, 0, 0, Math.PI * 2);
+        context.fill();
+        const skinGradient = context.createLinearGradient(0, 520, 0, 850);
+        skinGradient.addColorStop(0, "#e4ba92");
+        skinGradient.addColorStop(1, "#c98f68");
+        context.fillStyle = skinGradient;
+        context.beginPath();
+        context.ellipse(280, 575, 48, 56, 0, 0, Math.PI * 2);
+        context.fill();
+        context.fillStyle = "#171717";
+        context.beginPath();
+        context.arc(262, 572, 4, 0, Math.PI * 2);
+        context.arc(298, 572, 4, 0, Math.PI * 2);
+        context.fill();
+        context.fillStyle = skinGradient;
+        drawRoundRect(206, 646, 148, 218, 44);
+        context.fill();
+        context.fillStyle = "#252525";
+        drawRoundRect(214, 830, 54, 118, 18);
+        context.fill();
+        drawRoundRect(292, 830, 54, 118, 18);
+        context.fill();
+        const colors = ["#2b63ff", "#c4a873", "#d9477f", "#171717"];
         items.slice(0, 4).forEach((item, index) => {
-          context.fillStyle = colors[index % colors.length];
+          const garmentGradient = context.createLinearGradient(170, 650 + index * 38, 380, 760 + index * 38);
+          garmentGradient.addColorStop(0, colors[index % colors.length]);
+          garmentGradient.addColorStop(1, "#14171d");
+          context.fillStyle = garmentGradient;
           context.globalAlpha = 0.9;
-          const y = 660 + index * 54;
-          context.fillRect(180 + index * 18, y, 200 - index * 18, 42);
+          const y = 670 + index * 42;
+          drawRoundRect(176 + index * 15, y, 208 - index * 16, 58, 22);
+          context.fill();
+          context.strokeStyle = "rgba(255,255,255,.28)";
+          context.lineWidth = 2;
+          context.beginPath();
+          context.moveTo(280, y + 6);
+          context.lineTo(280, y + 52);
+          context.stroke();
           context.globalAlpha = 1;
         });
         context.fillStyle = "#171717";
@@ -9186,6 +9248,7 @@ import {
         }
         const item = products.find((product) => product.key === activeFitPreviewKey) || items[0];
         const avatarItems = activeAvatarItems(item);
+        lastFitRoomAvatarSnapshot = avatarLookSnapshotFromItems(avatarItems, profile);
         const mainItem = avatarItems[0] || item;
         const metrics = fitProfileMetrics(profile);
         const match = avatarItems.length
@@ -9343,9 +9406,10 @@ import {
 
       function openMyAvatarLook(snapshot = null) {
         const fitRoomModal = document.getElementById("fitRoomModal");
+        const fitRoomWasOpen = fitRoomModal && fitRoomModal.classList.contains("open");
         if (fitRoomModal && fitRoomModal.classList.contains("open")) closeFitRoom();
         const fallbackItem = products.find((product) => product.key === activeFitPreviewKey) || fitPreviewItems()[0];
-        activeAvatarLookSnapshot = snapshot || avatarLookSnapshot(fallbackItem);
+        activeAvatarLookSnapshot = snapshot || (fitRoomWasOpen ? lastFitRoomAvatarSnapshot : null) || avatarLookSnapshot(fallbackItem);
         document.getElementById("avatarLookBody").innerHTML = avatarLookCardMarkup(activeAvatarLookSnapshot);
         document.getElementById("avatarLookModal").classList.add("open");
         document.getElementById("avatarLookModal").setAttribute("aria-hidden", "false");
