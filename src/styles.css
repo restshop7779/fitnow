@@ -2367,6 +2367,23 @@
       .admin-pre-release-check.ready .admin-pre-release-hero em {
         background: #1f7d6d;
       }
+      .admin-pre-release-action-groups {
+        display: grid;
+        gap: 9px;
+      }
+      .admin-pre-release-action-groups > div {
+        min-width: 0;
+        padding: 10px;
+        border: 1px solid rgba(23, 23, 23, .12);
+        border-radius: 8px;
+        background: #fff;
+      }
+      .admin-pre-release-action-groups > div > strong {
+        display: block;
+        color: #171717;
+        font-size: 12px;
+        font-weight: 950;
+      }
       .admin-pre-release-grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));

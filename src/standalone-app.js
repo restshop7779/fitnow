@@ -4339,12 +4339,22 @@ import {
                 </div>
               ` : '<p>현재 바로 실행할 추천 점검이 없습니다.</p>'}
             </div>
-            <div class="admin-release-actions">
-              <button class="neutral" type="button" onclick="openAdminQaChecklist()">QA 체크리스트</button>
-              <button class="primary" type="button" onclick="openAdminFinalQaScenario()">QA 시나리오</button>
-              <button class="success" type="button" ${report.diagnostic.hasTestState ? "" : "disabled"} onclick="clearAdminTestDataFromPreRelease()">테스트 데이터 정리</button>
-              <button class="warning" type="button" onclick="copyAdminPreReleaseReport()">점검 리포트 복사</button>
-              <button class="primary" type="button" onclick="downloadAdminPreReleaseReport()">점검 리포트 다운로드</button>
+            <div class="admin-pre-release-action-groups">
+              <div>
+                <strong>점검 실행</strong>
+                <div class="admin-release-actions">
+                  <button class="neutral" type="button" onclick="openAdminQaChecklist()">QA 체크리스트</button>
+                  <button class="primary" type="button" onclick="openAdminFinalQaScenario()">QA 시나리오</button>
+                  <button class="success" type="button" ${report.diagnostic.hasTestState ? "" : "disabled"} onclick="clearAdminTestDataFromPreRelease()">테스트 데이터 정리</button>
+                </div>
+              </div>
+              <div>
+                <strong>리포트 보관</strong>
+                <div class="admin-release-actions">
+                  <button class="warning" type="button" onclick="copyAdminPreReleaseReport()">점검 리포트 복사</button>
+                  <button class="primary" type="button" onclick="downloadAdminPreReleaseReport()">점검 리포트 다운로드</button>
+                </div>
+              </div>
             </div>
           </div>
         `;
