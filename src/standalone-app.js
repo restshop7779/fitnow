@@ -2075,7 +2075,7 @@ import {
         ];
         node.innerHTML = filters.map((filter) => {
           const count = orders.filter((order) => vendorOrderFilterMatches(order, filter.key)).length;
-          return '<button class="chip ' + (vendorOrderFilter === filter.key ? 'active-control' : '') + '" type="button" onclick="setVendorOrderFilter(\'' + filter.key + '\')">' + filter.label + ' ' + count + '</button>';
+          return '<button class="vendor-order-filter ' + (vendorOrderFilter === filter.key ? 'active-control' : '') + '" type="button" onclick="setVendorOrderFilter(\'' + filter.key + '\')"><span>' + filter.label + '</span><strong>' + count + '</strong></button>';
         }).join("");
       }
 

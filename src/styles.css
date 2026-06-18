@@ -910,6 +910,48 @@
         border-radius: 8px;
         white-space: nowrap;
       }
+      #vendorOrderFilters {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        overflow: visible;
+      }
+      .vendor-order-filter {
+        min-width: 0;
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 9px 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fffdf8;
+        color: #171717;
+      }
+      .vendor-order-filter span {
+        min-width: 0;
+        font-size: 12px;
+        font-weight: 950;
+        white-space: nowrap;
+      }
+      .vendor-order-filter strong {
+        min-width: 28px;
+        height: 26px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 8px;
+        border-radius: 999px;
+        background: #eee8de;
+        color: #171717;
+        font-size: 12px;
+        font-weight: 950;
+      }
+      .vendor-order-filter.active-control strong {
+        background: rgba(255, 255, 255, .18);
+        color: #fff;
+      }
       .vendor-order-action-panel {
         display: grid;
         gap: 7px;
