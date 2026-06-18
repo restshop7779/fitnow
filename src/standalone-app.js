@@ -4494,6 +4494,112 @@ import {
         return order;
       }
 
+      function buildReturnRefundTestOrders() {
+        const now = Date.now();
+        const testProducts = products.filter((item) => item.stock > 0).slice(0, 4);
+        const fallback = products[0];
+        const specs = [
+          { key: "REQUEST", label: "요청됨", status: "requested", requestHoursAgo: 2, memo: "" },
+          { key: "APPROVED", label: "승인됨", status: "approved", requestHoursAgo: 5, memo: "상품 상태 확인 후 환불 승인" },
+          { key: "OVERDUE", label: "처리지연", status: "requested", requestHoursAgo: 30, memo: "" },
+          { key: "DONE", label: "환불완료", status: "completed", requestHoursAgo: 8, memo: "테스트 환불 완료 처리" },
+        ];
+        return specs.map((spec, index) => {
+          const product = testProducts[index] || fallback;
+          const createdAt = new Date(now - (spec.requestHoursAgo + 30) * 60 * 60 * 1000).toISOString();
+          const completedAt = new Date(now - (spec.requestHoursAgo + 24) * 60 * 60 * 1000).toISOString();
+          const requestedAt = new Date(now - spec.requestHoursAgo * 60 * 60 * 1000).toISOString();
+          const subtotal = itemSalePrice(product);
+          const deliveryFee = 3500;
+          const order = {
+            id: "FN-TEST-RETURN-" + spec.key + "-" + now,
+            region: "동탄2 신도시",
+            address: "반품/환불 테스트 주소 " + (index + 1),
+            receiveType: "문앞 수령",
+            paymentMethod: "카카오페이",
+            riderRequest: "반품/환불 " + spec.label + " 테스트 주문",
+            items: [{ ...product, quantity: 1, size: availableSizeOptions(product)[0] || product.size || "FREE" }],
+            subtotal,
+            deliveryFee,
+            total: subtotal + deliveryFee,
+            fastest: product.minutes || 36,
+            customerId: "return-refund-test",
+            customerName: "반품환불 테스트 고객",
+            customerContact: "01000000000",
+            progressStep: 4,
+            statusCode: "cancelled",
+            statusLabel: "취소됨",
+            cancelled: true,
+            paid: true,
+            paymentLabel: "카카오페이 결제 완료",
+            cancelReasonCode: "return_refund",
+            cancelReason: "배송완료 후 14일 이내 반품/환불 테스트 요청",
+            refundStatus: spec.status,
+            refundRequestedAt: requestedAt,
+            refundMemo: spec.memo,
+            refundHandledBy: spec.status === "requested" ? "" : "총관리자",
+            refundHandledAt: spec.status === "requested" ? "" : new Date(now - Math.max(1, spec.requestHoursAgo - 1) * 60 * 60 * 1000).toISOString(),
+            deliveryPartnerName: "지금배송 동탄센터",
+            riderName: "테스트 기사",
+            pickupConfirmedAt: new Date(now - (spec.requestHoursAgo + 25) * 60 * 60 * 1000).toISOString(),
+            arrivalConfirmedAt: completedAt,
+            pickupProofPhoto: null,
+            arrivalProofPhoto: null,
+            settlementStatus: "",
+            settlementConfirmedAt: "",
+            settlementPaidAt: "",
+            settlementHoldReason: "",
+            settlementHeldAt: "",
+            settlementReleasedAt: "",
+            settlementClosedAt: "",
+            settlementClosedBy: "",
+            settlementCloseLabel: "",
+            createdAt,
+            createdLabel: new Date(createdAt).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }),
+            deliveryLogs: [
+              { id: "log-return-" + spec.key + "-request-" + now, action: "반품/환불 요청", detail: spec.label + " 테스트 데이터", actor: "고객", partnerName: "지금배송 동탄센터", riderName: "테스트 기사", createdAt: requestedAt },
+              { id: "log-return-" + spec.key + "-done-" + now, action: "배송 완료", detail: "반품/환불 테스트용 배송 완료", actor: "지금배송 동탄센터", partnerName: "지금배송 동탄센터", riderName: "테스트 기사", createdAt: completedAt },
+            ],
+          };
+          order.paymentLabel = paymentLabelForOrder(order);
+          return order;
+        });
+      }
+
+      async function createReturnRefundTestOrders() {
+        if (!currentAdmin || currentAdmin.role !== "total") {
+          setSyncStatus("반품/환불 테스트 주문 생성은 총관리자만 가능합니다");
+          return;
+        }
+        if (!products.length) {
+          setSyncStatus("반품/환불 테스트에 사용할 상품이 없습니다");
+          return;
+        }
+        const demoOrders = buildReturnRefundTestOrders();
+        demoOrders.forEach((order) => {
+          saveOrderStatusOverride(order, { allowStepBack: true });
+          saveOrderHistory(order);
+        });
+        lastOrder = demoOrders[0];
+        try {
+          if (supabaseClient) {
+            for (const order of demoOrders) await syncOrderToSupabase(order);
+            const refreshedOrders = await loadAdminOrders({ includeDiagnostic: true });
+            await renderAdminOrders(refreshedOrders);
+            setSyncStatus("반품/환불 테스트 4건 생성 완료 - Supabase 반영");
+          } else {
+            await renderAdminOrders(orderHistory);
+            setSyncStatus("반품/환불 테스트 4건 생성 완료 - 화면 기록");
+          }
+        } catch (error) {
+          await renderAdminOrders(orderHistory);
+          setSyncStatus("반품/환불 테스트 4건 생성 완료 - 화면 반영, DB 저장 확인 필요");
+        }
+        renderOrders();
+        renderTracking();
+        saveTestToolMeta({ lastCheckAt: new Date().toISOString(), lastCheckType: "return_refund" });
+      }
+
       async function runDeliveryFlowAutoCheck() {
         if (!currentAdmin || currentAdmin.role !== "total") {
           setSyncStatus("배송 플로우 자동 점검은 총관리자만 가능합니다");
@@ -5536,6 +5642,7 @@ import {
           </div>
           <div class="mini-actions order-detail-action">
             <button type="button" onclick="createDeliveryFlowTestOrder()">배송 테스트 주문 생성</button>
+            <button type="button" onclick="createReturnRefundTestOrders()">반품/환불 테스트 4건 생성</button>
             <button type="button" onclick="runDeliveryFlowAutoCheck()">배송 플로우 자동 점검</button>
           </div>
         `;
@@ -8704,6 +8811,7 @@ exposeHandlers({
   confirmSettlementBatch,
   createOrderSnapshot,
   createDeliveryFlowTestOrder,
+  createReturnRefundTestOrders,
   createSettlementDemoOrders,
   createSettlementExcelDemoOrders,
   csvCell,
