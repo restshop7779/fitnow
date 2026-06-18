@@ -3006,6 +3006,7 @@
         --avatar-shoulder: 90px;
         --avatar-waist: 80px;
         --avatar-leg: 90px;
+        position: relative;
         width: 178px;
         min-height: var(--avatar-height);
         display: grid;
@@ -3025,6 +3026,7 @@
           linear-gradient(180deg, #e1b68f, #c98f68);
         border: 2px solid rgba(23,23,23,.82);
         box-shadow: inset 0 -8px 14px rgba(87,48,28,.16);
+        z-index: 4;
       }
       .fit-head::before {
         content: "";
@@ -3055,6 +3057,38 @@
         border: 2px solid rgba(23,23,23,.82);
         overflow: visible;
         box-shadow: inset 0 -16px 20px rgba(92,48,32,.12);
+        z-index: 2;
+      }
+      .fit-arms {
+        position: absolute;
+        left: 50%;
+        bottom: 102px;
+        width: calc(var(--avatar-shoulder) + 58px);
+        height: 128px;
+        transform: translateX(-50%);
+        pointer-events: none;
+        z-index: 1;
+      }
+      .fit-arms::before,
+      .fit-arms::after {
+        content: "";
+        position: absolute;
+        top: 18px;
+        width: 24px;
+        height: 112px;
+        border: 2px solid rgba(23,23,23,.72);
+        border-radius: 999px;
+        background:
+          linear-gradient(180deg, #dfae86, #c98f68);
+        box-shadow: inset 0 -10px 16px rgba(92,48,32,.12);
+      }
+      .fit-arms::before {
+        left: 4px;
+        transform: rotate(7deg);
+      }
+      .fit-arms::after {
+        right: 4px;
+        transform: rotate(-7deg);
       }
       .fit-torso::before {
         content: "";
@@ -3090,6 +3124,7 @@
         background:
           linear-gradient(90deg, #252525 0 45%, transparent 45% 55%, #252525 55% 100%);
         box-shadow: inset 0 16px 18px rgba(255,255,255,.05);
+        z-index: 2;
       }
       .fit-legs::after {
         content: "";
@@ -3148,11 +3183,12 @@
           linear-gradient(180deg, #2b63ff, #172a78);
       }
       .fit-garment.fit-visual-tshirt {
-        inset: 10px -6px 18px;
-        clip-path: polygon(19% 0, 38% 0, 42% 12%, 58% 12%, 62% 0, 81% 0, 100% 23%, 86% 43%, 76% 35%, 76% 100%, 24% 100%, 24% 35%, 14% 43%, 0 23%);
+        inset: -2px -18px 12px;
+        clip-path: polygon(18% 0, 38% 0, 43% 12%, 57% 12%, 62% 0, 82% 0, 100% 26%, 87% 44%, 76% 34%, 76% 100%, 24% 100%, 24% 34%, 13% 44%, 0 26%);
         border-color: rgba(23,23,23,.18);
         border-radius: 16px;
         background:
+          radial-gradient(circle at 50% 13%, transparent 0 12px, rgba(23,23,23,.08) 13px 15px, transparent 16px),
           linear-gradient(135deg, rgba(255,255,255,.85), transparent 45%),
           linear-gradient(180deg, #ffffff, #e9e6dc);
         color: #171717;
@@ -3163,8 +3199,20 @@
       }
       .fit-garment.fit-visual-tshirt::before {
         background:
+          linear-gradient(180deg, rgba(23,23,23,.08) 0 1px, transparent 1px 100%),
           linear-gradient(90deg, transparent 0 47%, rgba(23,23,23,.08) 48% 51%, transparent 52%),
           repeating-linear-gradient(90deg, rgba(23,23,23,.035) 0 1px, transparent 1px 9px);
+      }
+      .fit-garment.fit-visual-tshirt::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 8px;
+        width: 36px;
+        height: 18px;
+        transform: translateX(-50%);
+        border-bottom: 2px solid rgba(23,23,23,.12);
+        border-radius: 0 0 999px 999px;
       }
       .fit-garment.fit-하의 {
         inset: auto 14px -102px;

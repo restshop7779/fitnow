@@ -9219,6 +9219,10 @@ import {
         context.arc(298, 572, 4, 0, Math.PI * 2);
         context.fill();
         context.fillStyle = skinGradient;
+        drawRoundRect(178, 650, 34, 214, 17);
+        context.fill();
+        drawRoundRect(348, 650, 34, 214, 17);
+        context.fill();
         drawRoundRect(206, 646, 148, 218, 44);
         context.fill();
         context.fillStyle = "#252525";
@@ -9229,13 +9233,37 @@ import {
         const colors = ["#2b63ff", "#c4a873", "#d9477f", "#171717"];
         items.slice(0, 4).forEach((item, index) => {
           const garmentGradient = context.createLinearGradient(170, 650 + index * 38, 380, 760 + index * 38);
-          garmentGradient.addColorStop(0, colors[index % colors.length]);
-          garmentGradient.addColorStop(1, "#14171d");
+          const isTshirt = item.visual === "tshirt";
+          garmentGradient.addColorStop(0, isTshirt ? "#ffffff" : colors[index % colors.length]);
+          garmentGradient.addColorStop(1, isTshirt ? "#e9e6dc" : "#14171d");
           context.fillStyle = garmentGradient;
           context.globalAlpha = 0.9;
           const y = 670 + index * 42;
-          drawRoundRect(176 + index * 15, y, 208 - index * 16, 58, 22);
-          context.fill();
+          if (isTshirt) {
+            context.beginPath();
+            context.moveTo(180, y - 16);
+            context.lineTo(236, y - 16);
+            context.lineTo(248, y + 8);
+            context.lineTo(312, y + 8);
+            context.lineTo(324, y - 16);
+            context.lineTo(380, y - 16);
+            context.lineTo(414, y + 28);
+            context.lineTo(386, y + 58);
+            context.lineTo(356, y + 42);
+            context.lineTo(348, y + 98);
+            context.lineTo(212, y + 98);
+            context.lineTo(204, y + 42);
+            context.lineTo(174, y + 58);
+            context.lineTo(146, y + 28);
+            context.closePath();
+            context.fill();
+            context.strokeStyle = "rgba(23,23,23,.12)";
+            context.lineWidth = 3;
+            context.stroke();
+          } else {
+            drawRoundRect(176 + index * 15, y, 208 - index * 16, 58, 22);
+            context.fill();
+          }
           context.strokeStyle = "rgba(255,255,255,.28)";
           context.lineWidth = 2;
           context.beginPath();
@@ -9303,6 +9331,7 @@ import {
             <div class="fit-avatar-stage">
               <div class="fit-avatar" style="${avatarStyle}">
                 <div class="fit-head"></div>
+                <div class="fit-arms"></div>
                 <div class="fit-torso">${fitPreviewLayers(avatarItems)}</div>
                 <div class="fit-legs"></div>
               </div>
@@ -9416,6 +9445,7 @@ import {
             <div class="avatar-look-stage">
               <div class="fit-avatar">
                 <div class="fit-head"></div>
+                <div class="fit-arms"></div>
                 <div class="fit-torso">${fitPreviewLayers(items)}</div>
                 <div class="fit-legs"></div>
               </div>
