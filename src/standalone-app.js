@@ -906,6 +906,34 @@ import {
         return order.refundMemo;
       }
 
+      function customerRefundStatusClass(order) {
+        const status = refundStatusFromOrder(order);
+        if (status === "completed") return "done";
+        if (status === "approved") return "approved";
+        if (status === "rejected") return "rejected";
+        if (status === "requested") return "requested";
+        if (status === "not_required") return "done";
+        return "pending";
+      }
+
+      function customerRefundStatusCard(order, compact = false) {
+        const label = customerRefundStatusLabel(order);
+        if (!label) return "";
+        const detail = customerRefundStatusDetail(order);
+        const memo = customerRefundMemoLabel(order);
+        const process = isOpenRefundStatus(order) ? returnRefundProcessInfo(order).label : "처리 완료";
+        return `
+          <div class="customer-refund-card ${customerRefundStatusClass(order)} ${compact ? "compact" : ""}">
+            <div>
+              <span>반품/환불</span>
+              <strong>${label}</strong>
+            </div>
+            <p>${detail}</p>
+            <small>${process}${memo ? " · " + memo : ""}</small>
+          </div>
+        `;
+      }
+
       function refundStatusFromOrder(order) {
         if (!isOrderCancelled(order)) return "";
         if (order.refundStatus) return order.refundStatus;
@@ -7527,7 +7555,7 @@ import {
             <h3>최근 배송</h3>
             <div class="line-item"><span>${latestOrder ? latestOrder.id : "주문 대기"}</span><strong>${latestOrder ? orderDisplayLabel(latestOrder) : "아직 없음"}</strong></div>
             <div class="line-item"><span>결제 상태</span><strong>${latestOrder ? paymentLabelForOrder(latestOrder) : "결제 대기"}</strong></div>
-            ${latestOrder && customerRefundStatusLabel(latestOrder) ? '<div class="line-item"><span>반품/환불 상태</span><strong>' + customerRefundStatusLabel(latestOrder) + '</strong></div>' : ""}
+            ${latestOrder ? customerRefundStatusCard(latestOrder, true) : ""}
             <div class="line-item"><span>담당 기사</span><strong>${latestOrder ? assignedRiderLabel(latestOrder) : "배정 대기"}</strong></div>
           </section>
           <section class="summary-card" style="margin-top: 12px;">
@@ -8795,7 +8823,7 @@ import {
                 <span class="order-status">${order.id === (lastOrder && lastOrder.id) ? "추적 중" : orderDisplayLabel(order)}</span>
               </div>
               <div class="line-item"><span>${order.items[0].name}${order.items.length > 1 ? " 외 " + (order.items.length - 1) + "개" : ""}</span><strong>${orderDisplayLabel(order)}</strong></div>
-              ${customerRefundStatusLabel(order) ? '<div class="line-item"><span>반품/환불</span><strong>' + customerRefundStatusLabel(order) + '</strong></div>' : ""}
+              ${customerRefundStatusCard(order, true)}
             </button>
           `).join("") : "";
         }
@@ -8830,9 +8858,7 @@ import {
               <div class="line-item"><span>담당 기사</span><strong>${assignedRiderLabel(lastOrder)}</strong></div>
               <div class="line-item"><span>현재 상태</span><strong>${orderDisplayLabel(lastOrder)}</strong></div>
               ${(lastOrder.progressStep || 0) >= 4 && !isOrderCancelled(lastOrder) ? '<div class="line-item"><span>반품/환불 가능 기간</span><strong>' + returnRefundWindowLabel(lastOrder) + '</strong></div>' : ""}
-              ${customerRefundStatusLabel(lastOrder) ? '<div class="line-item"><span>반품/환불 상태</span><strong>' + customerRefundStatusLabel(lastOrder) + '</strong></div>' : ""}
-              ${customerRefundStatusDetail(lastOrder) ? '<div class="line-item"><span>처리 안내</span><strong>' + customerRefundStatusDetail(lastOrder) + '</strong></div>' : ""}
-              ${customerRefundMemoLabel(lastOrder) ? '<div class="line-item"><span>처리 메모</span><strong>' + customerRefundMemoLabel(lastOrder) + '</strong></div>' : ""}
+              ${customerRefundStatusCard(lastOrder)}
               ${canReviewOrder(lastOrder) ? '<div class="line-item"><span>리뷰 작성</span><strong>' + orderReviewCount(lastOrder) + '/' + lastOrder.items.length + '개</strong></div>' : ""}
               ${isOrderCancelled(lastOrder) ? '<div class="line-item"><span>취소 분류</span><strong>' + cancelReasonLabel(lastOrder) + '</strong></div>' : ""}
               ${isOrderCancelled(lastOrder) ? '<div class="line-item"><span>취소 사유</span><strong>' + (lastOrder.cancelReason || "사유 미입력") + '</strong></div>' : ""}

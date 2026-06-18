@@ -2822,6 +2822,67 @@
       .line-item strong,
       .price-row strong,
       .pickup-row strong { color: var(--ink); }
+      .customer-refund-card {
+        display: grid;
+        gap: 6px;
+        margin-top: 10px;
+        padding: 10px 12px;
+        border: 1px solid #f1c7bd;
+        border-radius: 8px;
+        background: #fff7f3;
+        text-align: left;
+      }
+      .customer-refund-card div {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        align-items: center;
+      }
+      .customer-refund-card span {
+        color: #9b321f;
+        font-size: 11px;
+        font-weight: 950;
+      }
+      .customer-refund-card strong {
+        color: #171717;
+        font-size: 13px;
+        font-weight: 950;
+      }
+      .customer-refund-card p {
+        margin: 0;
+        color: #3f4a54;
+        font-size: 12px;
+        font-weight: 850;
+        line-height: 1.45;
+      }
+      .customer-refund-card small {
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 850;
+        line-height: 1.35;
+      }
+      .customer-refund-card.approved {
+        border-color: #171717;
+        background: #fffaf0;
+      }
+      .customer-refund-card.done {
+        border-color: #b8e9d8;
+        background: #f1fff9;
+      }
+      .customer-refund-card.done span,
+      .customer-refund-card.done strong {
+        color: #1f7d6d;
+      }
+      .customer-refund-card.rejected {
+        border-color: #9b321f;
+        background: #fff0ec;
+      }
+      .customer-refund-card.compact {
+        padding: 9px 10px;
+      }
+      .customer-refund-card.compact p {
+        font-size: 11px;
+      }
       .total-row {
         margin-top: 10px;
         padding-top: 10px;
