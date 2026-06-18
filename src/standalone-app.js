@@ -3641,11 +3641,12 @@ import {
       }
 
       async function checkSupabaseCleanupPermission() {
+        setSyncStatus("DB 삭제권한 점검 중...");
         if (!currentAdmin || currentAdmin.role !== "total") {
           setSyncStatus("DB 삭제권한 점검은 총관리자만 가능합니다");
           return;
         }
-        if (!supabaseClient) {
+        if (!setupClientIfNeeded()) {
           setSyncStatus("Supabase 연결 후 DB 삭제권한을 점검할 수 있습니다");
           return;
         }
@@ -5793,10 +5794,11 @@ import {
             <button type="button" onclick="createDeliveryFlowTestOrder()">배송 테스트 주문 생성</button>
             <button type="button" onclick="createReturnRefundTestOrders()">반품/환불 테스트 4건 생성</button>
             <button type="button" onclick="runDeliveryFlowAutoCheck()">배송 플로우 자동 점검</button>
-            <button type="button" onclick="checkSupabaseCleanupPermission()">DB 삭제권한 점검</button>
+            <button type="button" data-admin-cleanup-check="true">DB 삭제권한 점검</button>
           </div>
         `;
         bindAdminTodoButtons(body);
+        bindAdminUtilityButtons(body);
       }
 
       function bindAdminTodoButtons(root = document) {
@@ -5819,6 +5821,45 @@ import {
           event.preventDefault();
           focusAdminTodo(button.getAttribute("data-admin-todo"));
         });
+      }
+
+      function bindAdminUtilityButtons(root = document) {
+        root.querySelectorAll("[data-admin-cleanup-check]").forEach((button) => {
+          button.onclick = (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            if (button.disabled) return;
+            checkSupabaseCleanupPermission();
+          };
+        });
+      }
+
+      function setupAdminUtilityHandlers() {
+        if (setupAdminUtilityHandlers.ready) return;
+        setupAdminUtilityHandlers.ready = true;
+        document.addEventListener("click", (event) => {
+          const button = findAdminCleanupCheckButtonFromEvent(event);
+          if (!button || button.disabled) return;
+          event.preventDefault();
+          checkSupabaseCleanupPermission();
+        });
+      }
+
+      function findAdminCleanupCheckButtonFromEvent(event) {
+        if (event.target && event.target.closest) {
+          const directButton = event.target.closest("[data-admin-cleanup-check]");
+          if (directButton) return directButton;
+        }
+        const buttons = Array.from(document.querySelectorAll("[data-admin-cleanup-check]"));
+        return buttons.find((button) => {
+          const rect = button.getBoundingClientRect();
+          return (
+            event.clientX >= rect.left &&
+            event.clientX <= rect.right &&
+            event.clientY >= rect.top &&
+            event.clientY <= rect.bottom
+          );
+        }) || null;
       }
 
       function findAdminTodoButtonFromEvent(event) {
@@ -8852,6 +8893,7 @@ import {
       restoreSavedVendor();
       restoreSavedAdmin();
       setupAdminTodoHandlers();
+      setupAdminUtilityHandlers();
       setupAdminSettlementViewHandlers();
       renderProducts();
       renderCart();
