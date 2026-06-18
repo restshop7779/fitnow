@@ -3522,6 +3522,29 @@ import {
         return !!(log && log.orderId && (String(log.orderId).startsWith("FN-TEST-") || String(log.orderId).startsWith("FN-SET")) && isExpiredTestTimestamp(log.createdAt, now));
       }
 
+      async function deleteSupabaseDiagnosticOrders(orderCodes = [], dbIds = []) {
+        if (!supabaseClient) return 0;
+        const uniqueCodes = Array.from(new Set(orderCodes.filter(Boolean).map(String)));
+        const uniqueDbIds = new Set(dbIds.filter(Boolean));
+        if (uniqueCodes.length) {
+          const lookup = await supabaseClient.from("orders").select("id, order_code").in("order_code", uniqueCodes);
+          if (lookup.error) throw lookup.error;
+          (lookup.data || []).forEach((row) => {
+            if (row.id) uniqueDbIds.add(row.id);
+          });
+        }
+        const dbIdList = Array.from(uniqueDbIds);
+        if (dbIdList.length) {
+          const itemDeleteResult = await supabaseClient.from("order_items").delete().in("order_id", dbIdList);
+          if (itemDeleteResult.error) throw itemDeleteResult.error;
+        }
+        if (uniqueCodes.length) {
+          const deleteResult = await supabaseClient.from("orders").delete().in("order_code", uniqueCodes);
+          if (deleteResult.error) throw deleteResult.error;
+        }
+        return uniqueCodes.length;
+      }
+
       async function clearAdminTestData(options = {}) {
         if (!currentAdmin || currentAdmin.role !== "total") {
           setSyncStatus("테스트 데이터 정리는 총관리자만 가능합니다");
@@ -3571,13 +3594,7 @@ import {
         saveSettlementFlowCheckLogs();
         if (supabaseClient && testIds.size) {
           try {
-            if (testDbIds.size) {
-              const itemDeleteResult = await supabaseClient.from("order_items").delete().in("order_id", Array.from(testDbIds));
-              if (itemDeleteResult.error) throw itemDeleteResult.error;
-            }
-            const deleteResult = await supabaseClient.from("orders").delete().in("order_code", Array.from(testIds));
-            if (deleteResult.error) throw deleteResult.error;
-            supabaseRemovedOrderCount = testIds.size;
+            supabaseRemovedOrderCount = await deleteSupabaseDiagnosticOrders(Array.from(testIds), Array.from(testDbIds));
           } catch (error) {
             supabaseCleanupFailed = true;
           }
@@ -3610,6 +3627,69 @@ import {
         renderSettlementExportActions();
         renderAdminReleaseReadiness(adminRenderedOrders.length ? adminRenderedOrders : orderHistory);
         setSyncStatus((expiredOnly ? "만료 테스트 데이터 자동 정리 완료 - " : "테스트 데이터 정리 완료 - ") + "화면 주문 " + removedOrderTotal + "건, DB 주문 " + supabaseRemovedOrderCount + "건, 상태 " + removedStatusCount + "건, 로그 " + removedLogTotal + "건 삭제" + (supabaseCleanupFailed ? " · Supabase 삭제 권한 확인 필요" : ""));
+      }
+
+      async function checkSupabaseCleanupPermission() {
+        if (!currentAdmin || currentAdmin.role !== "total") {
+          setSyncStatus("DB 삭제권한 점검은 총관리자만 가능합니다");
+          return;
+        }
+        if (!supabaseClient) {
+          setSyncStatus("Supabase 연결 후 DB 삭제권한을 점검할 수 있습니다");
+          return;
+        }
+        const product = products.find((item) => item.stock > 0) || products[0];
+        if (!product) {
+          setSyncStatus("DB 삭제권한 점검에 사용할 상품이 없습니다");
+          return;
+        }
+        const createdAt = new Date().toISOString();
+        const subtotal = itemSalePrice(product);
+        const order = {
+          id: "FN-TEST-CLEANUP-" + Date.now(),
+          region: "DB 삭제권한 점검",
+          address: "Supabase 삭제 정책 확인용",
+          receiveType: "테스트",
+          paymentMethod: "카카오페이",
+          riderRequest: "삭제 권한 점검 후 즉시 제거",
+          items: [{ ...product, quantity: 1, size: availableSizeOptions(product)[0] || product.size || "FREE" }],
+          subtotal,
+          deliveryFee: 0,
+          total: subtotal,
+          fastest: product.minutes || 36,
+          customerId: "cleanup-permission-test",
+          customerName: "DB 점검 고객",
+          customerContact: "01000000000",
+          progressStep: 0,
+          statusCode: "cancelled",
+          statusLabel: "취소됨",
+          paid: true,
+          paymentLabel: "카카오페이 결제 완료",
+          cancelled: true,
+          cancelReasonCode: "admin_test",
+          cancelReason: "Supabase 삭제 권한 점검",
+          deliveryPartnerName: "",
+          riderName: "",
+          pickupConfirmedAt: "",
+          arrivalConfirmedAt: "",
+          pickupProofPhoto: null,
+          arrivalProofPhoto: null,
+          createdAt,
+          createdLabel: new Date(createdAt).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }),
+          deliveryLogs: [],
+        };
+        try {
+          await syncOrderToSupabase(order);
+        } catch (error) {
+          setSyncStatus("DB 삭제권한 점검 실패 - 테스트 주문 저장 권한부터 확인 필요");
+          return;
+        }
+        try {
+          await deleteSupabaseDiagnosticOrders([order.id], [order.dbId]);
+          setSyncStatus("DB 삭제권한 정상 - 테스트 주문 저장 후 orders/order_items 삭제 확인 완료");
+        } catch (error) {
+          setSyncStatus("DB 삭제권한 확인 필요 - Supabase SQL 재실행 후 테스트 데이터 정리를 다시 눌러주세요");
+        }
       }
 
       function deliveryProofCleanupCandidates(orders = orderHistory) {
@@ -5702,6 +5782,7 @@ import {
             <button type="button" onclick="createDeliveryFlowTestOrder()">배송 테스트 주문 생성</button>
             <button type="button" onclick="createReturnRefundTestOrders()">반품/환불 테스트 4건 생성</button>
             <button type="button" onclick="runDeliveryFlowAutoCheck()">배송 플로우 자동 점검</button>
+            <button type="button" onclick="checkSupabaseCleanupPermission()">DB 삭제권한 점검</button>
           </div>
         `;
         bindAdminTodoButtons(body);
@@ -8770,6 +8851,7 @@ import {
 
 Object.assign(window, {
   checkSupabaseSetup,
+  checkSupabaseCleanupPermission,
   openManagement,
   closeManagement,
   openAdmin,
@@ -8860,6 +8942,7 @@ exposeHandlers({
   checkout,
   checkoutFromCart,
   checkSupabaseSetup,
+  checkSupabaseCleanupPermission,
   claimDeliveryOrder,
   claimDeliveryOrderFromDetail,
   clearDeliveryForm,
