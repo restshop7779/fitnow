@@ -4020,7 +4020,7 @@ import {
         setSyncStatus(settlementExportModeLabel(mode) + " 정산 CSV 다운로드 완료 - " + orders.length + "건");
       }
 
-      function openAdminQaChecklist() {
+      function openAdminQaChecklist(focusSectionId = "") {
         if (!currentAdmin || currentAdmin.role !== "total") {
           openAdminLogin();
           return;
@@ -4044,7 +4044,7 @@ import {
               <span>${progress.checked}/${progress.total}개 완료 · 마지막 저장 ${testToolTimeLabel(store.updatedAt)}</span>
             </div>
             ${sections.map((section, sectionIndex) => `
-              <div class="admin-qa-section">
+              <div class="admin-qa-section ${section.id === focusSectionId ? "focused" : ""}" data-admin-qa-section="${section.id}">
                 <div class="settlement-audit-step">${sectionIndex + 1}</div>
                 <div>
                   <strong>${section.title}</strong>
@@ -4073,6 +4073,18 @@ import {
         `;
         document.getElementById("adminOrderDetailModal").classList.add("open");
         document.getElementById("adminOrderDetailModal").setAttribute("aria-hidden", "false");
+        if (focusSectionId) {
+          window.setTimeout(() => {
+            const target = document.querySelector('[data-admin-qa-section="' + focusSectionId + '"]');
+            if (target && target.scrollIntoView) target.scrollIntoView({ behavior: "smooth", block: "center" });
+            highlightAdminTarget(target);
+          }, 80);
+        }
+      }
+
+      function openAdminFinalQaScenario() {
+        openAdminQaChecklist("final-scenario");
+        setSyncStatus("최종 QA 시나리오 섹션으로 이동했습니다");
       }
 
       function renderSettlementExportActions() {
@@ -4145,7 +4157,7 @@ import {
           </div>
           <button class="admin-tool-action primary" type="button" onclick="runSettlementFlowAutoCheck()">정산 플로우 점검</button>
           <button class="admin-tool-action" type="button" onclick="openAdminQaChecklist()">QA 체크리스트</button>
-          <button class="admin-tool-action primary" type="button" onclick="openAdminQaChecklist()">최종 QA 시나리오</button>
+          <button class="admin-tool-action primary" type="button" onclick="openAdminFinalQaScenario()">최종 QA 시나리오</button>
           <button class="admin-tool-action primary" type="button" onclick="runReturnRefundVisibilityCheck()">반품/환불 표시 점검</button>
           <button class="admin-tool-action" type="button" onclick="createSettlementExcelDemoOrders()">엑셀 테스트 6건 생성</button>
           <button class="admin-tool-action settlement-cleanup-action danger" type="button" onclick="clearAdminTestData()">테스트 데이터 정리</button>
@@ -9080,6 +9092,7 @@ Object.assign(window, {
   copySettlementFlowCheckReport,
   downloadSettlementFlowCheckReportCsv,
   openAdminQaChecklist,
+  openAdminFinalQaScenario,
   setAdminQaChecklistItem,
   clearAdminQaChecklist,
   copyAdminQaChecklistReport,
@@ -9298,6 +9311,7 @@ exposeHandlers({
   copySettlementFlowCheckReport,
   downloadSettlementFlowCheckReportCsv,
   openAdminQaChecklist,
+  openAdminFinalQaScenario,
   setAdminQaChecklistItem,
   clearAdminQaChecklist,
   copyAdminQaChecklistReport,
