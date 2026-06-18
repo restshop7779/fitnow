@@ -3642,8 +3642,37 @@ import {
 
       function setAdminCleanupCheckStatus(message) {
         setSyncStatus(message);
-        const node = document.getElementById("adminCleanupCheckStatus");
-        if (node) node.textContent = message;
+        document.querySelectorAll("[data-admin-cleanup-status]").forEach((node) => {
+          node.textContent = message;
+        });
+      }
+
+      async function checkAdminTestDataCleanupState() {
+        setAdminCleanupCheckStatus("테스트 데이터 정리 상태 점검 중...");
+        if (!currentAdmin || currentAdmin.role !== "total") {
+          setAdminCleanupCheckStatus("테스트 데이터 정리 상태 점검은 총관리자만 가능합니다");
+          return;
+        }
+        const localDiagnostic = adminDiagnosticState(orderHistory);
+        let dbDiagnosticOrders = 0;
+        let dbError = "";
+        if (setupClientIfNeeded()) {
+          try {
+            const dbOrders = await loadAdminOrders({ includeDiagnostic: true });
+            dbDiagnosticOrders = dbOrders.filter(isDiagnosticOrder).length;
+          } catch (error) {
+            dbError = shortSupabaseError(error);
+          }
+        }
+        const clean = !localDiagnostic.hasTestState && dbDiagnosticOrders === 0 && !dbError;
+        setAdminCleanupCheckStatus(
+          "테스트 데이터 정리 상태 " + (clean ? "정상" : "확인 필요") +
+          " - 화면 주문 " + localDiagnostic.orders + "건" +
+          " · DB 주문 " + dbDiagnosticOrders + "건" +
+          " · 상태 " + localDiagnostic.statuses + "건" +
+          " · 로그 " + localDiagnostic.logs + "건" +
+          (dbError ? " · DB 확인 실패: " + dbError : "")
+        );
       }
 
       async function checkSupabaseCleanupPermission() {
@@ -4074,7 +4103,9 @@ import {
           <button type="button" onclick="runReturnRefundVisibilityCheck()">반품/환불 표시 점검</button>
           <button type="button" onclick="createSettlementExcelDemoOrders()">엑셀 테스트 6건 생성</button>
           <button class="settlement-cleanup-action" type="button" onclick="clearAdminTestData()">테스트 데이터 정리</button>
+          <button type="button" onclick="checkAdminTestDataCleanupState()">정리 상태 점검</button>
           <div class="admin-utility-status" data-return-refund-visibility-status aria-live="polite">반품/환불 표시 점검 결과가 여기에 표시됩니다.</div>
+          <div class="admin-utility-status" data-admin-cleanup-status aria-live="polite">테스트 데이터 정리 상태가 여기에 표시됩니다.</div>
         `;
       }
 
@@ -5868,10 +5899,11 @@ import {
             <button type="button" onclick="createReturnRefundTestOrders()">반품/환불 테스트 4건 생성</button>
             <button type="button" onclick="runReturnRefundVisibilityCheck()">반품/환불 표시 점검</button>
             <button type="button" onclick="runDeliveryFlowAutoCheck()">배송 플로우 자동 점검</button>
+            <button type="button" onclick="checkAdminTestDataCleanupState()">정리 상태 점검</button>
             <button type="button" data-admin-cleanup-check="true">DB 삭제권한 점검</button>
           </div>
           <div class="admin-utility-status" data-return-refund-visibility-status aria-live="polite">반품/환불 표시 점검 결과가 여기에 표시됩니다.</div>
-          <div class="admin-utility-status" id="adminCleanupCheckStatus" aria-live="polite">DB 삭제권한 점검 결과가 여기에 표시됩니다.</div>
+          <div class="admin-utility-status" data-admin-cleanup-status aria-live="polite">DB 삭제권한 점검 결과가 여기에 표시됩니다.</div>
         `;
         bindAdminTodoButtons(body);
         bindAdminUtilityButtons(body);
@@ -8983,6 +9015,7 @@ import {
       });
 
 Object.assign(window, {
+  checkAdminTestDataCleanupState,
   checkSupabaseSetup,
   checkSupabaseCleanupPermission,
   openManagement,
@@ -9075,6 +9108,7 @@ exposeHandlers({
   cartTotals,
   checkout,
   checkoutFromCart,
+  checkAdminTestDataCleanupState,
   checkSupabaseSetup,
   checkSupabaseCleanupPermission,
   claimDeliveryOrder,
