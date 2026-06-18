@@ -1192,6 +1192,29 @@
         text-align: left;
         white-space: normal;
       }
+      .admin-tool-action {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        align-items: center;
+      }
+      .admin-tool-action span {
+        min-width: 0;
+      }
+      .admin-tool-action em {
+        flex: 0 0 auto;
+        padding: 4px 6px;
+        border-radius: 999px;
+        background: var(--lime);
+        color: #171c05;
+        font-size: 10px;
+        font-style: normal;
+        font-weight: 950;
+      }
+      .admin-tool-action.done {
+        border-color: #1f7d6d;
+        box-shadow: 0 0 0 2px rgba(31, 125, 109, .12) inset;
+      }
       .admin-tool-action.primary,
       .settlement-test-actions > button.admin-tool-action.primary {
         background: #171717;

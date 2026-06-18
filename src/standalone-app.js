@@ -4042,6 +4042,10 @@ import {
         const sections = adminQaChecklistSections();
         const store = readAdminQaChecklistStore();
         const progress = adminQaChecklistProgress(store);
+        const scenarioButton = (index, action, label, itemId = "", variant = "primary") => {
+          const done = itemId ? !!store.checked[adminQaChecklistItemKey("final-scenario", itemId)] : false;
+          return '<button class="admin-tool-action ' + variant + (done ? ' done' : '') + '" type="button" onclick="runQaScenarioAction(\'' + action + '\')"><span>' + index + '. ' + label + '</span>' + (done ? '<em>완료</em>' : '') + '</button>';
+        };
         if (title) title.textContent = "관리자 QA 체크리스트";
         body.innerHTML = `
           <div class="admin-qa-checklist">
@@ -4061,15 +4065,15 @@ import {
                   <strong>${section.title}</strong>
                   ${section.id === "final-scenario" ? `
                     <div class="admin-qa-scenario-actions">
-                      <button class="admin-tool-action primary" type="button" onclick="runQaScenarioAction('deliveryOrder')">배송 테스트 주문 생성</button>
-                      <button class="admin-tool-action primary" type="button" onclick="runQaScenarioAction('deliveryFlow')">배송 플로우 자동 점검</button>
-                      <button class="admin-tool-action primary" type="button" onclick="runQaScenarioAction('settlementFlow')">정산 플로우 점검</button>
-                      <button class="admin-tool-action primary" type="button" onclick="runQaScenarioAction('returnOrders')">반품/환불 테스트 4건 생성</button>
-                      <button class="admin-tool-action primary" type="button" onclick="runQaScenarioAction('returnVisibility')">반품/환불 표시 점검</button>
-                      <button class="admin-tool-action" type="button" onclick="runQaScenarioAction('excelDemo')">엑셀 테스트 6건 생성</button>
-                      <button class="admin-tool-action danger" type="button" onclick="runQaScenarioAction('cleanup')">테스트 데이터 정리</button>
-                      <button class="admin-tool-action" type="button" onclick="runQaScenarioAction('cleanupState')">정리 상태 점검</button>
-                      <button class="admin-tool-action" type="button" onclick="runQaScenarioAction('dbCleanup')">DB 삭제권한 점검</button>
+                      ${scenarioButton(1, "deliveryOrder", "배송 테스트 주문 생성", "delivery-order")}
+                      ${scenarioButton(2, "deliveryFlow", "배송 플로우 자동 점검", "delivery-proof")}
+                      ${scenarioButton(3, "returnOrders", "반품/환불 테스트 4건 생성")}
+                      ${scenarioButton(4, "returnVisibility", "반품/환불 표시 점검", "return-refund-visible")}
+                      ${scenarioButton(5, "settlementFlow", "정산 플로우 점검")}
+                      ${scenarioButton(6, "cleanup", "테스트 데이터 정리", "", "danger")}
+                      ${scenarioButton(7, "cleanupState", "정리 상태 점검", "cleanup-zero", "primary")}
+                      ${scenarioButton(8, "excelDemo", "엑셀 테스트 6건 생성", "", "")}
+                      ${scenarioButton(9, "dbCleanup", "DB 삭제권한 점검", "", "")}
                     </div>
                     <div class="admin-utility-status" data-qa-scenario-action-status aria-live="polite">QA 시나리오 버튼 실행 결과가 여기에 표시됩니다.</div>
                     <div class="admin-utility-status" data-return-refund-visibility-status aria-live="polite">반품/환불 표시 점검 결과가 여기에 표시됩니다.</div>
