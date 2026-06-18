@@ -3494,6 +3494,10 @@ import {
         ));
       }
 
+      function adminQaChecklistRemainingRows(store = readAdminQaChecklistStore()) {
+        return adminQaChecklistReportRows(store).filter((row) => row.status !== "완료");
+      }
+
       function adminQaChecklistReportText() {
         const store = readAdminQaChecklistStore();
         const progress = adminQaChecklistProgress(store);
@@ -4148,6 +4152,69 @@ import {
       function openAdminFinalQaScenario() {
         openAdminQaChecklist("final-scenario");
         setSyncStatus("최종 QA 시나리오 섹션으로 이동했습니다");
+      }
+
+      function openAdminPreReleaseCheck() {
+        if (!currentAdmin || currentAdmin.role !== "total") {
+          setSyncStatus("최종 배포 전 점검은 총관리자만 가능합니다");
+          return;
+        }
+        const title = document.getElementById("adminOrderDetailTitle");
+        const body = document.getElementById("adminOrderDetailBody");
+        const orders = adminRenderedOrders.length ? adminRenderedOrders : orderHistory;
+        const diagnostic = adminDiagnosticState(orders);
+        const qaStore = readAdminQaChecklistStore();
+        const qaProgress = adminQaChecklistProgress(qaStore);
+        const remainingRows = adminQaChecklistRemainingRows(qaStore);
+        const testMeta = readTestToolMeta();
+        const checks = [
+          { label: "QA 체크리스트", detail: qaProgress.checked + "/" + qaProgress.total + "개", ready: qaProgress.done },
+          { label: "테스트 데이터", detail: diagnostic.hasTestState ? "주문 " + diagnostic.orders + "건 · 로그 " + diagnostic.logs + "건" : "잔여 없음", ready: !diagnostic.hasTestState },
+          { label: "최근 점검", detail: testToolTimeLabel(testMeta.lastCheckAt), ready: !!testMeta.lastCheckAt },
+          { label: "최근 정리", detail: testToolTimeLabel(testMeta.lastCleanupAt), ready: !!testMeta.lastCleanupAt },
+        ];
+        const readyCount = checks.filter((item) => item.ready).length;
+        const allReady = readyCount === checks.length;
+        if (title) title.textContent = "최종 배포 전 점검";
+        body.innerHTML = `
+          <div class="admin-pre-release-check ${allReady ? "ready" : "pending"}">
+            <div class="admin-pre-release-hero">
+              <div>
+                <span>${allReady ? "배포 가능" : "확인 필요"}</span>
+                <strong>${allReady ? "운영 전 필수 점검이 완료되었습니다" : "운영 전 확인할 항목이 남아 있습니다"}</strong>
+                <p>QA 체크, 테스트 데이터 정리, 최근 점검/정리 기록을 기준으로 판단합니다.</p>
+              </div>
+              <em>${readyCount}/${checks.length}</em>
+            </div>
+            <div class="admin-pre-release-grid">
+              ${checks.map((item) => `
+                <div class="${item.ready ? "ready" : "pending"}">
+                  <span>${item.label}</span>
+                  <strong>${item.ready ? "OK" : "확인 필요"}</strong>
+                  <em>${item.detail}</em>
+                </div>
+              `).join("")}
+            </div>
+            <div class="admin-pre-release-section">
+              <strong>남은 QA 항목</strong>
+              ${remainingRows.length ? `
+                <ul>
+                  ${remainingRows.slice(0, 8).map((row) => '<li>' + row.sectionOrder + '-' + row.itemOrder + '. ' + qaScenarioStatusEscape(row.section) + ' / ' + qaScenarioStatusEscape(row.item) + '</li>').join("")}
+                </ul>
+                ${remainingRows.length > 8 ? '<p>외 ' + (remainingRows.length - 8) + '개 항목은 QA 체크리스트에서 확인하세요.</p>' : ""}
+              ` : '<p>미완료 QA 항목이 없습니다.</p>'}
+            </div>
+            <div class="admin-release-actions">
+              <button class="neutral" type="button" onclick="openAdminQaChecklist()">QA 체크리스트</button>
+              <button class="primary" type="button" onclick="openAdminFinalQaScenario()">QA 시나리오</button>
+              <button class="success" type="button" ${diagnostic.hasTestState ? "" : "disabled"} onclick="clearAdminTestData()">테스트 데이터 정리</button>
+              <button class="warning" type="button" onclick="copyAdminQaChecklistReport()">QA 리포트 복사</button>
+            </div>
+          </div>
+        `;
+        document.getElementById("adminOrderDetailModal").classList.add("open");
+        document.getElementById("adminOrderDetailModal").setAttribute("aria-hidden", "false");
+        setSyncStatus(allReady ? "최종 배포 전 점검 완료 상태입니다" : "최종 배포 전 확인 항목이 남아 있습니다");
       }
 
       function qaScenarioStatusEscape(value) {
@@ -5712,10 +5779,11 @@ import {
             </div>
             <div class="admin-release-readiness-grid">${itemMarkup}</div>
             <div class="admin-release-actions">
-              <button type="button" onclick="openAdminQaChecklist()">QA 체크리스트</button>
-              <button type="button" ${diagnostic.hasTestState ? "" : "disabled"} onclick="clearAdminTestData()">테스트 데이터 정리</button>
-              <button type="button" onclick="openSettlementStatement()">정산서 미리보기</button>
-              <button type="button" ${settlementExportCount ? "" : "disabled"} onclick="downloadSettlementCsv('all')">정산 CSV ${settlementExportCount}건</button>
+              <button class="primary" type="button" onclick="openAdminPreReleaseCheck()">최종 점검 모드</button>
+              <button class="neutral" type="button" onclick="openAdminQaChecklist()">QA 체크리스트</button>
+              <button class="success" type="button" ${diagnostic.hasTestState ? "" : "disabled"} onclick="clearAdminTestData()">테스트 데이터 정리</button>
+              <button class="warning" type="button" onclick="openSettlementStatement()">정산서 미리보기</button>
+              <button class="primary" type="button" ${settlementExportCount ? "" : "disabled"} onclick="downloadSettlementCsv('all')">정산 CSV ${settlementExportCount}건</button>
             </div>
           </div>
         `;
@@ -9264,6 +9332,7 @@ Object.assign(window, {
   downloadSettlementFlowCheckReportCsv,
   openAdminQaChecklist,
   openAdminFinalQaScenario,
+  openAdminPreReleaseCheck,
   setAdminQaChecklistItem,
   clearAdminQaChecklist,
   copyAdminQaChecklistReport,
@@ -9484,6 +9553,7 @@ exposeHandlers({
   downloadSettlementFlowCheckReportCsv,
   openAdminQaChecklist,
   openAdminFinalQaScenario,
+  openAdminPreReleaseCheck,
   setAdminQaChecklistItem,
   clearAdminQaChecklist,
   copyAdminQaChecklistReport,

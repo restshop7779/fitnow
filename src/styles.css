@@ -2298,15 +2298,15 @@
         line-height: 1.2;
         white-space: normal;
       }
-      .admin-release-actions button:nth-child(2) {
+      .admin-release-actions button.neutral {
         background: #fff0d2;
         color: #7c4d00;
       }
-      .admin-release-actions button:nth-child(3) {
+      .admin-release-actions button.success {
         background: var(--lime);
         color: #171c05;
       }
-      .admin-release-actions button:nth-child(4) {
+      .admin-release-actions button.warning {
         background: #ffe3dc;
         color: #9b321f;
       }
@@ -2315,6 +2315,109 @@
         background: #f3eee4;
         color: #9a9186;
         cursor: not-allowed;
+      }
+      .admin-pre-release-check {
+        display: grid;
+        gap: 10px;
+      }
+      .admin-pre-release-hero {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        align-items: center;
+        padding: 12px;
+        border: 1px solid #9b321f;
+        border-radius: 8px;
+        background: #fff0ec;
+      }
+      .admin-pre-release-check.ready .admin-pre-release-hero {
+        border-color: #1f7d6d;
+        background: #f1fff9;
+      }
+      .admin-pre-release-hero span,
+      .admin-pre-release-grid span {
+        display: block;
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 950;
+      }
+      .admin-pre-release-hero strong {
+        display: block;
+        margin-top: 3px;
+        color: #171717;
+        font-size: 15px;
+        font-weight: 950;
+      }
+      .admin-pre-release-hero p {
+        margin: 5px 0 0;
+        color: #5f675c;
+        font-size: 11px;
+        font-weight: 850;
+        line-height: 1.45;
+      }
+      .admin-pre-release-hero em {
+        padding: 8px 10px;
+        border-radius: 999px;
+        background: #9b321f;
+        color: #fff;
+        font-size: 12px;
+        font-style: normal;
+        font-weight: 950;
+      }
+      .admin-pre-release-check.ready .admin-pre-release-hero em {
+        background: #1f7d6d;
+      }
+      .admin-pre-release-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .admin-pre-release-grid div,
+      .admin-pre-release-section {
+        min-width: 0;
+        padding: 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+      }
+      .admin-pre-release-grid strong {
+        display: block;
+        margin-top: 3px;
+        color: #9b321f;
+        font-size: 12px;
+        font-weight: 950;
+      }
+      .admin-pre-release-grid .ready strong {
+        color: #1f7d6d;
+      }
+      .admin-pre-release-grid em {
+        display: block;
+        margin-top: 3px;
+        color: #3f4a54;
+        font-size: 11px;
+        font-style: normal;
+        font-weight: 850;
+      }
+      .admin-pre-release-section strong {
+        display: block;
+        color: #171717;
+        font-size: 12px;
+        font-weight: 950;
+      }
+      .admin-pre-release-section ul {
+        display: grid;
+        gap: 5px;
+        margin: 8px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+      .admin-pre-release-section li,
+      .admin-pre-release-section p {
+        margin: 0;
+        color: #5f675c;
+        font-size: 11px;
+        font-weight: 850;
+        line-height: 1.45;
       }
       .delivery-work-shortcuts {
         display: grid;
@@ -3184,6 +3287,7 @@
         .phone-frame { width: 100%; height: 100vh; border: 0; border-radius: 0; }
         .role-strip { grid-template-columns: 1fr; }
         .admin-release-readiness-grid { grid-template-columns: 1fr; }
+        .admin-pre-release-grid { grid-template-columns: 1fr; }
         .delivery-work-shortcut-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .admin-test-notice { grid-template-columns: 1fr; }
         .admin-test-notice button { width: 100%; }
