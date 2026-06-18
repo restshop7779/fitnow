@@ -140,8 +140,8 @@ create index if not exists wishlists_product_slug_idx on public.wishlists(produc
 
 grant select, insert, update, delete on public.showrooms, public.products to anon, authenticated;
 grant select, insert, update, delete on public.look_sets, public.look_set_items to anon, authenticated;
-grant select, insert, update on public.orders to anon, authenticated;
-grant select, insert on public.order_items to anon, authenticated;
+grant select, insert, update, delete on public.orders to anon, authenticated;
+grant select, insert, delete on public.order_items to anon, authenticated;
 grant select, insert, update, delete on public.product_reviews to anon, authenticated;
 grant select, insert, update, delete on public.wishlists to anon, authenticated;
 
@@ -161,8 +161,10 @@ drop policy if exists "Products public write" on public.products;
 drop policy if exists "Orders public read" on public.orders;
 drop policy if exists "Orders public insert" on public.orders;
 drop policy if exists "Orders public update" on public.orders;
+drop policy if exists "Orders public delete" on public.orders;
 drop policy if exists "Order items public read" on public.order_items;
 drop policy if exists "Order items public insert" on public.order_items;
+drop policy if exists "Order items public delete" on public.order_items;
 drop policy if exists "Look sets public read" on public.look_sets;
 drop policy if exists "Look sets public write" on public.look_sets;
 drop policy if exists "Look set items public read" on public.look_set_items;
@@ -203,6 +205,10 @@ on public.orders for update
 using (true)
 with check (true);
 
+create policy "Orders public delete"
+on public.orders for delete
+using (true);
+
 create policy "Order items public read"
 on public.order_items for select
 using (true);
@@ -210,6 +216,10 @@ using (true);
 create policy "Order items public insert"
 on public.order_items for insert
 with check (true);
+
+create policy "Order items public delete"
+on public.order_items for delete
+using (true);
 
 create policy "Look sets public read"
 on public.look_sets for select

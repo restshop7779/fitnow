@@ -3532,7 +3532,17 @@ import {
         const beforeOrderCount = orderHistory.length;
         const shouldRemoveOrder = (order) => expiredOnly ? isExpiredDiagnosticOrder(order, now) : isDiagnosticOrder(order);
         const shouldRemoveLog = (log) => expiredOnly ? isExpiredDiagnosticLog(log, now) : !!(log && log.orderId);
+        let supabaseRemovedOrderCount = 0;
+        let supabaseCleanupFailed = false;
         const testIds = new Set(orderHistory.filter(shouldRemoveOrder).map((order) => order.id));
+        const testDbIds = new Set();
+        if (supabaseClient) {
+          const dbOrders = await loadAdminOrders({ includeDiagnostic: true }).catch(() => []);
+          dbOrders.filter(shouldRemoveOrder).forEach((order) => {
+            testIds.add(order.id);
+            if (order.dbId) testDbIds.add(order.dbId);
+          });
+        }
         settlementFlowCheckLogs.forEach((log) => {
           if (shouldRemoveLog(log)) testIds.add(log.orderId);
         });
@@ -3559,6 +3569,19 @@ import {
         const beforeLogCount = settlementFlowCheckLogs.length;
         settlementFlowCheckLogs = settlementFlowCheckLogs.filter((log) => !shouldRemoveLog(log));
         saveSettlementFlowCheckLogs();
+        if (supabaseClient && testIds.size) {
+          try {
+            if (testDbIds.size) {
+              const itemDeleteResult = await supabaseClient.from("order_items").delete().in("order_id", Array.from(testDbIds));
+              if (itemDeleteResult.error) throw itemDeleteResult.error;
+            }
+            const deleteResult = await supabaseClient.from("orders").delete().in("order_code", Array.from(testIds));
+            if (deleteResult.error) throw deleteResult.error;
+            supabaseRemovedOrderCount = testIds.size;
+          } catch (error) {
+            supabaseCleanupFailed = true;
+          }
+        }
         if (lastOrder && shouldRemoveOrder(lastOrder)) {
           lastOrder = orderHistory[0] || null;
         }
@@ -3569,7 +3592,7 @@ import {
         adminSettlementView = "open";
         const removedOrderTotal = beforeOrderCount - orderHistory.length;
         const removedLogTotal = beforeLogCount - settlementFlowCheckLogs.length;
-        if (options.auto && !removedOrderTotal && !removedStatusCount && !removedLogTotal) return;
+        if (options.auto && !removedOrderTotal && !removedStatusCount && !removedLogTotal && !supabaseRemovedOrderCount) return;
         const diagnosticAfterCleanup = adminDiagnosticState(orderHistory);
         if (!expiredOnly && !options.auto && !diagnosticAfterCleanup.hasTestState) {
           markAdminQaChecklistItems({
@@ -3586,7 +3609,7 @@ import {
         saveTestToolMeta({ lastCleanupAt: new Date().toISOString(), lastCleanupMode: expiredOnly ? "expired" : "manual" });
         renderSettlementExportActions();
         renderAdminReleaseReadiness(adminRenderedOrders.length ? adminRenderedOrders : orderHistory);
-        setSyncStatus((expiredOnly ? "만료 테스트 데이터 자동 정리 완료 - " : "테스트 데이터 정리 완료 - ") + "주문 " + removedOrderTotal + "건, 상태 " + removedStatusCount + "건, 로그 " + removedLogTotal + "건 삭제");
+        setSyncStatus((expiredOnly ? "만료 테스트 데이터 자동 정리 완료 - " : "테스트 데이터 정리 완료 - ") + "화면 주문 " + removedOrderTotal + "건, DB 주문 " + supabaseRemovedOrderCount + "건, 상태 " + removedStatusCount + "건, 로그 " + removedLogTotal + "건 삭제" + (supabaseCleanupFailed ? " · Supabase 삭제 권한 확인 필요" : ""));
       }
 
       function deliveryProofCleanupCandidates(orders = orderHistory) {
