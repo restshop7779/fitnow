@@ -6297,13 +6297,28 @@ import {
                 ${order.refundMemo ? '<span>처리 메모: ' + order.refundMemo + '</span>' : ""}
               </div>
             ` : ""}
-            <div class="mini-actions">
-              <button type="button" ${deliveryActionReady ? "" : "disabled"} onclick="adminAdvanceOrderFromDetail('${order.id}', 3)">${cancelled ? "취소됨" : !readyForDelivery ? "픽업 대기" : !isDeliveryOrderClaimed(order) ? "배정 대기" : !pickupAuthed ? "픽업 인증 필요" : step >= 3 ? "배송 중 처리됨" : "배송 중"}</button>
-              <button type="button" ${deliveryCompleteReady ? "" : "disabled"} onclick="adminAdvanceOrderFromDetail('${order.id}', 4)">${cancelled ? "취소됨" : step < 3 ? "배송 대기" : !arrivalAuthed ? "도착 인증 필요" : step >= 4 ? "배송 완료됨" : "배송 완료"}</button>
-              <button class="danger" type="button" ${currentAdmin.role === "total" && canCancelOrder(order) ? "" : "disabled"} onclick="cancelAdminOrderFromDetail('${order.id}')">${cancelled ? "취소됨" : currentAdmin.role === "total" ? "주문 취소" : "총관리자 전용"}</button>
-              <button type="button" ${currentAdmin.role === "total" && canReviewReturnRefund(order) ? "" : "disabled"} onclick="approveReturnRefundFromDetail('${order.id}')">승인</button>
-              <button type="button" ${currentAdmin.role === "total" && canReviewReturnRefund(order) ? "" : "disabled"} onclick="rejectReturnRefundFromDetail('${order.id}')">거절</button>
-              <button type="button" ${currentAdmin.role === "total" && canCompleteRefund(order) ? "" : "disabled"} onclick="completeRefundFromDetail('${order.id}')">${currentAdmin.role === "total" && canCompleteRefund(order) ? "환불 완료" : currentAdmin.role === "total" ? paymentLabelForOrder(order) : "총관리자 전용"}</button>
+            <div class="vendor-detail-actions admin-detail-actions">
+              <div class="vendor-detail-action-group">
+                <strong>배송 처리</strong>
+                ${cancelled ? '<span>취소된 주문이라 배송 중, 배송 완료, 주문 취소 처리는 닫혔습니다.</span>' : `
+                  <div class="mini-actions vendor-detail-action-buttons">
+                    <button type="button" ${deliveryActionReady ? "" : "disabled"} onclick="adminAdvanceOrderFromDetail('${order.id}', 3)">${!readyForDelivery ? "픽업 대기" : !isDeliveryOrderClaimed(order) ? "배정 대기" : !pickupAuthed ? "픽업 인증 필요" : step >= 3 ? "배송 중 처리됨" : "배송 중"}</button>
+                    <button type="button" ${deliveryCompleteReady ? "" : "disabled"} onclick="adminAdvanceOrderFromDetail('${order.id}', 4)">${step < 3 ? "배송 대기" : !arrivalAuthed ? "도착 인증 필요" : step >= 4 ? "배송 완료됨" : "배송 완료"}</button>
+                    <button class="danger" type="button" ${currentAdmin.role === "total" && canCancelOrder(order) ? "" : "disabled"} onclick="cancelAdminOrderFromDetail('${order.id}')">${currentAdmin.role === "total" ? "주문 취소" : "총관리자 전용"}</button>
+                  </div>
+                `}
+              </div>
+              ${order.cancelReasonCode === "return_refund" ? `
+                <div class="vendor-detail-action-group refund-action-group">
+                  <strong>반품/환불 처리</strong>
+                  <span>${customerRefundStatusLabel(order) || paymentLabelForOrder(order)} · ${isOpenRefundStatus(order) ? returnRefundProcessInfo(order).label : "처리 완료"}</span>
+                  <div class="refund-action-buttons">
+                    <button class="refund-approve" type="button" ${currentAdmin.role === "total" && canReviewReturnRefund(order) ? "" : "disabled"} onclick="approveReturnRefundFromDetail('${order.id}')">승인</button>
+                    <button class="refund-reject" type="button" ${currentAdmin.role === "total" && canReviewReturnRefund(order) ? "" : "disabled"} onclick="rejectReturnRefundFromDetail('${order.id}')">거절</button>
+                    <button class="refund-complete" type="button" ${currentAdmin.role === "total" && canCompleteRefund(order) ? "" : "disabled"} onclick="completeRefundFromDetail('${order.id}')">${currentAdmin.role === "total" && canCompleteRefund(order) ? "환불 완료" : currentAdmin.role === "total" ? paymentLabelForOrder(order) : "총관리자 전용"}</button>
+                  </div>
+                </div>
+              ` : ""}
             </div>
             ${assignmentActions}
             <div class="order-detail-block">

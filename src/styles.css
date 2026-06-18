@@ -1334,6 +1334,9 @@
         display: grid;
         gap: 10px;
       }
+      .admin-detail-actions {
+        margin-top: 2px;
+      }
       .vendor-detail-action-group {
         display: grid;
         gap: 8px;
