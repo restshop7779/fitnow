@@ -3522,13 +3522,18 @@ import {
         return !!(log && log.orderId && (String(log.orderId).startsWith("FN-TEST-") || String(log.orderId).startsWith("FN-SET")) && isExpiredTestTimestamp(log.createdAt, now));
       }
 
+      function shortSupabaseError(error) {
+        const message = error && (error.message || error.details || error.hint || String(error));
+        return String(message || "알 수 없는 오류").replace(/\s+/g, " ").slice(0, 90);
+      }
+
       async function deleteSupabaseDiagnosticOrders(orderCodes = [], dbIds = []) {
         if (!supabaseClient) return 0;
         const uniqueCodes = Array.from(new Set(orderCodes.filter(Boolean).map(String)));
         const uniqueDbIds = new Set(dbIds.filter(Boolean));
         if (uniqueCodes.length) {
           const lookup = await supabaseClient.from("orders").select("id, order_code").in("order_code", uniqueCodes);
-          if (lookup.error) throw lookup.error;
+          if (lookup.error) throw new Error("orders 조회 실패: " + shortSupabaseError(lookup.error));
           (lookup.data || []).forEach((row) => {
             if (row.id) uniqueDbIds.add(row.id);
           });
@@ -3536,11 +3541,11 @@ import {
         const dbIdList = Array.from(uniqueDbIds);
         if (dbIdList.length) {
           const itemDeleteResult = await supabaseClient.from("order_items").delete().in("order_id", dbIdList);
-          if (itemDeleteResult.error) throw itemDeleteResult.error;
+          if (itemDeleteResult.error) throw new Error("order_items 삭제 실패: " + shortSupabaseError(itemDeleteResult.error));
         }
         if (uniqueCodes.length) {
           const deleteResult = await supabaseClient.from("orders").delete().in("order_code", uniqueCodes);
-          if (deleteResult.error) throw deleteResult.error;
+          if (deleteResult.error) throw new Error("orders 삭제 실패: " + shortSupabaseError(deleteResult.error));
         }
         return uniqueCodes.length;
       }
@@ -3557,6 +3562,7 @@ import {
         const shouldRemoveLog = (log) => expiredOnly ? isExpiredDiagnosticLog(log, now) : !!(log && log.orderId);
         let supabaseRemovedOrderCount = 0;
         let supabaseCleanupFailed = false;
+        let supabaseCleanupError = "";
         const testIds = new Set(orderHistory.filter(shouldRemoveOrder).map((order) => order.id));
         const testDbIds = new Set();
         if (supabaseClient) {
@@ -3597,6 +3603,7 @@ import {
             supabaseRemovedOrderCount = await deleteSupabaseDiagnosticOrders(Array.from(testIds), Array.from(testDbIds));
           } catch (error) {
             supabaseCleanupFailed = true;
+            supabaseCleanupError = shortSupabaseError(error);
           }
         }
         if (lastOrder && shouldRemoveOrder(lastOrder)) {
@@ -3626,7 +3633,7 @@ import {
         saveTestToolMeta({ lastCleanupAt: new Date().toISOString(), lastCleanupMode: expiredOnly ? "expired" : "manual" });
         renderSettlementExportActions();
         renderAdminReleaseReadiness(adminRenderedOrders.length ? adminRenderedOrders : orderHistory);
-        setSyncStatus((expiredOnly ? "만료 테스트 데이터 자동 정리 완료 - " : "테스트 데이터 정리 완료 - ") + "화면 주문 " + removedOrderTotal + "건, DB 주문 " + supabaseRemovedOrderCount + "건, 상태 " + removedStatusCount + "건, 로그 " + removedLogTotal + "건 삭제" + (supabaseCleanupFailed ? " · Supabase 삭제 권한 확인 필요" : ""));
+        setSyncStatus((expiredOnly ? "만료 테스트 데이터 자동 정리 완료 - " : "테스트 데이터 정리 완료 - ") + "화면 주문 " + removedOrderTotal + "건, DB 주문 " + supabaseRemovedOrderCount + "건, 상태 " + removedStatusCount + "건, 로그 " + removedLogTotal + "건 삭제" + (supabaseCleanupFailed ? " · Supabase 삭제 확인 필요: " + supabaseCleanupError : ""));
       }
 
       async function checkSupabaseCleanupPermission() {
@@ -3681,14 +3688,14 @@ import {
         try {
           await syncOrderToSupabase(order);
         } catch (error) {
-          setSyncStatus("DB 삭제권한 점검 실패 - 테스트 주문 저장 권한부터 확인 필요");
+          setSyncStatus("DB 삭제권한 점검 실패 - 테스트 주문 저장 권한 확인 필요: " + shortSupabaseError(error));
           return;
         }
         try {
           await deleteSupabaseDiagnosticOrders([order.id], [order.dbId]);
           setSyncStatus("DB 삭제권한 정상 - 테스트 주문 저장 후 orders/order_items 삭제 확인 완료");
         } catch (error) {
-          setSyncStatus("DB 삭제권한 확인 필요 - Supabase SQL 재실행 후 테스트 데이터 정리를 다시 눌러주세요");
+          setSyncStatus("DB 삭제권한 확인 필요 - " + shortSupabaseError(error) + " · Supabase SQL 재실행 후 다시 점검");
         }
       }
 
