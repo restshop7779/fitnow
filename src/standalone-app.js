@@ -74,6 +74,8 @@ import {
       const ADMIN_QA_CHECKLIST_KEY = "fitnow_admin_qa_checklist";
       const DELIVERY_PROOF_RETENTION_DAYS = 30;
       const DELIVERY_PROOF_RETENTION_MS = DELIVERY_PROOF_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+      const RETURN_REFUND_WINDOW_DAYS = 14;
+      const RETURN_REFUND_WINDOW_MS = RETURN_REFUND_WINDOW_DAYS * 24 * 60 * 60 * 1000;
       const TEST_DATA_RETENTION_OPTIONS = {
         "1h": { label: "1시간", ms: 60 * 60 * 1000 },
         "24h": { label: "24시간", ms: 24 * 60 * 60 * 1000 },
@@ -885,6 +887,39 @@ import {
 
       function canCancelOrder(order) {
         return !!(order && !isOrderCancelled(order) && (order.progressStep || 0) < 3);
+      }
+
+      function returnRefundDeadline(order) {
+        const completedAt = deliveryProofCompletedAt(order);
+        if (!completedAt) return null;
+        const time = new Date(completedAt).getTime();
+        if (!Number.isFinite(time)) return null;
+        return new Date(time + RETURN_REFUND_WINDOW_MS);
+      }
+
+      function canRequestReturnRefund(order, now = Date.now()) {
+        if (!order || isOrderCancelled(order) || (order.progressStep || 0) < 4) return false;
+        const deadline = returnRefundDeadline(order);
+        return !!(deadline && now <= deadline.getTime());
+      }
+
+      function returnRefundWindowLabel(order) {
+        const deadline = returnRefundDeadline(order);
+        if (!deadline) return "배송완료 후 " + RETURN_REFUND_WINDOW_DAYS + "일";
+        const expired = Date.now() > deadline.getTime();
+        const daysLeft = Math.max(0, Math.ceil((deadline.getTime() - Date.now()) / (24 * 60 * 60 * 1000)));
+        const dateLabel = deadline.toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
+        return expired ? "반품/환불 기간 만료" : "반품/환불 " + daysLeft + "일 남음 · " + dateLabel + "까지";
+      }
+
+      function customerCancelActionLabel(order) {
+        if (isOrderCancelled(order)) return "취소됨";
+        if ((order && order.progressStep || 0) >= 4) return canRequestReturnRefund(order) ? "반품/환불 요청" : "반품/환불 기간 만료";
+        return "주문 취소";
+      }
+
+      function canCustomerCancelOrReturn(order) {
+        return canCancelOrder(order) || canRequestReturnRefund(order);
       }
 
       function orderDisplayLabel(order) {
@@ -7632,13 +7667,14 @@ import {
         }
         list.innerHTML = orderListMarkup(orderHistory, {
           assignedRiderLabel,
-          canCancelOrder,
+          canCancelOrder: canCustomerCancelOrReturn,
           canReviewOrder,
           cancelReasonLabel,
           isOrderCancelled,
           orderDisplayLabel,
           orderReviewCount,
           paymentLabelForOrder,
+          customerCancelActionLabel,
         });
       }
 
@@ -7739,17 +7775,18 @@ import {
           setSyncStatus("주문 취소는 총관리자 권한에서 처리할 수 있습니다");
           return;
         }
-        if (!canCancelOrder(order)) {
-          setSyncStatus("배송 중 이후에는 앱에서 바로 취소할 수 없습니다");
+        const customerReturnRequest = source === "customer" && canRequestReturnRefund(order);
+        if (!canCancelOrder(order) && !customerReturnRequest) {
+          setSyncStatus((order.progressStep || 0) >= 4 ? "반품/환불 가능 기간이 지났습니다" : "배송 중 이후에는 앱에서 바로 취소할 수 없습니다");
           return;
         }
         const defaultReasonCode = defaultCancelReasonCode(source);
         const defaultReasonLabel = cancelReasonOptions.find((item) => item.key === defaultReasonCode).label;
-        const reasonChoice = window.prompt("취소 분류를 선택해 주세요\n1 고객 요청\n2 재고 부족\n3 배송 지연\n4 운영자 취소\n5 기타", defaultReasonLabel);
+        const reasonChoice = window.prompt((customerReturnRequest ? "반품/환불 분류를 선택해 주세요" : "취소 분류를 선택해 주세요") + "\n1 고객 요청\n2 재고 부족\n3 배송 지연\n4 운영자 취소\n5 기타", defaultReasonLabel);
         if (reasonChoice === null) return;
         const reasonCode = normalizeCancelReasonCode(reasonChoice, defaultReasonCode);
-        const defaultReason = source === "vendor" ? "업체 재고 부족" : source === "admin" ? "운영자 확인 취소" : "고객 요청";
-        const reason = window.prompt("취소 사유를 입력해 주세요", defaultReason);
+        const defaultReason = customerReturnRequest ? "배송완료 후 14일 이내 반품/환불 요청" : source === "vendor" ? "업체 재고 부족" : source === "admin" ? "운영자 확인 취소" : "고객 요청";
+        const reason = window.prompt(customerReturnRequest ? "반품/환불 사유를 입력해 주세요" : "취소 사유를 입력해 주세요", defaultReason);
         if (reason === null) return;
         order.cancelled = true;
         order.cancelReasonCode = reasonCode;
@@ -8035,7 +8072,7 @@ import {
           <button class="secondary" type="button" onclick="closeTracking(); openOrders()">주문 보기</button>
           <button class="secondary" type="button" ${canReviewOrder(lastOrder) ? "" : "disabled"} onclick="reviewOrder('${lastOrder.id}')">${canReviewOrder(lastOrder) ? "리뷰 작성" : "리뷰 대기"}</button>
           <button class="secondary" type="button" onclick="setSyncStatus('고객센터 연결 준비 중입니다')">고객센터 문의</button>
-          <button class="secondary" type="button" ${canCancelOrder(lastOrder) ? "" : "disabled"} onclick="cancelOrder('${lastOrder.id}', 'customer')">${isOrderCancelled(lastOrder) ? "취소됨" : "주문 취소"}</button>
+          <button class="secondary" type="button" ${canCustomerCancelOrReturn(lastOrder) ? "" : "disabled"} onclick="cancelOrder('${lastOrder.id}', 'customer')">${customerCancelActionLabel(lastOrder)}</button>
           <button class="primary" type="button" onclick="closeTracking()">새 상품 보기</button>
         `;
       }
@@ -8089,6 +8126,7 @@ import {
               <div class="line-item"><span>결제</span><strong>${lastOrder.paymentMethod || "카카오페이"} · ${paymentLabelForOrder(lastOrder)} · ${formatKRW(lastOrder.total)}</strong></div>
               <div class="line-item"><span>담당 기사</span><strong>${assignedRiderLabel(lastOrder)}</strong></div>
               <div class="line-item"><span>현재 상태</span><strong>${orderDisplayLabel(lastOrder)}</strong></div>
+              ${(lastOrder.progressStep || 0) >= 4 && !isOrderCancelled(lastOrder) ? '<div class="line-item"><span>반품/환불 가능 기간</span><strong>' + returnRefundWindowLabel(lastOrder) + '</strong></div>' : ""}
               ${canReviewOrder(lastOrder) ? '<div class="line-item"><span>리뷰 작성</span><strong>' + orderReviewCount(lastOrder) + '/' + lastOrder.items.length + '개</strong></div>' : ""}
               ${isOrderCancelled(lastOrder) ? '<div class="line-item"><span>취소 분류</span><strong>' + cancelReasonLabel(lastOrder) + '</strong></div>' : ""}
               ${isOrderCancelled(lastOrder) ? '<div class="line-item"><span>취소 사유</span><strong>' + (lastOrder.cancelReason || "사유 미입력") + '</strong></div>' : ""}
