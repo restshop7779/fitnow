@@ -4288,6 +4288,11 @@ import {
         const quickActions = adminPreReleaseQuickActions(qaStore, diagnostic, testMeta);
         const manualActions = adminPreReleaseManualActions(qaStore);
         const readyCount = checks.filter((item) => item.ready).length;
+        const allReady = readyCount === checks.length;
+        if (allReady && !testMeta.lastPreReleaseReadyAt) {
+          testMeta.lastPreReleaseReadyAt = new Date().toISOString();
+          saveTestToolMeta({ lastPreReleaseReadyAt: testMeta.lastPreReleaseReadyAt });
+        }
         return {
           diagnostic,
           qaStore,
@@ -4298,7 +4303,7 @@ import {
           quickActions,
           manualActions,
           readyCount,
-          allReady: readyCount === checks.length,
+          allReady,
         };
       }
 
@@ -4309,6 +4314,8 @@ import {
           "결과: " + (report.allReady ? "배포 가능" : "확인 필요"),
           "준비 상태: " + report.readyCount + "/" + report.checks.length,
           "작성 시각: " + testToolTimeLabel(new Date().toISOString()),
+          "최종 완료 시각: " + testToolTimeLabel(report.testMeta.lastPreReleaseReadyAt),
+          "리포트 다운로드: " + testToolTimeLabel(report.testMeta.lastPreReleaseReportDownloadedAt),
           "",
           "준비 항목",
           ...report.checks.map((item) => "- " + item.label + ": " + (item.ready ? "OK" : "확인 필요") + " (" + item.detail + ")"),
@@ -4361,6 +4368,10 @@ import {
         link.click();
         link.remove();
         window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        saveTestToolMeta({ lastPreReleaseReportDownloadedAt: new Date().toISOString() });
+        if (document.getElementById("adminOrderDetailModal").classList.contains("open")) {
+          openAdminPreReleaseCheck();
+        }
         setSyncStatus("운영 전 최종 점검 리포트 다운로드 완료 - " + status);
       }
 
@@ -4391,6 +4402,16 @@ import {
                   <em>${item.detail}</em>
                 </div>
               `).join("")}
+            </div>
+            <div class="admin-pre-release-records">
+              <div>
+                <span>최종 완료 시각</span>
+                <strong>${testToolTimeLabel(report.testMeta.lastPreReleaseReadyAt)}</strong>
+              </div>
+              <div>
+                <span>리포트 다운로드</span>
+                <strong>${testToolTimeLabel(report.testMeta.lastPreReleaseReportDownloadedAt)}</strong>
+              </div>
             </div>
             <div class="admin-pre-release-section">
               <strong>남은 QA 항목</strong>

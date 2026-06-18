@@ -2386,6 +2386,32 @@
       .admin-pre-release-check.ready .admin-pre-release-hero em {
         background: #1f7d6d;
       }
+      .admin-pre-release-records {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .admin-pre-release-records div {
+        min-width: 0;
+        padding: 9px;
+        border: 1px solid rgba(23, 23, 23, .12);
+        border-radius: 8px;
+        background: #fff;
+      }
+      .admin-pre-release-records span {
+        display: block;
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 950;
+      }
+      .admin-pre-release-records strong {
+        display: block;
+        margin-top: 3px;
+        color: #171717;
+        font-size: 11px;
+        font-weight: 950;
+        line-height: 1.3;
+      }
       .admin-pre-release-action-groups {
         display: grid;
         gap: 9px;
@@ -3446,6 +3472,7 @@
         .role-strip { grid-template-columns: 1fr; }
         .admin-release-readiness-grid { grid-template-columns: 1fr; }
         .admin-pre-release-grid { grid-template-columns: 1fr; }
+        .admin-pre-release-records { grid-template-columns: 1fr; }
         .admin-pre-release-quick-actions { grid-template-columns: 1fr; }
         .admin-pre-release-manual-actions > div > div { grid-template-columns: 1fr; }
         .delivery-work-shortcut-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
