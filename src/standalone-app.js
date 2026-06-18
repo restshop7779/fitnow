@@ -3514,8 +3514,7 @@ import {
         ].join("\n");
       }
 
-      async function copyAdminQaChecklistReport() {
-        const text = adminQaChecklistReportText();
+      async function copyTextWithFallback(text, successMessage, errorMessage) {
         if (!text) return;
         const fallbackCopy = () => {
           const textarea = document.createElement("textarea");
@@ -3536,15 +3535,23 @@ import {
           } else if (!fallbackCopy()) {
             throw new Error("fallback copy failed");
           }
-          setSyncStatus("QA 체크리스트 리포트를 복사했습니다");
+          setSyncStatus(successMessage);
         } catch (error) {
           try {
             if (!fallbackCopy()) throw error;
-            setSyncStatus("QA 체크리스트 리포트를 복사했습니다");
+            setSyncStatus(successMessage);
           } catch (fallbackError) {
-            setSyncStatus("QA 체크리스트 리포트 복사에 실패했습니다");
+            setSyncStatus(errorMessage);
           }
         }
+      }
+
+      async function copyAdminQaChecklistReport() {
+        await copyTextWithFallback(
+          adminQaChecklistReportText(),
+          "QA 체크리스트 리포트를 복사했습니다",
+          "QA 체크리스트 리포트 복사에 실패했습니다"
+        );
       }
 
       function downloadAdminQaChecklistCsv() {
@@ -4182,6 +4189,65 @@ import {
         return actions.slice(0, 6);
       }
 
+      function adminPreReleaseReportData() {
+        const orders = adminRenderedOrders.length ? adminRenderedOrders : orderHistory;
+        const diagnostic = adminDiagnosticState(orders);
+        const qaStore = readAdminQaChecklistStore();
+        const qaProgress = adminQaChecklistProgress(qaStore);
+        const remainingRows = adminQaChecklistRemainingRows(qaStore);
+        const testMeta = readTestToolMeta();
+        const checks = [
+          { label: "QA 체크리스트", detail: qaProgress.checked + "/" + qaProgress.total + "개", ready: qaProgress.done },
+          { label: "테스트 데이터", detail: diagnostic.hasTestState ? "주문 " + diagnostic.orders + "건 · 로그 " + diagnostic.logs + "건" : "잔여 없음", ready: !diagnostic.hasTestState },
+          { label: "최근 점검", detail: testToolTimeLabel(testMeta.lastCheckAt), ready: !!testMeta.lastCheckAt },
+          { label: "최근 정리", detail: testToolTimeLabel(testMeta.lastCleanupAt), ready: !!testMeta.lastCleanupAt },
+        ];
+        const quickActions = adminPreReleaseQuickActions(qaStore, diagnostic, testMeta);
+        const readyCount = checks.filter((item) => item.ready).length;
+        return {
+          diagnostic,
+          qaStore,
+          qaProgress,
+          remainingRows,
+          testMeta,
+          checks,
+          quickActions,
+          readyCount,
+          allReady: readyCount === checks.length,
+        };
+      }
+
+      function adminPreReleaseReportText() {
+        const report = adminPreReleaseReportData();
+        return [
+          "FitNow 운영 전 최종 점검 리포트",
+          "결과: " + (report.allReady ? "배포 가능" : "확인 필요"),
+          "준비 상태: " + report.readyCount + "/" + report.checks.length,
+          "작성 시각: " + testToolTimeLabel(new Date().toISOString()),
+          "",
+          "준비 항목",
+          ...report.checks.map((item) => "- " + item.label + ": " + (item.ready ? "OK" : "확인 필요") + " (" + item.detail + ")"),
+          "",
+          "남은 QA 항목",
+          ...(report.remainingRows.length
+            ? report.remainingRows.map((row) => "- " + row.sectionOrder + "-" + row.itemOrder + ". " + row.section + " / " + row.item)
+            : ["- 없음"]),
+          "",
+          "추천 바로 실행",
+          ...(report.quickActions.length
+            ? report.quickActions.map((item) => "- " + item.label + ": " + item.detail)
+            : ["- 없음"]),
+        ].join("\n");
+      }
+
+      async function copyAdminPreReleaseReport() {
+        await copyTextWithFallback(
+          adminPreReleaseReportText(),
+          "운영 전 최종 점검 리포트를 복사했습니다",
+          "운영 전 최종 점검 리포트 복사에 실패했습니다"
+        );
+      }
+
       function openAdminPreReleaseCheck() {
         if (!currentAdmin || currentAdmin.role !== "total") {
           setSyncStatus("최종 배포 전 점검은 총관리자만 가능합니다");
@@ -4189,34 +4255,20 @@ import {
         }
         const title = document.getElementById("adminOrderDetailTitle");
         const body = document.getElementById("adminOrderDetailBody");
-        const orders = adminRenderedOrders.length ? adminRenderedOrders : orderHistory;
-        const diagnostic = adminDiagnosticState(orders);
-        const qaStore = readAdminQaChecklistStore();
-        const qaProgress = adminQaChecklistProgress(qaStore);
-        const remainingRows = adminQaChecklistRemainingRows(qaStore);
-        const testMeta = readTestToolMeta();
-        const quickActions = adminPreReleaseQuickActions(qaStore, diagnostic, testMeta);
-        const checks = [
-          { label: "QA 체크리스트", detail: qaProgress.checked + "/" + qaProgress.total + "개", ready: qaProgress.done },
-          { label: "테스트 데이터", detail: diagnostic.hasTestState ? "주문 " + diagnostic.orders + "건 · 로그 " + diagnostic.logs + "건" : "잔여 없음", ready: !diagnostic.hasTestState },
-          { label: "최근 점검", detail: testToolTimeLabel(testMeta.lastCheckAt), ready: !!testMeta.lastCheckAt },
-          { label: "최근 정리", detail: testToolTimeLabel(testMeta.lastCleanupAt), ready: !!testMeta.lastCleanupAt },
-        ];
-        const readyCount = checks.filter((item) => item.ready).length;
-        const allReady = readyCount === checks.length;
+        const report = adminPreReleaseReportData();
         if (title) title.textContent = "최종 배포 전 점검";
         body.innerHTML = `
-          <div class="admin-pre-release-check ${allReady ? "ready" : "pending"}">
+          <div class="admin-pre-release-check ${report.allReady ? "ready" : "pending"}">
             <div class="admin-pre-release-hero">
               <div>
-                <span>${allReady ? "배포 가능" : "확인 필요"}</span>
-                <strong>${allReady ? "운영 전 필수 점검이 완료되었습니다" : "운영 전 확인할 항목이 남아 있습니다"}</strong>
+                <span>${report.allReady ? "배포 가능" : "확인 필요"}</span>
+                <strong>${report.allReady ? "운영 전 필수 점검이 완료되었습니다" : "운영 전 확인할 항목이 남아 있습니다"}</strong>
                 <p>QA 체크, 테스트 데이터 정리, 최근 점검/정리 기록을 기준으로 판단합니다.</p>
               </div>
-              <em>${readyCount}/${checks.length}</em>
+              <em>${report.readyCount}/${report.checks.length}</em>
             </div>
             <div class="admin-pre-release-grid">
-              ${checks.map((item) => `
+              ${report.checks.map((item) => `
                 <div class="${item.ready ? "ready" : "pending"}">
                   <span>${item.label}</span>
                   <strong>${item.ready ? "OK" : "확인 필요"}</strong>
@@ -4226,18 +4278,18 @@ import {
             </div>
             <div class="admin-pre-release-section">
               <strong>남은 QA 항목</strong>
-              ${remainingRows.length ? `
+              ${report.remainingRows.length ? `
                 <ul>
-                  ${remainingRows.slice(0, 8).map((row) => '<li>' + row.sectionOrder + '-' + row.itemOrder + '. ' + qaScenarioStatusEscape(row.section) + ' / ' + qaScenarioStatusEscape(row.item) + '</li>').join("")}
+                  ${report.remainingRows.slice(0, 8).map((row) => '<li>' + row.sectionOrder + '-' + row.itemOrder + '. ' + qaScenarioStatusEscape(row.section) + ' / ' + qaScenarioStatusEscape(row.item) + '</li>').join("")}
                 </ul>
-                ${remainingRows.length > 8 ? '<p>외 ' + (remainingRows.length - 8) + '개 항목은 QA 체크리스트에서 확인하세요.</p>' : ""}
+                ${report.remainingRows.length > 8 ? '<p>외 ' + (report.remainingRows.length - 8) + '개 항목은 QA 체크리스트에서 확인하세요.</p>' : ""}
               ` : '<p>미완료 QA 항목이 없습니다.</p>'}
             </div>
             <div class="admin-pre-release-section">
               <strong>바로 실행</strong>
-              ${quickActions.length ? `
+              ${report.quickActions.length ? `
                 <div class="admin-pre-release-quick-actions">
-                  ${quickActions.map((item) => `
+                  ${report.quickActions.map((item) => `
                     <button class="${item.variant}" type="button" onclick="runPreReleaseQaAction('${item.action}')">
                       <span>${qaScenarioStatusEscape(item.label)}</span>
                       <em>${qaScenarioStatusEscape(item.detail)}</em>
@@ -4249,14 +4301,14 @@ import {
             <div class="admin-release-actions">
               <button class="neutral" type="button" onclick="openAdminQaChecklist()">QA 체크리스트</button>
               <button class="primary" type="button" onclick="openAdminFinalQaScenario()">QA 시나리오</button>
-              <button class="success" type="button" ${diagnostic.hasTestState ? "" : "disabled"} onclick="clearAdminTestData()">테스트 데이터 정리</button>
-              <button class="warning" type="button" onclick="copyAdminQaChecklistReport()">QA 리포트 복사</button>
+              <button class="success" type="button" ${report.diagnostic.hasTestState ? "" : "disabled"} onclick="clearAdminTestData()">테스트 데이터 정리</button>
+              <button class="warning" type="button" onclick="copyAdminPreReleaseReport()">점검 리포트 복사</button>
             </div>
           </div>
         `;
         document.getElementById("adminOrderDetailModal").classList.add("open");
         document.getElementById("adminOrderDetailModal").setAttribute("aria-hidden", "false");
-        setSyncStatus(allReady ? "최종 배포 전 점검 완료 상태입니다" : "최종 배포 전 확인 항목이 남아 있습니다");
+        setSyncStatus(report.allReady ? "최종 배포 전 점검 완료 상태입니다" : "최종 배포 전 확인 항목이 남아 있습니다");
       }
 
       function qaScenarioStatusEscape(value) {
@@ -9385,6 +9437,7 @@ Object.assign(window, {
   setAdminQaChecklistItem,
   clearAdminQaChecklist,
   copyAdminQaChecklistReport,
+  copyAdminPreReleaseReport,
   downloadAdminQaChecklistCsv,
   runPreReleaseQaAction,
   approveReturnRefundFromDetail,
@@ -9607,6 +9660,7 @@ exposeHandlers({
   setAdminQaChecklistItem,
   clearAdminQaChecklist,
   copyAdminQaChecklistReport,
+  copyAdminPreReleaseReport,
   downloadAdminQaChecklistCsv,
   runPreReleaseQaAction,
   openSettlementStatement,
