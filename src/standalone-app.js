@@ -4229,6 +4229,28 @@ import {
         return actions.slice(0, 6);
       }
 
+      function adminPreReleaseManualActions(qaStore) {
+        const checked = qaStore.checked || {};
+        const actions = [];
+        if (!checked[adminQaChecklistItemKey("final-scenario", "vendor-refund-action")]) {
+          actions.push({
+            itemId: "vendor-refund-action",
+            label: "입점업체 승인/거절 버튼 확인",
+            detail: "입점업체 주문 상세의 반품/환불 승인·거절 버튼을 확인합니다.",
+            actionLabel: "입점업체 화면 열기",
+          });
+        }
+        if (!checked[adminQaChecklistItemKey("final-scenario", "admin-refund-action")]) {
+          actions.push({
+            itemId: "admin-refund-action",
+            label: "총관리자 환불 완료 버튼 확인",
+            detail: "총관리자 반품환불 주문 상세의 환불 완료 버튼을 확인합니다.",
+            actionLabel: "총관리자 주문 필터",
+          });
+        }
+        return actions;
+      }
+
       function adminPreReleaseReportData() {
         const orders = adminRenderedOrders.length ? adminRenderedOrders : orderHistory;
         const diagnostic = adminDiagnosticState(orders);
@@ -4245,6 +4267,7 @@ import {
           { label: "오늘 정리", detail: testToolFreshnessLabel(testMeta.lastCleanupAt), ready: cleanupReady },
         ];
         const quickActions = adminPreReleaseQuickActions(qaStore, diagnostic, testMeta);
+        const manualActions = adminPreReleaseManualActions(qaStore);
         const readyCount = checks.filter((item) => item.ready).length;
         return {
           diagnostic,
@@ -4254,6 +4277,7 @@ import {
           testMeta,
           checks,
           quickActions,
+          manualActions,
           readyCount,
           allReady: readyCount === checks.length,
         };
@@ -4278,6 +4302,11 @@ import {
           "추천 바로 실행",
           ...(report.quickActions.length
             ? report.quickActions.map((item) => "- " + item.label + ": " + item.detail)
+            : ["- 없음"]),
+          "",
+          "수동 확인",
+          ...(report.manualActions.length
+            ? report.manualActions.map((item) => "- " + item.label + ": " + item.detail)
             : ["- 없음"]),
         ].join("\n");
       }
@@ -4365,6 +4394,23 @@ import {
                   `).join("")}
                 </div>
               ` : '<p>현재 바로 실행할 추천 점검이 없습니다.</p>'}
+            </div>
+            <div class="admin-pre-release-section">
+              <strong>수동 확인</strong>
+              ${report.manualActions.length ? `
+                <div class="admin-pre-release-manual-actions">
+                  ${report.manualActions.map((item) => `
+                    <div>
+                      <span>${qaScenarioStatusEscape(item.label)}</span>
+                      <em>${qaScenarioStatusEscape(item.detail)}</em>
+                      <div>
+                        <button class="neutral" type="button" onclick="openPreReleaseManualQa('${item.itemId}')">${qaScenarioStatusEscape(item.actionLabel)}</button>
+                        <button class="success" type="button" onclick="completePreReleaseManualQa('${item.itemId}')">확인 완료</button>
+                      </div>
+                    </div>
+                  `).join("")}
+                </div>
+              ` : '<p>수동 확인 항목이 없습니다.</p>'}
             </div>
             <div class="admin-pre-release-action-groups">
               <div>
@@ -4500,6 +4546,39 @@ import {
         if (document.getElementById("adminOrderDetailModal").classList.contains("open")) {
           openAdminPreReleaseCheck();
         }
+      }
+
+      async function openPreReleaseManualQa(itemId) {
+        if (itemId === "vendor-refund-action") {
+          closeAdminOrderDetail();
+          openVendor();
+          if (currentVendor) {
+            await setVendorOrderFilter("return_refund_requested");
+            setSyncStatus("입점업체 반품요청 화면으로 이동했습니다. 주문 상세에서 승인/거절 버튼을 확인하세요");
+          } else {
+            setSyncStatus("입점업체 로그인 후 반품요청 주문 상세에서 승인/거절 버튼을 확인하세요");
+          }
+          return;
+        }
+        if (itemId === "admin-refund-action") {
+          closeAdminOrderDetail();
+          await focusAdminTodo("return_refund");
+          setSyncStatus("총관리자 반품/환불 주문 필터로 이동했습니다. 주문 상세에서 환불 완료 버튼을 확인하세요");
+          return;
+        }
+        setSyncStatus("확인할 수동 QA 항목을 찾지 못했습니다");
+      }
+
+      function completePreReleaseManualQa(itemId) {
+        if (!["vendor-refund-action", "admin-refund-action"].includes(itemId)) {
+          setSyncStatus("확인할 수동 QA 항목을 찾지 못했습니다");
+          return;
+        }
+        markFinalQaScenarioItem(itemId);
+        if (document.getElementById("adminOrderDetailModal").classList.contains("open")) {
+          openAdminPreReleaseCheck();
+        }
+        setSyncStatus(adminQaChecklistLabelByKey(adminQaChecklistItemKey("final-scenario", itemId)) + " 확인 완료");
       }
 
       function renderSettlementExportActions() {
@@ -9514,6 +9593,8 @@ Object.assign(window, {
   openAdminQaChecklist,
   openAdminFinalQaScenario,
   openAdminPreReleaseCheck,
+  openPreReleaseManualQa,
+  completePreReleaseManualQa,
   setAdminQaChecklistItem,
   clearAdminQaChecklist,
   copyAdminQaChecklistReport,
@@ -9739,6 +9820,8 @@ exposeHandlers({
   openAdminQaChecklist,
   openAdminFinalQaScenario,
   openAdminPreReleaseCheck,
+  openPreReleaseManualQa,
+  completePreReleaseManualQa,
   setAdminQaChecklistItem,
   clearAdminQaChecklist,
   copyAdminQaChecklistReport,
