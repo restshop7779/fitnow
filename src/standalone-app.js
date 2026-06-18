@@ -2241,11 +2241,13 @@ import {
             <div class="vendor-detail-actions">
               <div class="vendor-detail-action-group">
                 <strong>주문 처리</strong>
-                <div class="mini-actions vendor-detail-action-buttons">
-                  <button type="button" ${paidAndActive ? "" : "disabled"} onclick="vendorAdvanceOrderFromDetail('${order.id}', 1)">${cancelled ? "취소됨" : !order.paid ? "결제 대기" : (order.progressStep || 0) >= 1 ? "재고 확인됨" : "재고 확인"}</button>
-                  <button type="button" ${paidAndActive ? "" : "disabled"} onclick="vendorAdvanceOrderFromDetail('${order.id}', 2)">${cancelled ? "취소됨" : !order.paid ? "결제 대기" : (order.progressStep || 0) >= 2 ? "픽업 준비됨" : "픽업 준비"}</button>
-                  <button class="danger" type="button" ${canCancelOrder(order) ? "" : "disabled"} onclick="cancelVendorOrderFromDetail('${order.id}')">${cancelled ? "취소됨" : "주문 취소"}</button>
-                </div>
+                ${cancelled ? '<span>취소된 주문이라 재고 확인, 픽업 준비, 주문 취소 처리는 닫혔습니다.</span>' : `
+                  <div class="mini-actions vendor-detail-action-buttons">
+                    <button type="button" ${paidAndActive ? "" : "disabled"} onclick="vendorAdvanceOrderFromDetail('${order.id}', 1)">${!order.paid ? "결제 대기" : (order.progressStep || 0) >= 1 ? "재고 확인됨" : "재고 확인"}</button>
+                    <button type="button" ${paidAndActive ? "" : "disabled"} onclick="vendorAdvanceOrderFromDetail('${order.id}', 2)">${!order.paid ? "결제 대기" : (order.progressStep || 0) >= 2 ? "픽업 준비됨" : "픽업 준비"}</button>
+                    <button class="danger" type="button" ${canCancelOrder(order) ? "" : "disabled"} onclick="cancelVendorOrderFromDetail('${order.id}')">주문 취소</button>
+                  </div>
+                `}
               </div>
               ${returnRefundActive ? `
                 <div class="vendor-detail-action-group refund-action-group">
