@@ -931,6 +931,10 @@ import {
         return isOrderCancelled(order) && refundStatusFromOrder(order) === "pending";
       }
 
+      function canVendorManageRefund(order) {
+        return !!(currentVendor && order && (order.items || []).some((item) => item.showroom === currentVendor.store));
+      }
+
       const cancelReasonOptions = [
         { key: "customer", label: "고객 요청" },
         { key: "return_refund", label: "반품/환불 요청" },
@@ -2126,6 +2130,7 @@ import {
               <button type="button" ${paidAndActive ? "" : "disabled"} onclick="vendorAdvanceOrderFromDetail('${order.id}', 1)">${cancelled ? "취소됨" : !order.paid ? "결제 대기" : (order.progressStep || 0) >= 1 ? "재고 확인됨" : "재고 확인"}</button>
               <button type="button" ${paidAndActive ? "" : "disabled"} onclick="vendorAdvanceOrderFromDetail('${order.id}', 2)">${cancelled ? "취소됨" : !order.paid ? "결제 대기" : (order.progressStep || 0) >= 2 ? "픽업 준비됨" : "픽업 준비"}</button>
               <button class="danger" type="button" ${canCancelOrder(order) ? "" : "disabled"} onclick="cancelVendorOrderFromDetail('${order.id}')">${cancelled ? "취소됨" : "주문 취소"}</button>
+              <button type="button" ${canVendorManageRefund(order) && canCompleteRefund(order) ? "" : "disabled"} onclick="completeVendorRefundFromDetail('${order.id}')">${canVendorManageRefund(order) && canCompleteRefund(order) ? "환불 완료" : paymentLabelForOrder(order)}</button>
             </div>
           </div>
         `;
@@ -2145,6 +2150,11 @@ import {
 
       async function cancelVendorOrderFromDetail(orderId) {
         await cancelOrder(orderId, "vendor");
+        await openVendorOrderDetail(orderId);
+      }
+
+      async function completeVendorRefundFromDetail(orderId) {
+        await completeRefund(orderId, "vendor");
         await openVendorOrderDetail(orderId);
       }
 
@@ -7897,13 +7907,21 @@ import {
         }
       }
 
-      async function completeRefund(orderId) {
-        if (!currentAdmin) {
+      async function completeRefund(orderId, source = "admin") {
+        if (source === "vendor" && !currentVendor) {
+          openVendorLogin();
+          return;
+        }
+        if (source !== "vendor" && !currentAdmin) {
           openAdminLogin();
           return;
         }
         let order = orderHistory.find((item) => item.id === orderId);
         if (!order && lastOrder && lastOrder.id === orderId) order = lastOrder;
+        if (!order && supabaseClient && source === "vendor") {
+          const orders = await loadVendorOrders().catch(() => []);
+          order = orders.find((item) => item.id === orderId);
+        }
         if (!order && supabaseClient) {
           const orders = await loadAdminOrders().catch(() => []);
           order = orders.find((item) => item.id === orderId);
@@ -7912,11 +7930,15 @@ import {
           setSyncStatus("환불 처리할 주문을 찾을 수 없습니다");
           return;
         }
-        if (!canCurrentAdminManageOrder(order)) {
+        if (source === "vendor" && !canVendorManageRefund(order)) {
+          setSyncStatus("입점업체는 자기 매장 주문만 환불 처리할 수 있습니다");
+          return;
+        }
+        if (source !== "vendor" && !canCurrentAdminManageOrder(order)) {
           setSyncStatus("현재 계정에서 환불 처리할 수 없는 주문입니다");
           return;
         }
-        if (currentAdmin.role !== "total") {
+        if (source !== "vendor" && currentAdmin.role !== "total") {
           setSyncStatus("환불 처리는 총관리자 권한에서 처리할 수 있습니다");
           return;
         }
@@ -7936,7 +7958,7 @@ import {
         if (document.getElementById("adminModal").classList.contains("open")) renderAdminOrders();
         try {
           await syncOrderStatusToSupabase(order);
-          setSyncStatus("환불 완료 상태가 Supabase에 저장됨 - " + order.id);
+          setSyncStatus((source === "vendor" ? "입점업체 환불 완료 상태" : "환불 완료 상태") + "가 Supabase에 저장됨 - " + order.id);
         } catch (error) {
           setSyncStatus("환불 완료는 화면에 반영됨 - DB 업데이트 권한 확인 필요");
         }
@@ -8451,6 +8473,7 @@ exposeHandlers({
   closeVendorProductDetail,
   completeRefund,
   completeRefundFromDetail,
+  completeVendorRefundFromDetail,
   confirmCheckout,
   confirmDeliveryProof,
   confirmDeliveryProofFromDetail,
