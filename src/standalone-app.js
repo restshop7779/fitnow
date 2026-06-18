@@ -3436,6 +3436,10 @@ import {
             <span>${progress.checked}/${progress.total}개 완료 · 마지막 저장 ${testToolTimeLabel(store.updatedAt)}</span>
           `;
         }
+        keys.forEach((key) => {
+          const input = document.querySelector('[data-admin-qa-key="' + key + '"]');
+          if (input) input.checked = !!store.checked[key];
+        });
       }
 
       function markFinalQaScenarioItem(itemId, options = {}) {
@@ -4060,7 +4064,7 @@ import {
                       const key = adminQaChecklistItemKey(section.id, item.id);
                       return `
                       <label>
-                        <input type="checkbox" ${store.checked[key] ? "checked" : ""} onchange="setAdminQaChecklistItem('${key}', this.checked)" />
+                        <input type="checkbox" data-admin-qa-key="${key}" ${store.checked[key] ? "checked" : ""} onchange="setAdminQaChecklistItem('${key}', this.checked)" />
                         <span>${item.label}</span>
                       </label>
                     `;
@@ -6729,6 +6733,9 @@ import {
           { photo: options.photo || null }
         );
         await persistDeliveryAssignment(order, (type === "pickup" ? "픽업 인증 완료" : "도착 인증 완료") + " - " + order.id);
+        if (hasDeliveryProof(order, "pickup") && hasDeliveryProof(order, "arrival")) {
+          markFinalQaScenarioItem("delivery-proof");
+        }
       }
 
       async function confirmDeliveryProofFromDetail(orderId, type) {
