@@ -67,6 +67,7 @@ import {
   orderSummaryMarkup,
   timelineMarkup,
 } from "./standalone/orderViews.js";
+import * as THREE from "three";
 
       const SETTLEMENT_FLOW_CHECK_LOG_KEY = "fitnow_settlement_flow_check_logs";
       const TEST_DATA_RETENTION_KEY = "fitnow_test_data_retention";
@@ -151,6 +152,7 @@ import {
       let activeFitPreviewKey = "";
       let activeAvatarLookSnapshot = null;
       let lastFitRoomAvatarSnapshot = null;
+      let fitAvatar3DState = null;
       function readReviewStore() {
         try {
           const parsed = JSON.parse(localStorage.getItem(REVIEW_STORAGE_KEY) || "[]");
@@ -9066,6 +9068,180 @@ import {
         }).join("");
       }
 
+      function disposeFitAvatar3D() {
+        if (!fitAvatar3DState) return;
+        cancelAnimationFrame(fitAvatar3DState.frame);
+        if (fitAvatar3DState.resizeObserver) fitAvatar3DState.resizeObserver.disconnect();
+        if (fitAvatar3DState.scene) {
+          fitAvatar3DState.scene.traverse((object) => {
+            if (object.geometry) object.geometry.dispose();
+            if (object.material) {
+              const materials = Array.isArray(object.material) ? object.material : [object.material];
+              materials.forEach((material) => material.dispose());
+            }
+          });
+        }
+        if (fitAvatar3DState.renderer) fitAvatar3DState.renderer.dispose();
+        fitAvatar3DState = null;
+      }
+
+      function fitAvatar3DColorForItem(item = {}) {
+        if (item.visual === "tshirt") return 0xf7f3ea;
+        if (item.category === "하의") return 0x262a32;
+        if (item.category === "신발") return 0x151515;
+        if (item.category === "잡화") return 0xc4a873;
+        if (/니트|베스트/i.test(item.name || "")) return 0x956f4b;
+        return 0x2b63ff;
+      }
+
+      function addCapsulePart(group, material, radius, length, position, rotation = [0, 0, 0], scale = [1, 1, 1]) {
+        const geometry = new THREE.CapsuleGeometry(radius, length, 16, 28);
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.set(position[0], position[1], position[2]);
+        mesh.rotation.set(rotation[0], rotation[1], rotation[2]);
+        mesh.scale.set(scale[0], scale[1], scale[2]);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        group.add(mesh);
+        return mesh;
+      }
+
+      function addEllipsoidPart(group, material, radius, position, scale = [1, 1, 1]) {
+        const geometry = new THREE.SphereGeometry(radius, 36, 28);
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.set(position[0], position[1], position[2]);
+        mesh.scale.set(scale[0], scale[1], scale[2]);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        group.add(mesh);
+        return mesh;
+      }
+
+      function buildFitAvatar3DModel(profile, metrics, items = []) {
+        const group = new THREE.Group();
+        const heightScale = THREE.MathUtils.clamp(0.9 + (profile.height - 168) / 95, 0.82, 1.22);
+        const shoulderScale = THREE.MathUtils.clamp(metrics.shoulder / 92, 0.84, 1.28);
+        const waistScale = THREE.MathUtils.clamp(metrics.waist / 82, 0.84, 1.26);
+        const legScale = THREE.MathUtils.clamp(metrics.leg / 92, 0.86, 1.3);
+        const hipScale = THREE.MathUtils.clamp((waistScale + legScale) / 2, 0.86, 1.28);
+        const skin = new THREE.MeshStandardMaterial({ color: 0xd7a27b, roughness: 0.58, metalness: 0.02 });
+        const skinSoft = new THREE.MeshStandardMaterial({ color: 0xe2b18b, roughness: 0.62, metalness: 0.02 });
+        const hair = new THREE.MeshStandardMaterial({ color: 0x191614, roughness: 0.7 });
+        const pants = new THREE.MeshStandardMaterial({ color: 0x242832, roughness: 0.54, metalness: 0.02 });
+        const shoe = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.48 });
+        const topItem = items.find((item) => ["상의", "아우터", "원피스"].includes(item.category)) || items[0] || {};
+        const shirtColor = fitAvatar3DColorForItem(topItem);
+        const shirt = new THREE.MeshStandardMaterial({
+          color: shirtColor,
+          roughness: topItem.visual === "tshirt" ? 0.72 : 0.5,
+          metalness: 0.01,
+        });
+        const seam = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8, transparent: true, opacity: 0.24 });
+
+        group.scale.setScalar(heightScale);
+        group.rotation.y = -0.2;
+
+        addEllipsoidPart(group, skinSoft, 0.34, [0, 2.92, 0], [0.82, 1, 0.76]);
+        addEllipsoidPart(group, hair, 0.36, [0, 3.04, -0.02], [0.9, 0.64, 0.8]);
+        addCapsulePart(group, skin, 0.12, 0.18, [0, 2.48, 0], [0, 0, 0], [1, 1, 0.88]);
+
+        addCapsulePart(group, skin, 0.4, 0.92, [0, 1.86, 0], [0, 0, 0], [shoulderScale, 1.05, 0.58]);
+        addCapsulePart(group, shirt, 0.42, 0.95, [0, 1.86, 0.016], [0, 0, 0], [shoulderScale * 1.04, 1.03, 0.6]);
+        addEllipsoidPart(group, skin, 0.33, [0, 1.27, 0], [hipScale, 0.46, 0.55]);
+
+        const collar = new THREE.TorusGeometry(0.18, 0.018, 10, 48, Math.PI * 1.35);
+        const collarMesh = new THREE.Mesh(collar, seam);
+        collarMesh.position.set(0, 2.35, 0.29);
+        collarMesh.rotation.set(Math.PI * 0.58, 0, Math.PI * 0.82);
+        group.add(collarMesh);
+
+        const shoulderWidth = 0.58 * shoulderScale;
+        addCapsulePart(group, shirt, 0.115, 0.56, [-shoulderWidth, 2.05, 0.02], [0.05, 0, -0.38], [1, 1, 0.9]);
+        addCapsulePart(group, shirt, 0.115, 0.56, [shoulderWidth, 2.05, 0.02], [0.05, 0, 0.38], [1, 1, 0.9]);
+        addCapsulePart(group, skin, 0.095, 0.72, [-shoulderWidth - 0.08, 1.45, 0], [0.02, 0, -0.17], [1, 1, 0.9]);
+        addCapsulePart(group, skin, 0.095, 0.72, [shoulderWidth + 0.08, 1.45, 0], [0.02, 0, 0.17], [1, 1, 0.9]);
+
+        const legX = 0.18 * hipScale;
+        addCapsulePart(group, pants, 0.14, 1.06 * legScale, [-legX, 0.58, 0], [0.02, 0, 0.04], [1, 1, 0.88]);
+        addCapsulePart(group, pants, 0.14, 1.06 * legScale, [legX, 0.58, 0], [0.02, 0, -0.04], [1, 1, 0.88]);
+        addCapsulePart(group, shoe, 0.085, 0.28, [-legX, -0.16 * legScale, 0.09], [Math.PI / 2, 0, Math.PI / 2], [1.15, 1, 0.78]);
+        addCapsulePart(group, shoe, 0.085, 0.28, [legX, -0.16 * legScale, 0.09], [Math.PI / 2, 0, Math.PI / 2], [1.15, 1, 0.78]);
+
+        if (items.some((item) => item.category === "잡화")) {
+          const bagMaterial = new THREE.MeshStandardMaterial({ color: 0xc4a873, roughness: 0.44, metalness: 0.08 });
+          const bag = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.45, 0.16), bagMaterial);
+          bag.position.set(shoulderWidth + 0.27, 1.22, 0.15);
+          bag.rotation.set(0.08, -0.18, -0.08);
+          bag.castShadow = true;
+          group.add(bag);
+        }
+
+        return group;
+      }
+
+      function renderFitAvatar3D(profile, metrics, items = []) {
+        disposeFitAvatar3D();
+        const canvas = document.getElementById("fitAvatar3DCanvas");
+        const stage = document.getElementById("fitAvatar3DStage");
+        if (!canvas || !stage) return;
+        const scene = new THREE.Scene();
+        scene.background = null;
+        const camera = new THREE.OrthographicCamera(-1.9, 1.9, 2.6, -0.55, 0.1, 100);
+        camera.position.set(0, 1.52, 6.6);
+        camera.lookAt(0, 1.45, 0);
+        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+        const ambient = new THREE.HemisphereLight(0xffffff, 0xd0c4b4, 2.1);
+        scene.add(ambient);
+        const key = new THREE.DirectionalLight(0xffffff, 2.4);
+        key.position.set(3.4, 5.2, 4.2);
+        key.castShadow = true;
+        scene.add(key);
+        const rim = new THREE.DirectionalLight(0x9bc4ff, 1.2);
+        rim.position.set(-3.2, 2.7, -2.4);
+        scene.add(rim);
+
+        const floor = new THREE.Mesh(
+          new THREE.CircleGeometry(1.28, 72),
+          new THREE.MeshStandardMaterial({ color: 0xede6da, roughness: 0.86, metalness: 0 })
+        );
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = -0.27;
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        const model = buildFitAvatar3DModel(profile, metrics, items);
+        scene.add(model);
+
+        const resize = () => {
+          const rect = stage.getBoundingClientRect();
+          const width = Math.max(1, Math.round(rect.width));
+          const height = Math.max(1, Math.round(rect.height));
+          renderer.setSize(width, height, false);
+          canvas.width = Math.round(width * Math.min(window.devicePixelRatio || 1, 2));
+          canvas.height = Math.round(height * Math.min(window.devicePixelRatio || 1, 2));
+          renderer.render(scene, camera);
+        };
+        const resizeObserver = new ResizeObserver(resize);
+        resizeObserver.observe(stage);
+        resize();
+
+        const startedAt = Date.now();
+        const animate = () => {
+          const elapsed = (Date.now() - startedAt) / 1000;
+          model.rotation.y = -0.24 + Math.sin(elapsed * 0.75) * 0.13;
+          model.position.y = Math.sin(elapsed * 1.15) * 0.015;
+          renderer.render(scene, camera);
+          if (fitAvatar3DState) fitAvatar3DState.frame = requestAnimationFrame(animate);
+        };
+        fitAvatar3DState = { renderer, scene, frame: 0, resizeObserver };
+        animate();
+      }
+
       function avatarLookListMarkup(items = []) {
         if (!items.length) return '<div class="line-item"><span>착용 아이템</span><strong>장바구니에 상품을 담아보세요</strong></div>';
         return items.map((item) => `
@@ -9373,8 +9549,9 @@ import {
         const avatarBodyClass = "fit-body-" + profile.bodyType;
         body.innerHTML = `
           <section class="fit-room-layout">
-            <div class="fit-avatar-stage">
-              <div class="fit-avatar ${avatarBodyClass}" style="${avatarStyle}">
+            <div class="fit-avatar-stage fit-avatar-stage-3d" id="fitAvatar3DStage">
+              <canvas id="fitAvatar3DCanvas" class="fit-avatar-3d-canvas" aria-label="마이아바타 3D 미리보기"></canvas>
+              <div class="fit-avatar fit-avatar-fallback ${avatarBodyClass}" style="${avatarStyle}" aria-hidden="true">
                 <div class="fit-head"></div>
                 <div class="fit-arms"></div>
                 <div class="fit-torso">${fitPreviewLayers(avatarItems)}</div>
@@ -9431,6 +9608,7 @@ import {
             <button class="secondary" type="button" onclick="openMyAvatarLook()">마이아바타룩 보기</button>
           </div>
         `;
+        requestAnimationFrame(() => renderFitAvatar3D(profile, metrics, avatarItems));
       }
 
       function openFitRoom(key = "") {
@@ -9451,6 +9629,7 @@ import {
       }
 
       function closeFitRoom() {
+        disposeFitAvatar3D();
         document.getElementById("fitRoomModal").classList.remove("open");
         document.getElementById("fitRoomModal").setAttribute("aria-hidden", "true");
       }

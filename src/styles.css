@@ -2990,6 +2990,7 @@
       }
       .fit-avatar-stage {
         min-height: 366px;
+        position: relative;
         display: grid;
         place-items: center;
         border: 1px solid var(--line);
@@ -3001,6 +3002,37 @@
         background-size: auto, auto, 28px 28px;
         overflow: hidden;
         perspective: 900px;
+      }
+      .fit-avatar-stage-3d {
+        min-height: 430px;
+        border: 0;
+        background:
+          radial-gradient(circle at 50% 18%, rgba(216,243,106,.28), transparent 30%),
+          radial-gradient(ellipse at 50% 82%, rgba(23,23,23,.16), transparent 42%),
+          linear-gradient(180deg, #fbfaf6, #ebe4d9);
+      }
+      .fit-avatar-stage-3d::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(90deg, rgba(23,23,23,.045) 1px, transparent 1px),
+          linear-gradient(180deg, rgba(23,23,23,.045) 1px, transparent 1px);
+        background-size: 32px 32px;
+        mask-image: linear-gradient(180deg, rgba(0,0,0,.2), rgba(0,0,0,.72), rgba(0,0,0,.16));
+        pointer-events: none;
+      }
+      .fit-avatar-3d-canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+        z-index: 2;
+      }
+      .fit-avatar-fallback {
+        opacity: 0;
+        pointer-events: none;
       }
       .fit-avatar {
         --avatar-height: 190px;
