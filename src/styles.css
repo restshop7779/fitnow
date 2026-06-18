@@ -2384,6 +2384,40 @@
         font-size: 12px;
         font-weight: 950;
       }
+      .admin-copy-fallback {
+        display: grid;
+        gap: 7px;
+        padding: 10px;
+        border: 1px solid #7c4d00;
+        border-radius: 8px;
+        background: #fff8e7;
+      }
+      .admin-copy-fallback strong {
+        display: block;
+        color: #171717;
+        font-size: 12px;
+        font-weight: 950;
+      }
+      .admin-copy-fallback p {
+        margin: 0;
+        color: #5b4637;
+        font-size: 11px;
+        font-weight: 850;
+        line-height: 1.45;
+      }
+      .admin-copy-fallback textarea {
+        width: 100%;
+        min-height: 148px;
+        padding: 8px;
+        border: 1px solid rgba(23, 23, 23, .16);
+        border-radius: 8px;
+        background: #fff;
+        color: #171717;
+        font-size: 11px;
+        font-weight: 750;
+        line-height: 1.45;
+        resize: vertical;
+      }
       .admin-pre-release-grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));

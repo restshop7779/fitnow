@@ -3528,7 +3528,27 @@ import {
         ].join("\n");
       }
 
-      async function copyTextWithFallback(text, successMessage, errorMessage) {
+      function showCopyFallbackText(text, label = "리포트") {
+        const body = document.getElementById("adminOrderDetailBody");
+        if (!body) return false;
+        const existing = body.querySelector("[data-copy-fallback-text]");
+        if (existing) existing.remove();
+        body.insertAdjacentHTML("beforeend", `
+          <div class="admin-copy-fallback" data-copy-fallback-text>
+            <strong>${qaScenarioStatusEscape(label)} 직접 복사</strong>
+            <p>브라우저 클립보드 권한이 제한되어 아래 텍스트를 표시했습니다.</p>
+            <textarea readonly>${qaScenarioStatusEscape(text)}</textarea>
+          </div>
+        `);
+        const textarea = body.querySelector("[data-copy-fallback-text] textarea");
+        if (textarea) {
+          textarea.focus();
+          textarea.select();
+        }
+        return true;
+      }
+
+      async function copyTextWithFallback(text, successMessage, errorMessage, fallbackLabel = "리포트") {
         if (!text) return;
         const fallbackCopy = () => {
           const textarea = document.createElement("textarea");
@@ -3555,7 +3575,11 @@ import {
             if (!fallbackCopy()) throw error;
             setSyncStatus(successMessage);
           } catch (fallbackError) {
-            setSyncStatus(errorMessage);
+            if (showCopyFallbackText(text, fallbackLabel)) {
+              setSyncStatus("복사 권한 제한 - " + fallbackLabel + " 텍스트를 화면에 표시했습니다");
+            } else {
+              setSyncStatus(errorMessage);
+            }
           }
         }
       }
@@ -3564,7 +3588,8 @@ import {
         await copyTextWithFallback(
           adminQaChecklistReportText(),
           "QA 체크리스트 리포트를 복사했습니다",
-          "QA 체크리스트 리포트 복사에 실패했습니다"
+          "QA 체크리스트 리포트 복사에 실패했습니다",
+          "QA 체크리스트 리포트"
         );
       }
 
@@ -4260,7 +4285,8 @@ import {
         await copyTextWithFallback(
           adminPreReleaseReportText(),
           "운영 전 최종 점검 리포트를 복사했습니다",
-          "운영 전 최종 점검 리포트 복사에 실패했습니다"
+          "운영 전 최종 점검 리포트 복사에 실패했습니다",
+          "운영 전 최종 점검 리포트"
         );
       }
 
