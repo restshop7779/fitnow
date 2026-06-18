@@ -613,10 +613,20 @@
       .visual.has-photo:before { display: none; }
       .visual img { width: 100%; height: 100%; object-fit: cover; display: block; }
       .jacket { background: linear-gradient(145deg, #dfe5ea, #f7f3ec); }
+      .tshirt { background: linear-gradient(145deg, #f9f9f7, #dedbd2); }
       .shoes { background: linear-gradient(145deg, #f2d2b7, #fbf7ee); }
       .bag { background: linear-gradient(145deg, #d2efe7, #f7f3ec); }
       .ring { background: linear-gradient(145deg, #e7e2d8, #fff); }
       .visual:before { content: ""; position: absolute; inset: 30px 32px 20px; border-radius: 22px; background: #303845; opacity: .92; }
+      .visual.tshirt:before {
+        inset: 26px 25px 22px;
+        clip-path: polygon(20% 0, 38% 0, 42% 12%, 58% 12%, 62% 0, 80% 0, 100% 25%, 86% 43%, 76% 35%, 76% 100%, 24% 100%, 24% 35%, 14% 43%, 0 25%);
+        border: 2px solid rgba(23,23,23,.18);
+        border-radius: 10px 10px 18px 18px;
+        background: linear-gradient(180deg, #fff, #ece9df);
+        box-shadow: inset 0 -14px 20px rgba(23,23,23,.08);
+        opacity: 1;
+      }
       .detail-visual { height: 248px; margin-bottom: 14px; }
       .badge { display: inline-flex; align-items: center; gap: 6px; min-height: 25px; margin-bottom: 9px; padding: 0 8px; border-radius: 999px; background: var(--lime); font-size: 11px; font-weight: 950; }
       .badge i { width: 6px; height: 6px; border-radius: 50%; background: #171c05; }
@@ -3137,6 +3147,25 @@
           linear-gradient(135deg, rgba(255,255,255,.22), transparent 34%),
           linear-gradient(180deg, #2b63ff, #172a78);
       }
+      .fit-garment.fit-visual-tshirt {
+        inset: 10px -6px 18px;
+        clip-path: polygon(19% 0, 38% 0, 42% 12%, 58% 12%, 62% 0, 81% 0, 100% 23%, 86% 43%, 76% 35%, 76% 100%, 24% 100%, 24% 35%, 14% 43%, 0 23%);
+        border-color: rgba(23,23,23,.18);
+        border-radius: 16px;
+        background:
+          linear-gradient(135deg, rgba(255,255,255,.85), transparent 45%),
+          linear-gradient(180deg, #ffffff, #e9e6dc);
+        color: #171717;
+        box-shadow:
+          inset 0 10px 18px rgba(255,255,255,.7),
+          inset 0 -18px 22px rgba(23,23,23,.1),
+          0 8px 14px rgba(23,23,23,.14);
+      }
+      .fit-garment.fit-visual-tshirt::before {
+        background:
+          linear-gradient(90deg, transparent 0 47%, rgba(23,23,23,.08) 48% 51%, transparent 52%),
+          repeating-linear-gradient(90deg, rgba(23,23,23,.035) 0 1px, transparent 1px 9px);
+      }
       .fit-garment.fit-하의 {
         inset: auto 14px -102px;
         height: 104px;
@@ -3201,6 +3230,17 @@
         color: #171717;
         padding: 0 10px;
         font-weight: 900;
+      }
+      .fit-empty-hint {
+        margin: -2px 0 0;
+        padding: 10px 12px;
+        border: 1px dashed var(--line);
+        border-radius: 8px;
+        background: #fffaf0;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 850;
+        line-height: 1.45;
       }
       .fit-result-card { margin-top: 12px; }
       .avatar-look-card {

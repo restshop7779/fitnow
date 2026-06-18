@@ -1497,6 +1497,42 @@ import {
         };
       }
 
+      function avatarTestProduct() {
+        return {
+          key: "white-regular-overfit-tee",
+          name: "화이트 레귤러핏 오버핏 반팔티",
+          price: 39000,
+          discountRate: 10,
+          showroom: "어반클로젯 동탄",
+          stock: 12,
+          minutes: 28,
+          match: 91,
+          material: "코튼 100%",
+          visual: "tshirt",
+          category: "상의",
+          fit: "레귤러 기반 오버핏 반팔",
+          size: "M / L / XL",
+          garmentLength: 72,
+          shoulderWidth: 54,
+          chestWidth: 58,
+          waistWidth: 56,
+          modelHeight: 176,
+          modelWeight: 68,
+          note: "화이트 컬러의 기본 반팔티입니다. 레귤러 핏보다 여유 있고 과하지 않은 오버핏이라 데님, 쇼츠, 조거 팬츠에 바로 매칭하기 좋습니다.",
+        };
+      }
+
+      function ensureAvatarTestProduct() {
+        const existing = products.find((item) => item.key === "white-regular-overfit-tee");
+        if (existing) {
+          Object.assign(existing, avatarTestProduct(), { dbId: existing.dbId, showroomId: existing.showroomId });
+          return existing;
+        }
+        const insertIndex = Math.max(0, Math.min(1, products.length));
+        products.splice(insertIndex, 0, avatarTestProduct());
+        return products[insertIndex];
+      }
+
       function lookSetRowToItem(row) {
         return {
           dbId: row.id,
@@ -1655,6 +1691,7 @@ import {
         }
         if (productResult.data && productResult.data.length) {
           products.splice(0, products.length, ...productResult.data.map(productToItem));
+          ensureAvatarTestProduct();
         }
         await loadSupabaseLookSets();
         await loadSupabaseReviews();
@@ -8896,7 +8933,7 @@ import {
       }
 
       function fitPreviewItems() {
-        return products.filter((item) => storeIsVisible(item)).slice(0, 30);
+        return wishlistItems().filter((item) => storeIsVisible(item)).slice(0, 30);
       }
 
       function fitProfileMetrics(profile) {
@@ -8979,8 +9016,9 @@ import {
           const category = qaScenarioStatusEscape(item.category || "상의");
           const name = qaScenarioStatusEscape(item.name || category);
           const photoClass = item.image ? " has-photo" : "";
+          const visualClass = item.visual ? " fit-visual-" + qaScenarioStatusEscape(item.visual) : "";
           const image = item.image ? '<img src="' + item.image + '" alt="' + name + '" />' : '<span>' + category + '</span>';
-          return '<div class="fit-garment fit-layer-' + index + ' fit-' + category + photoClass + '" title="' + name + '">' + image + '</div>';
+          return '<div class="fit-garment fit-layer-' + index + ' fit-' + category + visualClass + photoClass + '" title="' + name + '">' + image + '</div>';
         }).join("");
       }
 
@@ -9244,7 +9282,7 @@ import {
         const profile = readFitProfile();
         const items = fitPreviewItems();
         if (!activeFitPreviewKey || !items.some((item) => item.key === activeFitPreviewKey)) {
-          activeFitPreviewKey = (cart[0] && cart[0].key) || (items[0] && items[0].key) || "";
+          activeFitPreviewKey = (items[0] && items[0].key) || "";
         }
         const item = products.find((product) => product.key === activeFitPreviewKey) || items[0];
         const avatarItems = activeAvatarItems(item);
@@ -9279,10 +9317,12 @@ import {
                 </label>
               </div>
               <label class="fit-select-label">입어볼 상품
-                <select id="fitPreviewItem" onchange="selectFitPreviewItem(this.value)">
+                <select id="fitPreviewItem" ${items.length ? "" : "disabled"} onchange="selectFitPreviewItem(this.value)">
                   ${items.map((candidate) => '<option value="' + candidate.key + '" ' + (candidate.key === (item && item.key) ? "selected" : "") + '>' + candidate.name + ' · ' + candidate.showroom + '</option>').join("")}
+                  ${items.length ? "" : '<option value="">찜한 상품이 없습니다</option>'}
                 </select>
               </label>
+              ${items.length ? "" : '<p class="fit-empty-hint">상품 카드의 하트(♡)를 눌러 찜하면 여기에서 입어볼 수 있습니다.</p>'}
               <button class="primary" type="button" onclick="saveFitProfile()">내 체형 저장</button>
             </div>
           </section>
@@ -10284,6 +10324,7 @@ import {
       setupAdminTodoHandlers();
       setupAdminUtilityHandlers();
       setupAdminSettlementViewHandlers();
+      ensureAvatarTestProduct();
       renderProducts();
       renderCart();
       openSharedAvatarLookFromUrl();
