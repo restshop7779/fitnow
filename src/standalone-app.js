@@ -7157,6 +7157,14 @@ import {
         const latestOrder = orderHistory[0];
         const wishedItems = wishlistItems();
         const viewedItems = recentViewItems();
+        const guestCustomer = customerId() === "guest-preview";
+        const loginPromptMarkup = guestCustomer ? `
+          <section class="summary-card" style="margin-top: 12px;">
+            <h3>고객 로그인</h3>
+            <div class="line-item"><span>카카오 연동 계정 또는 휴대폰 로그인으로</span><strong>주문 추적 연결</strong></div>
+            <button class="primary" type="button" onclick="openCustomerLogin()" style="width:100%;margin-top:8px;">고객 로그인</button>
+          </section>
+        ` : "";
         const wishlistMarkup = wishedItems.length ? wishedItems.map((item) => `
           <div class="vendor-product-row">
             <div>
@@ -7188,8 +7196,9 @@ import {
               <strong>${currentCustomer.name}</strong>
               <span>${customerContactLabel()}</span>
             </div>
-            <span>${currentCustomer.provider ? providerLabel(currentCustomer.provider) + " 연동 계정" : "오산, 동탄 지금배송 고객 계정"}</span>
+              <span>${currentCustomer.provider ? providerLabel(currentCustomer.provider) + " 연동 계정" : "오산, 동탄 지금배송 고객 계정"}</span>
           </section>
+          ${loginPromptMarkup}
           <section class="summary-card" style="margin-top: 12px;">
             <h3>이용 요약</h3>
             <div class="line-item"><span>최근 주문</span><strong>${orderCount}건</strong></div>
@@ -7235,10 +7244,10 @@ import {
             </div>
           </section>
           <div class="detail-actions">
-            <button class="secondary" type="button" onclick="openCustomerLogin()">고객 변경</button>
+            <button class="secondary" type="button" onclick="openCustomerLogin()">${guestCustomer ? "고객 로그인" : "고객 변경"}</button>
             <button class="primary" type="button" onclick="openTrackingFromMy()">배송 추적</button>
           </div>
-          <button class="secondary" type="button" onclick="logoutCustomer()" style="width:100%;margin-top:8px;">로그아웃</button>
+          <button class="secondary" type="button" onclick="logoutCustomer()" style="width:100%;margin-top:8px;">${guestCustomer ? "게스트 상태 초기화" : "로그아웃"}</button>
         `;
       }
 
