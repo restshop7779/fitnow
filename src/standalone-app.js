@@ -1654,7 +1654,7 @@ import {
         if (orderResult.error) throw orderResult.error;
         return (orderResult.data || [])
           .map(orderRowToHistory)
-          .filter((order) => !isDiagnosticOrder(order))
+          .filter((order) => !isDiagnosticOrder(order) || isReturnRefundTestOrder(order))
           .filter((order) => order.items.some((item) => item.showroom === currentVendor.store));
       }
 
@@ -1773,6 +1773,11 @@ import {
       function isDiagnosticOrder(order) {
         const id = String(order && order.id || "");
         return id.startsWith("FN-TEST-") || id.startsWith("FN-SET");
+      }
+
+      function isReturnRefundTestOrder(order) {
+        const id = String(order && order.id || "");
+        return id.startsWith("FN-TEST-RETURN-");
       }
 
       function orderStatusLabel(status) {
