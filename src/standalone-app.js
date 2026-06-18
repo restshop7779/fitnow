@@ -76,6 +76,8 @@ import {
       const DELIVERY_PROOF_RETENTION_MS = DELIVERY_PROOF_RETENTION_DAYS * 24 * 60 * 60 * 1000;
       const RETURN_REFUND_WINDOW_DAYS = 14;
       const RETURN_REFUND_WINDOW_MS = RETURN_REFUND_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+      const RETURN_REFUND_PROCESS_HOURS = 24;
+      const RETURN_REFUND_PROCESS_MS = RETURN_REFUND_PROCESS_HOURS * 60 * 60 * 1000;
       const TEST_DATA_RETENTION_OPTIONS = {
         "1h": { label: "1시간", ms: 60 * 60 * 1000 },
         "24h": { label: "24시간", ms: 24 * 60 * 60 * 1000 },
@@ -970,6 +972,22 @@ import {
         return ["pending", "requested", "approved"].includes(refundStatusFromOrder(order));
       }
 
+      function returnRefundRequestedAt(order) {
+        if (!order || order.cancelReasonCode !== "return_refund") return "";
+        return order.refundRequestedAt || order.refundHandledAt || order.updatedAt || order.createdAt || "";
+      }
+
+      function returnRefundProcessInfo(order, now = Date.now()) {
+        const requestedAt = returnRefundRequestedAt(order);
+        const time = new Date(requestedAt || "").getTime();
+        if (!Number.isFinite(time)) return { label: "처리기한 미확인", cls: "ready", overdue: false, hoursLeft: null };
+        const deadline = time + RETURN_REFUND_PROCESS_MS;
+        const hoursLeft = Math.ceil((deadline - now) / (60 * 60 * 1000));
+        if (hoursLeft <= 0) return { label: "처리 지연", cls: "refund", overdue: true, hoursLeft };
+        if (hoursLeft <= 6) return { label: "마감 " + hoursLeft + "시간 전", cls: "refund", overdue: false, hoursLeft };
+        return { label: "처리기한 " + hoursLeft + "시간", cls: "ready", overdue: false, hoursLeft };
+      }
+
       function canVendorManageRefund(order) {
         return !!(currentVendor && order && (order.items || []).some((item) => item.showroom === currentVendor.store));
       }
@@ -1073,6 +1091,7 @@ import {
           cancelReasonCode: order.cancelReasonCode || "",
           cancelReason: order.cancelReason || "",
           refundStatus: order.refundStatus || "",
+          refundRequestedAt: order.refundRequestedAt || "",
           refundMemo: order.refundMemo || "",
           refundHandledBy: order.refundHandledBy || "",
           refundHandledAt: order.refundHandledAt || "",
@@ -1109,6 +1128,7 @@ import {
           order.cancelReasonCode = stored.cancelReasonCode || order.cancelReasonCode || "other";
           order.cancelReason = stored.cancelReason || order.cancelReason || "";
           order.refundStatus = stored.refundStatus || order.refundStatus || refundStatusFromOrder(order);
+          order.refundRequestedAt = stored.refundRequestedAt || order.refundRequestedAt || "";
           order.refundMemo = stored.refundMemo || order.refundMemo || "";
           order.refundHandledBy = stored.refundHandledBy || order.refundHandledBy || "";
           order.refundHandledAt = stored.refundHandledAt || order.refundHandledAt || "";
@@ -1444,6 +1464,7 @@ import {
           cancelReasonCode: order.cancelReasonCode || "",
           cancelReason: order.cancelReason || "",
           refundStatus: order.refundStatus || "",
+          refundRequestedAt: order.refundRequestedAt || "",
           refundMemo: order.refundMemo || "",
           refundHandledBy: order.refundHandledBy || "",
           refundHandledAt: order.refundHandledAt || "",
@@ -1481,6 +1502,7 @@ import {
               cancelReasonCode: parsed.cancelReasonCode || "",
               cancelReason: parsed.cancelReason || "",
               refundStatus: parsed.refundStatus || "",
+              refundRequestedAt: parsed.refundRequestedAt || "",
               refundMemo: parsed.refundMemo || "",
               refundHandledBy: parsed.refundHandledBy || "",
               refundHandledAt: parsed.refundHandledAt || "",
@@ -1506,9 +1528,9 @@ import {
             };
           }
         } catch (error) {
-          return { address: value || fallbackRegion || "", receiveType: "문앞 수령", paymentMethod: "", riderRequest: "", cancelReasonCode: "", cancelReason: "", refundStatus: "", refundMemo: "", refundHandledBy: "", refundHandledAt: "", stockReserved: false, stockRestored: false, deliveryPartnerName: "", riderName: "", pickupConfirmedAt: "", arrivalConfirmedAt: "", pickupProofPhoto: null, arrivalProofPhoto: null, settlementStatus: "", settlementConfirmedAt: "", settlementConfirmedBy: "", settlementPaidAt: "", settlementHoldReason: "", settlementHeldAt: "", settlementReleasedAt: "", settlementClosedAt: "", settlementClosedBy: "", settlementCloseLabel: "", deliveryLogs: [] };
+          return { address: value || fallbackRegion || "", receiveType: "문앞 수령", paymentMethod: "", riderRequest: "", cancelReasonCode: "", cancelReason: "", refundStatus: "", refundRequestedAt: "", refundMemo: "", refundHandledBy: "", refundHandledAt: "", stockReserved: false, stockRestored: false, deliveryPartnerName: "", riderName: "", pickupConfirmedAt: "", arrivalConfirmedAt: "", pickupProofPhoto: null, arrivalProofPhoto: null, settlementStatus: "", settlementConfirmedAt: "", settlementConfirmedBy: "", settlementPaidAt: "", settlementHoldReason: "", settlementHeldAt: "", settlementReleasedAt: "", settlementClosedAt: "", settlementClosedBy: "", settlementCloseLabel: "", deliveryLogs: [] };
         }
-        return { address: value || fallbackRegion || "", receiveType: "문앞 수령", paymentMethod: "", riderRequest: "", cancelReasonCode: "", cancelReason: "", refundStatus: "", refundMemo: "", refundHandledBy: "", refundHandledAt: "", stockReserved: false, stockRestored: false, deliveryPartnerName: "", riderName: "", pickupConfirmedAt: "", arrivalConfirmedAt: "", pickupProofPhoto: null, arrivalProofPhoto: null, settlementStatus: "", settlementConfirmedAt: "", settlementConfirmedBy: "", settlementPaidAt: "", settlementHoldReason: "", settlementHeldAt: "", settlementReleasedAt: "", settlementClosedAt: "", settlementClosedBy: "", settlementCloseLabel: "", deliveryLogs: [] };
+        return { address: value || fallbackRegion || "", receiveType: "문앞 수령", paymentMethod: "", riderRequest: "", cancelReasonCode: "", cancelReason: "", refundStatus: "", refundRequestedAt: "", refundMemo: "", refundHandledBy: "", refundHandledAt: "", stockReserved: false, stockRestored: false, deliveryPartnerName: "", riderName: "", pickupConfirmedAt: "", arrivalConfirmedAt: "", pickupProofPhoto: null, arrivalProofPhoto: null, settlementStatus: "", settlementConfirmedAt: "", settlementConfirmedBy: "", settlementPaidAt: "", settlementHoldReason: "", settlementHeldAt: "", settlementReleasedAt: "", settlementClosedAt: "", settlementClosedBy: "", settlementCloseLabel: "", deliveryLogs: [] };
       }
 
       async function initSupabase() {
@@ -1707,6 +1729,7 @@ import {
           cancelReasonCode: deliveryRequest.cancelReasonCode || "",
           cancelReason: deliveryRequest.cancelReason || "",
           refundStatus: deliveryRequest.refundStatus || "",
+          refundRequestedAt: deliveryRequest.refundRequestedAt || "",
           refundMemo: deliveryRequest.refundMemo || "",
           refundHandledBy: deliveryRequest.refundHandledBy || "",
           refundHandledAt: deliveryRequest.refundHandledAt || "",
@@ -1939,6 +1962,7 @@ import {
         const activeOrders = vendorOrders.filter((order) => !isOrderCancelled(order) && (order.progressStep || 0) < 2);
         const returnRefundRequests = vendorOrders.filter(isVendorReturnRefundRequest);
         const approvedRefunds = vendorOrders.filter(isVendorRefundApproved);
+        const overdueReturnRefunds = vendorOrders.filter((order) => order.cancelReasonCode === "return_refund" && isOpenRefundStatus(order) && returnRefundProcessInfo(order).overdue);
         const lowStock = vendorItems.filter((item) => productStatus(item) === "selling" && totalSizeStock(item) <= 2).length;
         const stoppedItems = vendorItems.filter((item) => productStatus(item) !== "selling").length;
         const todaySales = vendorOrders
@@ -1949,6 +1973,7 @@ import {
         if (activeOrders.length) alerts.push({ text: "새 주문 " + activeOrders.length + "건이 재고 확인 또는 픽업 준비를 기다리고 있어요.", good: false });
         if (returnRefundRequests.length) alerts.push({ text: "반품/환불 요청 " + returnRefundRequests.length + "건이 승인 또는 거절 처리를 기다리고 있어요.", good: false });
         if (approvedRefunds.length) alerts.push({ text: "승인된 환불 " + approvedRefunds.length + "건은 환불 완료 처리가 필요해요.", good: false });
+        if (overdueReturnRefunds.length) alerts.push({ text: "처리 기한이 지난 반품/환불 " + overdueReturnRefunds.length + "건이 있어요.", good: false });
         if (lowStock) alerts.push({ text: "재고 2개 이하 상품 " + lowStock + "개가 있어요. 상품 관리에서 재고를 확인해 주세요.", good: false });
         if (stoppedItems) alerts.push({ text: "품절/숨김 상품 " + stoppedItems + "개는 고객에게 노출되지 않고 있어요.", good: false });
         if (todaySales > 0) alerts.push({ text: "오늘 배송완료 매출은 " + formatKRW(todaySales) + "입니다.", good: true });
@@ -1959,6 +1984,7 @@ import {
             <div class="vendor-home-tile"><span>처리할 주문</span><strong>${activeOrders.length}건</strong></div>
             <div class="vendor-home-tile"><span>반품요청</span><strong>${returnRefundRequests.length}건</strong></div>
             <div class="vendor-home-tile"><span>환불승인</span><strong>${approvedRefunds.length}건</strong></div>
+            <div class="vendor-home-tile"><span>처리지연</span><strong>${overdueReturnRefunds.length}건</strong></div>
             <div class="vendor-home-tile"><span>재고 부족</span><strong>${lowStock}개</strong></div>
             <div class="vendor-home-tile"><span>품절/숨김</span><strong>${stoppedItems}개</strong></div>
             <div class="vendor-home-tile"><span>오늘 매출</span><strong>${formatKRW(todaySales)}</strong></div>
@@ -2134,6 +2160,7 @@ import {
                 <span>${vendorItems.length}개 상품 · ${vendorItems.map((item) => item.name).join(", ")}</span>
                 <span>${formatKRW(vendorTotal)} · ${paymentLabelForOrder(order)}</span>
                 ${order.cancelReasonCode === "return_refund" ? '<span>반품/환불: ' + customerRefundStatusLabel(order) + '</span>' : ""}
+                ${order.cancelReasonCode === "return_refund" && isOpenRefundStatus(order) ? '<span>처리 기한: ' + returnRefundProcessInfo(order).label + '</span>' : ""}
               </div>
               <div class="mini-actions order-detail-action">
                 <button type="button" onclick="openVendorOrderDetail('${order.id}')">상세보기</button>
@@ -2200,6 +2227,7 @@ import {
                 <span>취소 사유: ${order.cancelReason || "사유 미입력"}</span>
                 ${order.cancelReasonCode === "return_refund" ? '<span>반품/환불 기준: 배송완료 후 ' + RETURN_REFUND_WINDOW_DAYS + '일 이내 요청</span>' : ""}
                 <span>환불 상태: ${paymentLabelForOrder(order)}</span>
+                ${order.cancelReasonCode === "return_refund" && isOpenRefundStatus(order) ? '<span>처리 기한: ' + returnRefundProcessInfo(order).label + '</span>' : ""}
                 ${order.refundHandledBy ? '<span>처리자: ' + order.refundHandledBy + '</span>' : ""}
                 ${order.refundMemo ? '<span>처리 메모: ' + order.refundMemo + '</span>' : ""}
               </div>
@@ -5307,6 +5335,7 @@ import {
             cancelled,
             readyForDelivery,
             refundPending: isOpenRefundStatus(order),
+            refundOverdue: order.cancelReasonCode === "return_refund" && isOpenRefundStatus(order) && returnRefundProcessInfo(order).overdue,
             completed: !cancelled && step >= 4,
             total: orderTotal,
             markup: `
@@ -5317,6 +5346,7 @@ import {
                 <span>${order.address} · ${assignedRiderLabel(order)}</span>
                 <span>${order.paymentMethod || "카카오페이"} · ${actionStatus}</span>
                 ${cancelled ? '<span>취소 분류: ' + cancelReasonLabel(order) + '</span>' : ""}
+                ${order.cancelReasonCode === "return_refund" && isOpenRefundStatus(order) ? '<span>처리 기한: ' + returnRefundProcessInfo(order).label + '</span>' : ""}
               </div>
               <div class="mini-actions order-detail-action">
                 <button type="button" onclick="openAdminOrderDetail('${order.id}')">상세보기</button>
@@ -5346,6 +5376,7 @@ import {
                 <div><span>리스크 요약</span><strong>${reportStatus}</strong></div>
                 <div><span>픽업대기</span><strong>${metrics.pickupWaiting}건</strong></div>
                 <div><span>환불대기</span><strong>${metrics.refundWaiting}건</strong></div>
+                <div><span>처리지연</span><strong>${metrics.refundOverdue}건</strong></div>
                 <div><span>취소율</span><strong>${metrics.cancelRate}%</strong></div>
                 <div><span>품절/숨김</span><strong>${metrics.stoppedItems}개</strong></div>
                 <div><span>정산 예정</span><strong>${formatKRW(metrics.payout)}</strong></div>
@@ -5698,15 +5729,17 @@ import {
         const stoppedItems = products.filter((item) => item.showroom === store && productStatus(item) !== "selling").length;
         const pickupWaiting = rows.filter((row) => !row.cancelled && !row.readyForDelivery).length;
         const refundWaiting = rows.filter((row) => row.refundPending).length;
+        const refundOverdue = rows.filter((row) => row.refundOverdue).length;
         const cancelledCount = rows.filter((row) => row.cancelled).length;
         const completedSales = rows.filter((row) => row.completed).reduce((sum, row) => sum + row.total, 0);
         const cancelRate = rows.length ? Math.round(cancelledCount * 100 / rows.length) : 0;
         const payout = Math.max(0, completedSales - Math.round(completedSales * 0.12));
-        return { stoppedItems, pickupWaiting, refundWaiting, cancelledCount, cancelRate, payout };
+        return { stoppedItems, pickupWaiting, refundWaiting, refundOverdue, cancelledCount, cancelRate, payout };
       }
 
       function adminStoreRiskBadge(store, rows) {
         const metrics = adminStoreRiskMetrics(store, rows);
+        if (metrics.refundOverdue) return { label: "처리 지연", cls: "refund" };
         if (metrics.refundWaiting) return { label: "환불 확인", cls: "refund" };
         if (metrics.pickupWaiting >= 2) return { label: "픽업 지연", cls: "ready" };
         if (metrics.cancelRate >= 30) return { label: "취소 주의", cls: "cancelled" };
@@ -6117,6 +6150,7 @@ import {
                 <span>취소 분류: ${cancelReasonLabel(order)}</span>
                 <span>취소 사유: ${order.cancelReason || "사유 미입력"}</span>
                 <span>환불 상태: ${paymentLabelForOrder(order)}</span>
+                ${order.cancelReasonCode === "return_refund" && isOpenRefundStatus(order) ? '<span>처리 기한: ' + returnRefundProcessInfo(order).label + '</span>' : ""}
                 ${order.refundHandledBy ? '<span>처리자: ' + order.refundHandledBy + '</span>' : ""}
                 ${order.refundMemo ? '<span>처리 메모: ' + order.refundMemo + '</span>' : ""}
               </div>
@@ -7945,6 +7979,7 @@ import {
         order.statusCode = "cancelled";
         order.statusLabel = "취소됨";
         order.refundStatus = customerReturnRequest ? "requested" : refundStatusFromOrder(order);
+        if (customerReturnRequest && !order.refundRequestedAt) order.refundRequestedAt = new Date().toISOString();
         order.paymentLabel = paymentLabelForOrder(order);
         const stockRestoredNow = restoreOrderStock(order);
         lastOrder = order;
