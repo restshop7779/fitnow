@@ -877,6 +877,33 @@ import {
         return "환불 대기";
       }
 
+      function customerRefundStatusLabel(order) {
+        if (!isOrderCancelled(order) || (order && order.cancelReasonCode) !== "return_refund") return "";
+        const status = refundStatusFromOrder(order);
+        if (status === "requested") return "요청 접수";
+        if (status === "approved") return "승인됨";
+        if (status === "rejected") return "거절됨";
+        if (status === "completed") return "환불 완료";
+        if (status === "not_required") return "현장결제 취소";
+        return "처리 중";
+      }
+
+      function customerRefundStatusDetail(order) {
+        if (!isOrderCancelled(order) || (order && order.cancelReasonCode) !== "return_refund") return "";
+        const status = refundStatusFromOrder(order);
+        if (status === "requested") return "입점업체 또는 관리자가 요청 내용을 확인하고 있습니다.";
+        if (status === "approved") return "요청이 승인되었습니다. 환불 완료 처리를 기다리고 있습니다.";
+        if (status === "rejected") return "요청이 거절되었습니다. 자세한 내용은 고객센터로 문의해 주세요.";
+        if (status === "completed") return "환불 처리가 완료되었습니다.";
+        if (status === "not_required") return "현장결제 주문으로 별도 카드 환불이 필요하지 않습니다.";
+        return "환불 상태를 확인하고 있습니다.";
+      }
+
+      function customerRefundMemoLabel(order) {
+        if (!isOrderCancelled(order) || (order && order.cancelReasonCode) !== "return_refund" || !order.refundMemo) return "";
+        return order.refundMemo;
+      }
+
       function refundStatusFromOrder(order) {
         if (!isOrderCancelled(order)) return "";
         if (order.refundStatus) return order.refundStatus;
@@ -7010,6 +7037,7 @@ import {
             <h3>최근 배송</h3>
             <div class="line-item"><span>${latestOrder ? latestOrder.id : "주문 대기"}</span><strong>${latestOrder ? orderDisplayLabel(latestOrder) : "아직 없음"}</strong></div>
             <div class="line-item"><span>결제 상태</span><strong>${latestOrder ? paymentLabelForOrder(latestOrder) : "결제 대기"}</strong></div>
+            ${latestOrder && customerRefundStatusLabel(latestOrder) ? '<div class="line-item"><span>반품/환불 상태</span><strong>' + customerRefundStatusLabel(latestOrder) + '</strong></div>' : ""}
             <div class="line-item"><span>담당 기사</span><strong>${latestOrder ? assignedRiderLabel(latestOrder) : "배정 대기"}</strong></div>
           </section>
           <section class="summary-card" style="margin-top: 12px;">
@@ -7774,6 +7802,8 @@ import {
           orderReviewCount,
           paymentLabelForOrder,
           customerCancelActionLabel,
+          customerRefundStatusLabel,
+          customerRefundStatusDetail,
         });
       }
 
@@ -8274,6 +8304,7 @@ import {
                 <span class="order-status">${order.id === (lastOrder && lastOrder.id) ? "추적 중" : orderDisplayLabel(order)}</span>
               </div>
               <div class="line-item"><span>${order.items[0].name}${order.items.length > 1 ? " 외 " + (order.items.length - 1) + "개" : ""}</span><strong>${orderDisplayLabel(order)}</strong></div>
+              ${customerRefundStatusLabel(order) ? '<div class="line-item"><span>반품/환불</span><strong>' + customerRefundStatusLabel(order) + '</strong></div>' : ""}
             </button>
           `).join("") : "";
         }
@@ -8308,6 +8339,9 @@ import {
               <div class="line-item"><span>담당 기사</span><strong>${assignedRiderLabel(lastOrder)}</strong></div>
               <div class="line-item"><span>현재 상태</span><strong>${orderDisplayLabel(lastOrder)}</strong></div>
               ${(lastOrder.progressStep || 0) >= 4 && !isOrderCancelled(lastOrder) ? '<div class="line-item"><span>반품/환불 가능 기간</span><strong>' + returnRefundWindowLabel(lastOrder) + '</strong></div>' : ""}
+              ${customerRefundStatusLabel(lastOrder) ? '<div class="line-item"><span>반품/환불 상태</span><strong>' + customerRefundStatusLabel(lastOrder) + '</strong></div>' : ""}
+              ${customerRefundStatusDetail(lastOrder) ? '<div class="line-item"><span>처리 안내</span><strong>' + customerRefundStatusDetail(lastOrder) + '</strong></div>' : ""}
+              ${customerRefundMemoLabel(lastOrder) ? '<div class="line-item"><span>처리 메모</span><strong>' + customerRefundMemoLabel(lastOrder) + '</strong></div>' : ""}
               ${canReviewOrder(lastOrder) ? '<div class="line-item"><span>리뷰 작성</span><strong>' + orderReviewCount(lastOrder) + '/' + lastOrder.items.length + '개</strong></div>' : ""}
               ${isOrderCancelled(lastOrder) ? '<div class="line-item"><span>취소 분류</span><strong>' + cancelReasonLabel(lastOrder) + '</strong></div>' : ""}
               ${isOrderCancelled(lastOrder) ? '<div class="line-item"><span>취소 사유</span><strong>' + (lastOrder.cancelReason || "사유 미입력") + '</strong></div>' : ""}
@@ -8619,6 +8653,9 @@ exposeHandlers({
   currentRegion,
   customerContactLabel,
   customerId,
+  customerRefundMemoLabel,
+  customerRefundStatusDetail,
+  customerRefundStatusLabel,
   decodeDeliveryRequest,
   defaultCancelReasonCode,
   defaultPartnerRate,

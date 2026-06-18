@@ -138,6 +138,8 @@ export function orderListMarkup(orders, helpers) {
       <div class="line-item"><span>${order.address}</span><strong>${order.fastest}분</strong></div>
       <div class="line-item"><span>${order.receiveType || "문앞 수령"}</span><strong>${order.riderRequest ? "요청 있음" : "요청 없음"}</strong></div>
       <div class="line-item"><span>${order.paymentMethod || "카카오페이"}</span><strong>${helpers.paymentLabelForOrder(order)}</strong></div>
+      ${helpers.customerRefundStatusLabel && helpers.customerRefundStatusLabel(order) ? '<div class="line-item"><span>반품/환불 상태</span><strong>' + helpers.customerRefundStatusLabel(order) + '</strong></div>' : ""}
+      ${helpers.customerRefundStatusDetail && helpers.customerRefundStatusDetail(order) ? '<div class="line-item"><span>처리 안내</span><strong>' + helpers.customerRefundStatusDetail(order) + '</strong></div>' : ""}
       <div class="line-item"><span>담당 기사</span><strong>${helpers.assignedRiderLabel(order)}</strong></div>
       ${helpers.isOrderCancelled(order) ? '<div class="line-item"><span>취소 분류</span><strong>' + helpers.cancelReasonLabel(order) + '</strong></div>' : ""}
       ${helpers.isOrderCancelled(order) ? '<div class="line-item"><span>취소 사유</span><strong>' + (order.cancelReason || "사유 미입력") + '</strong></div>' : ""}
