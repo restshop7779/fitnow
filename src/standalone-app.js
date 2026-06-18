@@ -1636,8 +1636,8 @@ import {
           .limit(10);
         if (orderResult.error) throw orderResult.error;
         orderHistory = mergeOrderLists(
-          (orderResult.data || []).map(orderRowToHistory).filter((order) => !isDiagnosticOrder(order)),
-          orderHistory.filter((order) => !isDiagnosticOrder(order)),
+          (orderResult.data || []).map(orderRowToHistory).filter((order) => !isDiagnosticOrder(order) || isReturnRefundTestOrder(order)),
+          orderHistory.filter((order) => !isDiagnosticOrder(order) || isReturnRefundTestOrder(order)),
         );
         if (orderHistory.length) {
           lastOrder = lastOrder ? orderHistory.find((order) => order.id === lastOrder.id) || orderHistory[0] : orderHistory[0];
