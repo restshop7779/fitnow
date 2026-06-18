@@ -3289,6 +3289,20 @@ import {
         return value ? settlementTimeLabel(value) : "기록 없음";
       }
 
+      function isTodayTestToolTime(value) {
+        if (!value) return false;
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return false;
+        const today = new Date();
+        return date.getFullYear() === today.getFullYear()
+          && date.getMonth() === today.getMonth()
+          && date.getDate() === today.getDate();
+      }
+
+      function testToolFreshnessLabel(value) {
+        return isTodayTestToolTime(value) ? testToolTimeLabel(value) : testToolTimeLabel(value) + " · 오늘 실행 필요";
+      }
+
       function adminQaChecklistSections() {
         return [
           {
@@ -4184,8 +4198,8 @@ import {
         }
         if (!settlementReady) addAction("settlementFlow", "정산 플로우 점검", "정산 주문, 지급 상태, 로그를 확인합니다");
         if (diagnostic.hasTestState) addAction("cleanup", "테스트 데이터 정리", "진단 주문과 테스트 로그를 정리합니다", "warning");
-        if (!hasCleanupZero || !testMeta.lastCleanupAt) addAction("cleanupState", "정리 상태 점검", "남은 테스트 데이터 0건 여부를 확인합니다");
-        if (!testMeta.lastCheckAt) addAction("dbCleanup", "DB 삭제권한 점검", "정리 버튼 실행 권한을 확인합니다", "neutral");
+        if (!hasCleanupZero || !isTodayTestToolTime(testMeta.lastCleanupAt)) addAction("cleanupState", "정리 상태 점검", "남은 테스트 데이터 0건 여부를 확인합니다");
+        if (!isTodayTestToolTime(testMeta.lastCheckAt)) addAction("dbCleanup", "DB 삭제권한 점검", "정리 버튼 실행 권한을 확인합니다", "neutral");
         return actions.slice(0, 6);
       }
 
@@ -4196,11 +4210,13 @@ import {
         const qaProgress = adminQaChecklistProgress(qaStore);
         const remainingRows = adminQaChecklistRemainingRows(qaStore);
         const testMeta = readTestToolMeta();
+        const checkReady = isTodayTestToolTime(testMeta.lastCheckAt);
+        const cleanupReady = isTodayTestToolTime(testMeta.lastCleanupAt);
         const checks = [
           { label: "QA 체크리스트", detail: qaProgress.checked + "/" + qaProgress.total + "개", ready: qaProgress.done },
           { label: "테스트 데이터", detail: diagnostic.hasTestState ? "주문 " + diagnostic.orders + "건 · 로그 " + diagnostic.logs + "건" : "잔여 없음", ready: !diagnostic.hasTestState },
-          { label: "최근 점검", detail: testToolTimeLabel(testMeta.lastCheckAt), ready: !!testMeta.lastCheckAt },
-          { label: "최근 정리", detail: testToolTimeLabel(testMeta.lastCleanupAt), ready: !!testMeta.lastCleanupAt },
+          { label: "오늘 점검", detail: testToolFreshnessLabel(testMeta.lastCheckAt), ready: checkReady },
+          { label: "오늘 정리", detail: testToolFreshnessLabel(testMeta.lastCleanupAt), ready: cleanupReady },
         ];
         const quickActions = adminPreReleaseQuickActions(qaStore, diagnostic, testMeta);
         const readyCount = checks.filter((item) => item.ready).length;
@@ -5871,16 +5887,16 @@ import {
         const testMeta = readTestToolMeta();
         const qaReady = qaProgress.done;
         const dataReady = !diagnostic.hasTestState;
-        const checkReady = !!testMeta.lastCheckAt;
-        const cleanupReady = !!testMeta.lastCleanupAt;
+        const checkReady = isTodayTestToolTime(testMeta.lastCheckAt);
+        const cleanupReady = isTodayTestToolTime(testMeta.lastCleanupAt);
         const settlementExportCount = settlementExportOrders("all").length;
         const readyCount = [qaReady, dataReady, checkReady, cleanupReady].filter(Boolean).length;
         const allReady = readyCount === 4;
         const itemMarkup = [
           { label: "QA", detail: qaReady ? "완료 " + testToolTimeLabel(qaStore.completedAt || qaStore.updatedAt) : qaProgress.checked + "/" + qaProgress.total + "개", ready: qaReady },
           { label: "테스트 데이터", detail: dataReady ? "잔여 없음" : "주문 " + diagnostic.orders + "건 · 로그 " + diagnostic.logs + "건", ready: dataReady },
-          { label: "최근 점검", detail: testToolTimeLabel(testMeta.lastCheckAt), ready: checkReady },
-          { label: "최근 정리", detail: testToolTimeLabel(testMeta.lastCleanupAt), ready: cleanupReady },
+          { label: "오늘 점검", detail: testToolFreshnessLabel(testMeta.lastCheckAt), ready: checkReady },
+          { label: "오늘 정리", detail: testToolFreshnessLabel(testMeta.lastCleanupAt), ready: cleanupReady },
         ].map((item) => `
           <div class="${item.ready ? "ready" : "pending"}">
             <span>${item.label}</span>
