@@ -4121,6 +4121,23 @@ import {
         });
       }
 
+      function markQaScenarioActionSuccess(action) {
+        const updates = {};
+        if (action === "deliveryOrder") {
+          updates[adminQaChecklistItemKey("final-scenario", "delivery-order")] = true;
+        } else if (action === "deliveryFlow") {
+          updates[adminQaChecklistItemKey("final-scenario", "delivery-order")] = true;
+          updates[adminQaChecklistItemKey("final-scenario", "delivery-proof")] = true;
+        } else if (action === "settlementFlow") {
+          ["test-order-created", "paid", "paid-tab", "logs-updated"].forEach((itemId) => {
+            updates[adminQaChecklistItemKey("settlement-flow", itemId)] = true;
+          });
+        } else if (action === "returnVisibility") {
+          updates[adminQaChecklistItemKey("final-scenario", "return-refund-visible")] = true;
+        }
+        markAdminQaChecklistItems(updates);
+      }
+
       async function runQaScenarioAction(action) {
         const labels = {
           deliveryOrder: "배송 테스트 주문 생성",
@@ -4146,6 +4163,7 @@ import {
           else if (action === "cleanupState") await checkAdminTestDataCleanupState();
           else if (action === "dbCleanup") await checkSupabaseCleanupPermission();
           else throw new Error("알 수 없는 QA 작업입니다");
+          markQaScenarioActionSuccess(action);
           const latestStatus = document.getElementById("syncStatus")?.textContent || "";
           setQaScenarioActionStatus(label + " 실행 완료" + (latestStatus ? " - " + latestStatus : ""));
         } catch (error) {
