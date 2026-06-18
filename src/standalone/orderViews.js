@@ -145,7 +145,7 @@ export function orderListMarkup(orders, helpers) {
       <div class="mini-actions">
         <button type="button" onclick="selectOrder('${order.id}')">추적 보기</button>
         <button type="button" ${helpers.canReviewOrder(order) ? "" : "disabled"} onclick="reviewOrder('${order.id}')">${helpers.canReviewOrder(order) ? "리뷰 작성" : "배송 완료 후 리뷰"}</button>
-        <button class="danger" type="button" ${helpers.canCancelOrder(order) ? "" : "disabled"} onclick="cancelOrder('${order.id}', 'customer')">${helpers.isOrderCancelled(order) ? "취소됨" : "주문 취소"}</button>
+        <button class="danger" type="button" ${helpers.canCancelOrder(order) ? "" : "disabled"} onclick="cancelOrder('${order.id}', 'customer')">${helpers.customerCancelActionLabel ? helpers.customerCancelActionLabel(order) : helpers.isOrderCancelled(order) ? "취소됨" : "주문 취소"}</button>
       </div>
     </section>
   `).join("");
