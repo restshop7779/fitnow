@@ -3640,19 +3640,25 @@ import {
         setSyncStatus((expiredOnly ? "만료 테스트 데이터 자동 정리 완료 - " : "테스트 데이터 정리 완료 - ") + "화면 주문 " + removedOrderTotal + "건, DB 주문 " + supabaseRemovedOrderCount + "건, 상태 " + removedStatusCount + "건, 로그 " + removedLogTotal + "건 삭제" + (supabaseCleanupFailed ? " · Supabase 삭제 확인 필요: " + supabaseCleanupError : ""));
       }
 
+      function setAdminCleanupCheckStatus(message) {
+        setSyncStatus(message);
+        const node = document.getElementById("adminCleanupCheckStatus");
+        if (node) node.textContent = message;
+      }
+
       async function checkSupabaseCleanupPermission() {
-        setSyncStatus("DB 삭제권한 점검 중...");
+        setAdminCleanupCheckStatus("DB 삭제권한 점검 중...");
         if (!currentAdmin || currentAdmin.role !== "total") {
-          setSyncStatus("DB 삭제권한 점검은 총관리자만 가능합니다");
+          setAdminCleanupCheckStatus("DB 삭제권한 점검은 총관리자만 가능합니다");
           return;
         }
         if (!setupClientIfNeeded()) {
-          setSyncStatus("Supabase 연결 후 DB 삭제권한을 점검할 수 있습니다");
+          setAdminCleanupCheckStatus("Supabase 연결 후 DB 삭제권한을 점검할 수 있습니다");
           return;
         }
         const product = products.find((item) => item.stock > 0) || products[0];
         if (!product) {
-          setSyncStatus("DB 삭제권한 점검에 사용할 상품이 없습니다");
+          setAdminCleanupCheckStatus("DB 삭제권한 점검에 사용할 상품이 없습니다");
           return;
         }
         const createdAt = new Date().toISOString();
@@ -3693,14 +3699,14 @@ import {
         try {
           await syncOrderToSupabase(order);
         } catch (error) {
-          setSyncStatus("DB 삭제권한 점검 실패 - 테스트 주문 저장 권한 확인 필요: " + shortSupabaseError(error));
+          setAdminCleanupCheckStatus("DB 삭제권한 점검 실패 - 테스트 주문 저장 권한 확인 필요: " + shortSupabaseError(error));
           return;
         }
         try {
           await deleteSupabaseDiagnosticOrders([order.id], [order.dbId]);
-          setSyncStatus("DB 삭제권한 정상 - 테스트 주문 저장 후 orders/order_items 삭제 확인 완료");
+          setAdminCleanupCheckStatus("DB 삭제권한 정상 - 테스트 주문 저장 후 orders/order_items 삭제 확인 완료");
         } catch (error) {
-          setSyncStatus("DB 삭제권한 확인 필요 - " + shortSupabaseError(error) + " · Supabase SQL 재실행 후 다시 점검");
+          setAdminCleanupCheckStatus("DB 삭제권한 확인 필요 - " + shortSupabaseError(error) + " · Supabase SQL 재실행 후 다시 점검");
         }
       }
 
@@ -5796,6 +5802,7 @@ import {
             <button type="button" onclick="runDeliveryFlowAutoCheck()">배송 플로우 자동 점검</button>
             <button type="button" data-admin-cleanup-check="true">DB 삭제권한 점검</button>
           </div>
+          <div class="admin-utility-status" id="adminCleanupCheckStatus" aria-live="polite">DB 삭제권한 점검 결과가 여기에 표시됩니다.</div>
         `;
         bindAdminTodoButtons(body);
         bindAdminUtilityButtons(body);
@@ -5829,7 +5836,9 @@ import {
             event.preventDefault();
             event.stopPropagation();
             if (button.disabled) return;
-            checkSupabaseCleanupPermission();
+            checkSupabaseCleanupPermission().catch((error) => {
+              setAdminCleanupCheckStatus("DB 삭제권한 점검 오류 - " + shortSupabaseError(error));
+            });
           };
         });
       }
@@ -5841,7 +5850,9 @@ import {
           const button = findAdminCleanupCheckButtonFromEvent(event);
           if (!button || button.disabled) return;
           event.preventDefault();
-          checkSupabaseCleanupPermission();
+          checkSupabaseCleanupPermission().catch((error) => {
+            setAdminCleanupCheckStatus("DB 삭제권한 점검 오류 - " + shortSupabaseError(error));
+          });
         });
       }
 
