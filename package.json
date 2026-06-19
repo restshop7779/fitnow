@@ -12,7 +12,6 @@
     "@vitejs/plugin-react": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "three": "^0.184.0",
     "vite": "latest"
   }
 }
