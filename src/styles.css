@@ -2988,6 +2988,26 @@
         grid-template-columns: 1fr;
         gap: 12px;
       }
+      .fit-view-tabs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+      .fit-view-tabs button {
+        min-height: 42px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        color: #171717;
+        font-size: 13px;
+        font-weight: 950;
+      }
+      .fit-view-tabs button.active-control {
+        border-color: #171717;
+        background: #171717;
+        color: #fff;
+      }
       .fit-avatar-stage {
         min-height: 366px;
         position: relative;
@@ -3014,6 +3034,10 @@
         box-shadow:
           inset 0 0 0 1px rgba(23,23,23,.08),
           0 18px 42px rgba(23,23,23,.14);
+      }
+      .real-fit-stage.is-hidden,
+      .fit-3d-stage.is-hidden {
+        display: none;
       }
       .real-fit-stage::before {
         content: "";
@@ -3063,6 +3087,54 @@
         word-break: keep-all;
       }
       .real-fit-badge span {
+        color: rgba(255,255,255,.72);
+        text-align: right;
+      }
+      .fit-3d-stage {
+        min-height: 520px;
+        position: relative;
+        overflow: hidden;
+        border-radius: 8px;
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.38), rgba(23,23,23,.08)),
+          #f3efe7;
+        box-shadow:
+          inset 0 0 0 1px rgba(23,23,23,.08),
+          0 18px 42px rgba(23,23,23,.14);
+        touch-action: none;
+      }
+      .fit-3d-stage canvas {
+        width: 100%;
+        height: 100%;
+        min-height: 520px;
+        display: block;
+      }
+      .fit-3d-hud {
+        position: absolute;
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+        z-index: 2;
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        align-items: center;
+        padding: 11px 12px;
+        border: 1px solid rgba(255,255,255,.3);
+        border-radius: 8px;
+        background: rgba(23,23,23,.72);
+        color: #fff;
+        backdrop-filter: blur(12px);
+      }
+      .fit-3d-hud strong,
+      .fit-3d-hud span {
+        min-width: 0;
+        font-size: 12px;
+        font-weight: 950;
+        line-height: 1.25;
+        word-break: keep-all;
+      }
+      .fit-3d-hud span {
         color: rgba(255,255,255,.72);
         text-align: right;
       }
@@ -3649,12 +3721,18 @@
       }
       .fit-result-card { margin-top: 12px; }
       @media (max-width: 420px) {
-        .real-fit-stage { min-height: 430px; }
-        .real-fit-badge {
+        .real-fit-stage,
+        .fit-3d-stage,
+        .fit-3d-stage canvas {
+          min-height: 430px;
+        }
+        .real-fit-badge,
+        .fit-3d-hud {
           align-items: flex-start;
           flex-direction: column;
         }
-        .real-fit-badge span { text-align: left; }
+        .real-fit-badge span,
+        .fit-3d-hud span { text-align: left; }
         .avatar-tryon-actions,
         .avatar-tryon-result,
         .fit-ease-grid {

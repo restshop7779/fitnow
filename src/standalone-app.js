@@ -67,6 +67,7 @@ import {
   orderSummaryMarkup,
   timelineMarkup,
 } from "./standalone/orderViews.js";
+import * as THREE from "three";
 import realFitModelImage from "../assets/fitnow-real-fit-model.png";
 
       const SETTLEMENT_FLOW_CHECK_LOG_KEY = "fitnow_settlement_flow_check_logs";
@@ -150,9 +151,11 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       let recentViews = [];
       let reviews = [];
       let activeFitPreviewKey = "";
+      let activeFitViewMode = "real";
       let activeAvatarLookSnapshot = null;
       let lastFitRoomAvatarSnapshot = null;
       let avatarTryOnState = { status: "idle", photoDataUrl: "", photoName: "" };
+      let fit3dRuntime = null;
       function readReviewStore() {
         try {
           const parsed = JSON.parse(localStorage.getItem(REVIEW_STORAGE_KEY) || "[]");
@@ -9093,6 +9096,248 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         ].join(";");
       }
 
+      function disposeFit3dPreview() {
+        if (!fit3dRuntime) return;
+        if (fit3dRuntime.frame) window.cancelAnimationFrame(fit3dRuntime.frame);
+        if (fit3dRuntime.resizeObserver) fit3dRuntime.resizeObserver.disconnect();
+        if (fit3dRuntime.canvas) {
+          fit3dRuntime.canvas.removeEventListener("pointerdown", fit3dRuntime.onPointerDown);
+          fit3dRuntime.canvas.removeEventListener("pointermove", fit3dRuntime.onPointerMove);
+          fit3dRuntime.canvas.removeEventListener("pointerup", fit3dRuntime.onPointerUp);
+          fit3dRuntime.canvas.removeEventListener("pointercancel", fit3dRuntime.onPointerUp);
+        }
+        if (fit3dRuntime.scene) {
+          fit3dRuntime.scene.traverse((node) => {
+            if (!node.geometry && !node.material) return;
+            if (node.geometry) node.geometry.dispose();
+            const materials = Array.isArray(node.material) ? node.material : [node.material];
+            materials.filter(Boolean).forEach((material) => material.dispose());
+          });
+        }
+        if (fit3dRuntime.renderer) fit3dRuntime.renderer.dispose();
+        fit3dRuntime = null;
+      }
+
+      function fit3dMaterial(color, roughness = .72, metalness = .04) {
+        return new THREE.MeshStandardMaterial({ color, roughness, metalness });
+      }
+
+      function fit3dCapsule(radius, length, material) {
+        const mesh = new THREE.Mesh(new THREE.CapsuleGeometry(radius, length, 12, 24), material);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        return mesh;
+      }
+
+      function fit3dGarmentColor(item = {}) {
+        if (item.visual === "tshirt" || /화이트|white/i.test(item.name || "")) return 0xf7f3ea;
+        if (item.category === "하의") return 0x22252c;
+        if (item.category === "잡화") return 0xc4a873;
+        if (item.category === "신발") return 0x111111;
+        return 0x2f5bff;
+      }
+
+      function fit3dBuildAvatar(profile, metrics, items = []) {
+        const group = new THREE.Group();
+        const heightScale = Math.min(1.18, Math.max(.88, profile.height / 172.5));
+        const shoulderScale = Math.min(1.28, Math.max(.82, metrics.shoulderRatio));
+        const chestScale = Math.min(1.24, Math.max(.84, metrics.chestRatio));
+        const waistScale = Math.min(1.28, Math.max(.82, metrics.waistRatio));
+        const hipScale = Math.min(1.28, Math.max(.84, metrics.hipRatio));
+        const legScale = Math.min(1.18, Math.max(.88, metrics.legRatio));
+        group.scale.set(1, heightScale, 1);
+        group.position.y = -.18;
+
+        const skin = fit3dMaterial(0xd7a57f, .78, .02);
+        const hair = fit3dMaterial(0x1f1b18, .82, .02);
+        const shirt = fit3dMaterial(fit3dGarmentColor(items.find((item) => item.category !== "하의")), .64, .02);
+        const pants = fit3dMaterial(fit3dGarmentColor(items.find((item) => item.category === "하의") || { category: "하의" }), .7, .03);
+        const shoe = fit3dMaterial(0x151515, .66, .06);
+
+        const head = new THREE.Mesh(new THREE.SphereGeometry(.28, 32, 24), skin);
+        head.position.y = 2.6;
+        head.scale.set(.86, 1.05, .82);
+        group.add(head);
+
+        const hairCap = new THREE.Mesh(new THREE.SphereGeometry(.29, 32, 16, 0, Math.PI * 2, 0, Math.PI * .58), hair);
+        hairCap.position.set(0, 2.73, -.015);
+        hairCap.scale.set(.92, .62, .9);
+        group.add(hairCap);
+
+        const neck = new THREE.Mesh(new THREE.CylinderGeometry(.11, .13, .22, 24), skin);
+        neck.position.y = 2.27;
+        group.add(neck);
+
+        const torso = fit3dCapsule(.42, .82, shirt);
+        torso.position.y = 1.66;
+        torso.scale.set(shoulderScale, 1, chestScale * .78);
+        group.add(torso);
+
+        const waist = new THREE.Mesh(new THREE.CylinderGeometry(.34 * waistScale, .42 * hipScale, .36, 32), shirt);
+        waist.position.y = 1.09;
+        waist.castShadow = true;
+        waist.receiveShadow = true;
+        group.add(waist);
+
+        const hem = new THREE.Mesh(new THREE.TorusGeometry(.36 * Math.max(waistScale, hipScale), .012, 8, 48), fit3dMaterial(0xddd7ca, .7, .02));
+        hem.position.y = .88;
+        hem.rotation.x = Math.PI / 2;
+        group.add(hem);
+
+        const armLength = .9 * heightScale;
+        [["left", -1], ["right", 1]].forEach(([, side]) => {
+          const upperArm = fit3dCapsule(.095, armLength * .5, skin);
+          upperArm.position.set(side * (.53 * shoulderScale), 1.77, 0);
+          upperArm.rotation.z = side * .22;
+          group.add(upperArm);
+          const sleeve = fit3dCapsule(.118, .28, shirt);
+          sleeve.position.set(side * (.45 * shoulderScale), 1.97, 0);
+          sleeve.rotation.z = side * .22;
+          group.add(sleeve);
+          const foreArm = fit3dCapsule(.085, armLength * .46, skin);
+          foreArm.position.set(side * (.64 * shoulderScale), 1.24, .02);
+          foreArm.rotation.z = side * -.05;
+          group.add(foreArm);
+        });
+
+        [["left", -1], ["right", 1]].forEach(([, side]) => {
+          const leg = fit3dCapsule(.14 * Math.max(.9, hipScale), .9 * legScale, pants);
+          leg.position.set(side * .18 * hipScale, .42, 0);
+          leg.rotation.z = side * .03;
+          group.add(leg);
+          const shoeMesh = new THREE.Mesh(new THREE.BoxGeometry(.34, .11, .46), shoe);
+          shoeMesh.position.set(side * .18 * hipScale, -.15, .05);
+          shoeMesh.castShadow = true;
+          shoeMesh.receiveShadow = true;
+          group.add(shoeMesh);
+        });
+
+        const shoulderLine = new THREE.Mesh(new THREE.BoxGeometry(1.06 * shoulderScale, .08, .18), shirt);
+        shoulderLine.position.y = 2.12;
+        shoulderLine.castShadow = true;
+        shoulderLine.receiveShadow = true;
+        group.add(shoulderLine);
+
+        return group;
+      }
+
+      function initializeFit3dPreview(profile, metrics, items = []) {
+        const canvas = document.getElementById("fit3dCanvas");
+        const stage = document.getElementById("fit3dStage");
+        if (!canvas || !stage || stage.classList.contains("is-hidden")) return;
+        disposeFit3dPreview();
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xf3efe7);
+        const camera = new THREE.PerspectiveCamera(34, 1, .1, 100);
+        camera.position.set(0, 1.22, 6.15);
+        camera.lookAt(0, 1.18, 0);
+
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, preserveDrawingBuffer: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+        const hemi = new THREE.HemisphereLight(0xffffff, 0x6b6255, 2.8);
+        scene.add(hemi);
+        const key = new THREE.DirectionalLight(0xffffff, 2.6);
+        key.position.set(3, 5, 4);
+        key.castShadow = true;
+        scene.add(key);
+        const fill = new THREE.DirectionalLight(0xf2dcc2, 1.2);
+        fill.position.set(-4, 2, 3);
+        scene.add(fill);
+
+        const floor = new THREE.Mesh(
+          new THREE.CircleGeometry(1.75, 72),
+          new THREE.MeshStandardMaterial({ color: 0xded8cc, roughness: .8 })
+        );
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = -.24;
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        const avatar = fit3dBuildAvatar(profile, metrics, items);
+        scene.add(avatar);
+
+        const runtime = {
+          canvas,
+          scene,
+          camera,
+          renderer,
+          avatar,
+          frame: 0,
+          dragging: false,
+          lastX: 0,
+          velocity: .006,
+          resizeObserver: null,
+          onPointerDown: null,
+          onPointerMove: null,
+          onPointerUp: null,
+        };
+
+        const resize = () => {
+          const rect = stage.getBoundingClientRect();
+          const width = Math.max(1, Math.round(rect.width));
+          const height = Math.max(1, Math.round(rect.height));
+          renderer.setSize(width, height, false);
+          camera.aspect = width / height;
+          camera.updateProjectionMatrix();
+        };
+
+        runtime.onPointerDown = (event) => {
+          runtime.dragging = true;
+          runtime.lastX = event.clientX;
+          runtime.velocity = 0;
+          canvas.setPointerCapture(event.pointerId);
+        };
+        runtime.onPointerMove = (event) => {
+          if (!runtime.dragging) return;
+          const delta = event.clientX - runtime.lastX;
+          runtime.lastX = event.clientX;
+          avatar.rotation.y += delta * .012;
+        };
+        runtime.onPointerUp = (event) => {
+          runtime.dragging = false;
+          runtime.velocity = .006;
+          try { canvas.releasePointerCapture(event.pointerId); } catch (error) {}
+        };
+
+        canvas.addEventListener("pointerdown", runtime.onPointerDown);
+        canvas.addEventListener("pointermove", runtime.onPointerMove);
+        canvas.addEventListener("pointerup", runtime.onPointerUp);
+        canvas.addEventListener("pointercancel", runtime.onPointerUp);
+        runtime.resizeObserver = new ResizeObserver(resize);
+        runtime.resizeObserver.observe(stage);
+        resize();
+
+        const animate = () => {
+          if (!runtime.dragging) avatar.rotation.y += runtime.velocity;
+          renderer.render(scene, camera);
+          runtime.frame = window.requestAnimationFrame(animate);
+        };
+        fit3dRuntime = runtime;
+        animate();
+      }
+
+      function setFitViewMode(mode) {
+        activeFitViewMode = mode === "3d" ? "3d" : "real";
+        document.querySelectorAll("[data-fit-view]").forEach((button) => {
+          button.classList.toggle("active-control", button.dataset.fitView === activeFitViewMode);
+        });
+        const realStage = document.getElementById("realFitStage");
+        const threeStage = document.getElementById("fit3dStage");
+        if (realStage) realStage.classList.toggle("is-hidden", activeFitViewMode !== "real");
+        if (threeStage) threeStage.classList.toggle("is-hidden", activeFitViewMode !== "3d");
+        if (activeFitViewMode === "3d") {
+          const profile = readFitProfile();
+          const item = products.find((product) => product.key === activeFitPreviewKey) || fitPreviewItems()[0];
+          initializeFit3dPreview(profile, fitProfileMetrics(profile), activeAvatarItems(item));
+        } else {
+          disposeFit3dPreview();
+        }
+      }
+
       function fitRatioPercent(ratio) {
         return Math.min(100, Math.max(8, Math.round(ratio * 50)));
       }
@@ -9553,8 +9798,12 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         const avatarBodyClass = "fit-body-" + profile.bodyType;
         const realFitStyle = realFitPreviewStyle(profile, metrics);
         body.innerHTML = `
+          <div class="fit-view-tabs">
+            <button class="${activeFitViewMode === "real" ? "active-control" : ""}" type="button" data-fit-view="real" onclick="setFitViewMode('real')">실사 보기</button>
+            <button class="${activeFitViewMode === "3d" ? "active-control" : ""}" type="button" data-fit-view="3d" onclick="setFitViewMode('3d')">3D 보기</button>
+          </div>
           <section class="fit-room-layout">
-            <div class="real-fit-stage ${avatarBodyClass}" style="${realFitStyle}">
+            <div class="real-fit-stage ${avatarBodyClass} ${activeFitViewMode === "real" ? "" : "is-hidden"}" id="realFitStage" style="${realFitStyle}">
               <img class="real-fit-model" src="${realFitModelImage}" alt="실제 모델 착장 미리보기" />
               <div class="real-fit-badge">
                 <strong>${metrics.label}</strong>
@@ -9565,6 +9814,13 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
                 <div class="fit-arms"></div>
                 <div class="fit-torso">${fitPreviewLayers(avatarItems)}</div>
                 <div class="fit-legs"></div>
+              </div>
+            </div>
+            <div class="fit-3d-stage ${avatarBodyClass} ${activeFitViewMode === "3d" ? "" : "is-hidden"}" id="fit3dStage">
+              <canvas id="fit3dCanvas" aria-label="360도 3D 체형 착용 미리보기"></canvas>
+              <div class="fit-3d-hud">
+                <strong>${metrics.label}</strong>
+                <span>드래그해서 360도 회전</span>
               </div>
             </div>
             <div class="fit-room-controls">
@@ -9620,6 +9876,11 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
             <button class="secondary" type="button" onclick="openMyAvatarLook()">마이아바타룩 보기</button>
           </div>
         `;
+        if (activeFitViewMode === "3d") {
+          window.requestAnimationFrame(() => initializeFit3dPreview(profile, metrics, avatarItems));
+        } else {
+          disposeFit3dPreview();
+        }
       }
 
       function openFitRoom(key = "") {
@@ -9640,6 +9901,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       }
 
       function closeFitRoom() {
+        disposeFit3dPreview();
         document.getElementById("fitRoomModal").classList.remove("open");
         document.getElementById("fitRoomModal").setAttribute("aria-hidden", "true");
       }
@@ -11071,6 +11333,7 @@ exposeHandlers({
   setCategory,
   setPriceRange,
   setRegion,
+  setFitViewMode,
   setSettlementPartnerFilter,
   setSettlementPeriodFilter,
   setShowroom,
