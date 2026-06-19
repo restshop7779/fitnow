@@ -2449,6 +2449,8 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         document.getElementById("vendorSubmitButton").textContent = "상품 등록";
         document.getElementById("vendorName").value = "신규 등록 상품 " + (vendorProductCount + 1);
         document.getElementById("vendorCategory").value = "상의";
+        const visualSelect = document.getElementById("vendorVisual");
+        if (visualSelect) visualSelect.value = "tshirt";
         document.getElementById("vendorPrice").value = 69000;
         document.getElementById("vendorDiscount").value = 10;
         document.getElementById("vendorStock").value = 3;
@@ -2544,6 +2546,8 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         document.getElementById("vendorStore").value = item.showroom;
         document.getElementById("vendorName").value = item.name;
         document.getElementById("vendorCategory").value = item.category === "의류" ? "상의" : (item.category || "상의");
+        const visualSelect = document.getElementById("vendorVisual");
+        if (visualSelect) visualSelect.value = item.visual || defaultVisualForCategory(item.category || "상의");
         document.getElementById("vendorPrice").value = item.price;
         document.getElementById("vendorDiscount").value = normalizedDiscount(item.discountRate);
         document.getElementById("vendorStock").value = item.stock;
@@ -2596,6 +2600,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
             </div>
             <div class="order-detail-block">
               <strong>가상착용 데이터</strong>
+              <span>3D 의상 타입 ${fitVisualTypeLabel(item.visual)}</span>
               <span>${garmentSpecSummary(item)}</span>
               <span>모델 기준 ${modelSpecSummary(item)}</span>
             </div>
@@ -8404,7 +8409,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           match: Number(document.getElementById("vendorMatch").value),
           material: document.getElementById("vendorMaterial").value.trim(),
           category: document.getElementById("vendorCategory").value,
-          visual: existing ? existing.visual : ["jacket", "shoes", "bag", "ring"][vendorProductCount % 4],
+          visual: document.getElementById("vendorVisual")?.value || (existing ? existing.visual : defaultVisualForCategory(document.getElementById("vendorCategory").value)),
           image: vendorImageData || (existing ? existing.image : ""),
           imageFile: vendorImageFile,
           fit: existing ? existing.fit : "업체 등록 상품",
@@ -8946,6 +8951,43 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
 
       function fitSizeSelectOptions(kind, selected) {
         return fitSizeOptions(kind).map((size) => '<option value="' + size + '" ' + (size === selected ? "selected" : "") + '>' + size + '</option>').join("");
+      }
+
+      function fitVisualTypeOptions() {
+        return [
+          { key: "tshirt", label: "반팔 티셔츠", category: "상의" },
+          { key: "shirt", label: "셔츠/블라우스", category: "상의" },
+          { key: "hoodie", label: "후드/맨투맨", category: "상의" },
+          { key: "jacket", label: "자켓/아우터", category: "상의" },
+          { key: "wide-pants", label: "와이드/조거 팬츠", category: "하의" },
+          { key: "shorts", label: "쇼츠/반바지", category: "하의" },
+          { key: "shoes", label: "신발", category: "신발" },
+          { key: "bag", label: "가방/잡화", category: "잡화" },
+        ];
+      }
+
+      function fitVisualTypeLabel(value) {
+        const option = fitVisualTypeOptions().find((item) => item.key === value);
+        return option ? option.label : "자동 추정";
+      }
+
+      function fitVisualTypeSelectOptions(selected = "tshirt") {
+        return fitVisualTypeOptions().map((option) => '<option value="' + option.key + '" ' + (option.key === selected ? "selected" : "") + '>' + option.label + '</option>').join("");
+      }
+
+      function defaultVisualForCategory(category = "상의") {
+        const map = { "상의": "tshirt", "하의": "wide-pants", "신발": "shoes", "잡화": "bag", "아우터": "jacket" };
+        return map[category] || "tshirt";
+      }
+
+      function syncVendorVisualWithCategory() {
+        const category = document.getElementById("vendorCategory")?.value || "상의";
+        const select = document.getElementById("vendorVisual");
+        if (!select) return;
+        const currentOption = fitVisualTypeOptions().find((item) => item.key === select.value);
+        if (!currentOption || currentOption.category !== category) {
+          select.value = defaultVisualForCategory(category);
+        }
       }
 
       function fitBodySamples() {
@@ -11579,6 +11621,7 @@ exposeHandlers({
   syncReviewToSupabase,
   syncStoreToSupabase,
   syncWishlistToSupabase,
+  syncVendorVisualWithCategory,
   toggleFast,
   toggleStore,
   toggleWishlist,

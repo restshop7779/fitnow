@@ -234,7 +234,7 @@
                 <select id="vendorStore"></select>
               </label>
               <label>카테고리
-                <select id="vendorCategory" required>
+                <select id="vendorCategory" onchange="syncVendorVisualWithCategory()" required>
                   <option value="상의">상의</option>
                   <option value="하의">하의</option>
                   <option value="신발">신발</option>
@@ -242,6 +242,18 @@
                 </select>
               </label>
             </div>
+            <label>3D 의상 타입
+              <select id="vendorVisual" required>
+                <option value="tshirt">반팔 티셔츠</option>
+                <option value="shirt">셔츠/블라우스</option>
+                <option value="hoodie">후드/맨투맨</option>
+                <option value="jacket">자켓/아우터</option>
+                <option value="wide-pants">와이드/조거 팬츠</option>
+                <option value="shorts">쇼츠/반바지</option>
+                <option value="shoes">신발</option>
+                <option value="bag">가방/잡화</option>
+              </select>
+            </label>
             <label>상품명
               <input id="vendorName" type="text" value="크롭 니트 베스트" required />
             </label>
