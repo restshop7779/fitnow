@@ -9293,6 +9293,14 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       }
 
       function fit3dTopItem(items = []) {
+        if (items.length && items.every((item) => item.category === "하의" || item.category === "신발" || item.category === "잡화")) {
+          return {
+            category: "상의",
+            visual: "tshirt",
+            name: "기본 피팅 이너",
+            color: "#f7f2e8"
+          };
+        }
         return items.find((item) => ["상의", "아우터", "원피스"].includes(item.category)) || items.find((item) => item.category !== "하의" && item.category !== "신발" && item.category !== "잡화") || {
           category: "상의",
           visual: "tshirt",
@@ -9309,42 +9317,69 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         return items.filter((item) => item.category === "잡화").slice(0, 2);
       }
 
+      function fit3dSilhouette(type) {
+        const map = {
+          tshirt: { shoulder: 1.02, chest: 1, waist: 1, length: 1, depth: 1, sleeveRadius: 1, sleeveLength: 1, sleeveDrop: 0 },
+          shirt: { shoulder: 1.08, chest: 1.03, waist: .96, length: 1.03, depth: .98, sleeveRadius: .82, sleeveLength: 1.16, sleeveDrop: -.08 },
+          hoodie: { shoulder: 1.16, chest: 1.13, waist: 1.09, length: 1.08, depth: 1.16, sleeveRadius: 1.08, sleeveLength: 1.22, sleeveDrop: -.1 },
+          sweatshirt: { shoulder: 1.12, chest: 1.1, waist: 1.07, length: 1.06, depth: 1.12, sleeveRadius: 1.04, sleeveLength: 1.18, sleeveDrop: -.08 },
+          jacket: { shoulder: 1.2, chest: 1.18, waist: 1.02, length: 1.12, depth: 1.2, sleeveRadius: 1.12, sleeveLength: 1.2, sleeveDrop: -.06 },
+        };
+        return map[type] || map.tshirt;
+      }
+
       function fit3dAddTopDetails(group, type, scales, materials) {
         const { shoulderScale, chestScale, waistScale, hipScale } = scales;
         const { shirt, shirtShadow, seamMaterial } = materials;
         if (type === "shirt" || type === "jacket") {
-          const placket = new THREE.Mesh(new THREE.BoxGeometry(.018, .86, .018), seamMaterial);
+          const placket = new THREE.Mesh(new THREE.BoxGeometry(type === "jacket" ? .026 : .018, type === "jacket" ? .98 : .9, .018), seamMaterial);
           placket.position.set(0, 1.55, .24 * chestScale);
           group.add(placket);
-          [1.9, 1.7, 1.5, 1.3].forEach((y) => {
-            const button = new THREE.Mesh(new THREE.SphereGeometry(.018, 16, 10), seamMaterial);
+          [1.92, 1.72, 1.52, 1.32].forEach((y) => {
+            const button = new THREE.Mesh(new THREE.SphereGeometry(type === "jacket" ? .021 : .017, 16, 10), seamMaterial);
             button.position.set(0, y, .254 * chestScale);
             group.add(button);
           });
+          [["left", -1], ["right", 1]].forEach(([, side]) => {
+            const pocket = fit3dRoundedBox(.16, .11, .018, .018, 5, fit3dFabricMaterial(type === "jacket" ? 0x344054 : 0xefe7da, .88));
+            pocket.position.set(side * .2 * chestScale, 1.42, .266 * chestScale);
+            pocket.rotation.z = side * .025;
+            group.add(pocket);
+          });
         }
         if (type === "jacket") {
-          const jacket = fit3dRoundedBox(.93 * shoulderScale, 1.05, .5 * chestScale, .12, 10, fit3dFabricMaterial(0x293241, .88));
-          jacket.position.y = 1.55;
+          const jacket = fit3dRoundedBox(1.08 * shoulderScale, 1.18, .58 * chestScale, .13, 10, fit3dFabricMaterial(0x293241, .88));
+          jacket.position.y = 1.51;
           jacket.position.z = .015;
           group.add(jacket);
-          const opening = new THREE.Mesh(new THREE.BoxGeometry(.18, .92, .024), fit3dFabricMaterial(0xf7f2e8, .92));
-          opening.position.set(0, 1.55, .268 * chestScale);
+          const opening = new THREE.Mesh(new THREE.BoxGeometry(.24, 1.06, .034), fit3dFabricMaterial(0xf7f2e8, .92));
+          opening.position.set(0, 1.49, .39 * chestScale);
           group.add(opening);
+          const split = new THREE.Mesh(new THREE.BoxGeometry(.034, .34, .038), fit3dFabricMaterial(0xf7f2e8, .92));
+          split.position.set(0, .97, .41 * chestScale);
+          group.add(split);
           [["left", -1], ["right", 1]].forEach(([, side]) => {
-            const lapel = fit3dRoundedBox(.18, .54, .028, .025, 6, fit3dFabricMaterial(0x354052, .88));
-            lapel.position.set(side * .12, 1.76, .286 * chestScale);
-            lapel.rotation.z = side * .18;
+            const lapel = fit3dRoundedBox(.22, .64, .04, .025, 6, fit3dFabricMaterial(0x354052, .88));
+            lapel.position.set(side * .155, 1.76, .43 * chestScale);
+            lapel.rotation.z = side * .22;
             group.add(lapel);
+            const lowerPanel = fit3dRoundedBox(.18, .36, .034, .025, 6, fit3dFabricMaterial(0x232c3a, .9));
+            lowerPanel.position.set(side * .21, 1.05, .415 * chestScale);
+            lowerPanel.rotation.z = side * -.06;
+            group.add(lowerPanel);
           });
         }
         if (type === "hoodie") {
-          const hood = new THREE.Mesh(new THREE.TorusGeometry(.24, .045, 16, 48), shirt);
-          hood.position.set(0, 2.16, -.08);
+          const hood = new THREE.Mesh(new THREE.TorusGeometry(.29, .058, 16, 56), shirt);
+          hood.position.set(0, 2.15, -.09);
           hood.rotation.x = Math.PI / 2.5;
-          hood.scale.set(1.05, .72, 1);
+          hood.scale.set(1.18, .8, 1.08);
           hood.castShadow = true;
           hood.receiveShadow = true;
           group.add(hood);
+          const pouch = fit3dRoundedBox(.42 * waistScale, .2, .035, .03, 8, fit3dFabricMaterial(0xcfd5de, .9));
+          pouch.position.set(0, 1.12, .285 * chestScale);
+          group.add(pouch);
           [["left", -1], ["right", 1]].forEach(([, side]) => {
             const string = new THREE.Mesh(new THREE.CylinderGeometry(.007, .007, .36, 8), seamMaterial);
             string.position.set(side * .055, 1.88, .255 * chestScale);
@@ -9436,6 +9471,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         const isLongSleeve = ["hoodie", "jacket", "shirt", "sweatshirt"].includes(topType);
         const isWidePants = bottomType === "wide-pants" || /와이드|wide|조거|jogger/i.test(bottomItem.name || bottomItem.fit || "");
         const isShorts = bottomType === "shorts";
+        const silhouette = fit3dSilhouette(topType);
 
         const skin = fit3dMaterial(0xd8b296, .84, .01);
         const hair = fit3dMaterial(0x171717, .88, .01);
@@ -9465,8 +9501,8 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         neck.position.y = 2.25;
         group.add(neck);
 
-        const torso = fit3dRoundedBox((isOuter ? .9 : .84) * shoulderScale, isOuter ? 1.12 : 1.08, (isOuter ? .5 : .44) * chestScale, .15, 12, shirt);
-        torso.position.y = 1.58;
+        const torso = fit3dRoundedBox(.84 * shoulderScale * silhouette.shoulder, 1.08 * silhouette.length, .44 * chestScale * silhouette.depth, .15, 12, shirt);
+        torso.position.y = 1.58 - (silhouette.length - 1) * .08;
         torso.rotation.x = .015;
         group.add(torso);
         [["left", -1], ["right", 1]].forEach(([, side]) => {
@@ -9476,15 +9512,15 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           group.add(frontDrape);
         });
 
-        const shirtDrape = new THREE.Mesh(new THREE.CylinderGeometry((isOuter ? .47 : .43) * waistScale, (isOuter ? .55 : .51) * hipScale, isOuter ? .38 : .34, 48), shirt);
-        shirtDrape.position.y = .97;
-        shirtDrape.scale.z = .62;
+        const shirtDrape = new THREE.Mesh(new THREE.CylinderGeometry(.43 * waistScale * silhouette.waist, .51 * hipScale * (topType === "shirt" ? .95 : silhouette.waist), .34 * silhouette.depth, 48), shirt);
+        shirtDrape.position.y = .97 - (silhouette.length - 1) * .08;
+        shirtDrape.scale.z = .62 * silhouette.depth;
         shirtDrape.castShadow = true;
         shirtDrape.receiveShadow = true;
         group.add(shirtDrape);
 
-        const hem = new THREE.Mesh(new THREE.TorusGeometry((isOuter ? .46 : .42) * Math.max(waistScale, hipScale), .01, 8, 56), shirtShadow);
-        hem.position.y = .78;
+        const hem = new THREE.Mesh(new THREE.TorusGeometry(.42 * Math.max(waistScale, hipScale) * silhouette.waist, topType === "hoodie" ? .018 : .01, 8, 56), shirtShadow);
+        hem.position.y = .78 - (silhouette.length - 1) * .12;
         hem.scale.z = .58;
         hem.rotation.x = Math.PI / 2;
         group.add(hem);
@@ -9500,38 +9536,38 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
 
         const armLength = .86 * heightScale;
         [["left", -1], ["right", 1]].forEach(([, side]) => {
-          const sleeve = fit3dCapsule(isLongSleeve ? .105 : .125, isLongSleeve ? .82 : .36, shirt);
-          sleeve.position.set(side * (.51 * shoulderScale), isLongSleeve ? 1.58 : 1.87, .005);
-          sleeve.rotation.z = side * .18;
-          sleeve.scale.set(1, 1, .92);
+          const sleeve = fit3dCapsule((isLongSleeve ? .105 : .125) * silhouette.sleeveRadius, (isLongSleeve ? .82 : .36) * silhouette.sleeveLength, shirt);
+          sleeve.position.set(side * (.51 * shoulderScale * silhouette.shoulder), (isLongSleeve ? 1.58 : 1.87) + silhouette.sleeveDrop, .005);
+          sleeve.rotation.z = side * (topType === "jacket" ? .12 : .18);
+          sleeve.scale.set(1, 1, topType === "jacket" ? 1.02 : .92);
           group.add(sleeve);
 
           const arm = fit3dCapsule(.082, isLongSleeve ? armLength * .34 : armLength * .88, skin);
-          arm.position.set(side * (.62 * shoulderScale), isLongSleeve ? .96 : 1.34, .02);
+          arm.position.set(side * (.62 * shoulderScale * silhouette.shoulder), isLongSleeve ? .94 + silhouette.sleeveDrop : 1.34, .02);
           arm.rotation.z = side * .08;
           arm.scale.set(.86, 1, .82);
           group.add(arm);
           const hand = new THREE.Mesh(new THREE.SphereGeometry(.075, 18, 12), skin);
-          hand.position.set(side * (.65 * shoulderScale), isLongSleeve ? .76 : .9, .045);
+          hand.position.set(side * (.65 * shoulderScale * silhouette.shoulder), isLongSleeve ? .74 + silhouette.sleeveDrop : .9, .045);
           hand.scale.set(.72, 1.08, .56);
           group.add(hand);
           const wristShadow = new THREE.Mesh(new THREE.TorusGeometry(.068, .006, 8, 24), fit3dMaterial(0xc99f83, .9, 0));
-          wristShadow.position.set(side * (.64 * shoulderScale), isLongSleeve ? .84 : .99, .043);
+          wristShadow.position.set(side * (.64 * shoulderScale * silhouette.shoulder), isLongSleeve ? .82 + silhouette.sleeveDrop : .99, .043);
           wristShadow.scale.z = .42;
           wristShadow.rotation.x = Math.PI / 2;
           group.add(wristShadow);
         });
 
         [["left", -1], ["right", 1]].forEach(([, side]) => {
-          const legWidth = (isWidePants ? .31 : .24) * Math.max(.92, hipScale);
+          const legWidth = (isWidePants ? .37 : .24) * Math.max(.92, hipScale);
           const legHeight = (isShorts ? .52 : 1.22) * legScale;
-          const leg = fit3dRoundedBox(legWidth, legHeight, isWidePants ? .32 : .28, .06, 8, pants);
-          const legOffset = (isWidePants ? .22 : .19) * hipScale;
+          const leg = fit3dRoundedBox(legWidth, legHeight, isWidePants ? .38 : .28, isWidePants ? .075 : .06, 8, pants);
+          const legOffset = (isWidePants ? .26 : .19) * hipScale;
           leg.position.set(side * legOffset, isShorts ? .49 : .15, 0);
-          leg.rotation.z = side * .012;
+          leg.rotation.z = side * (isWidePants ? -.018 : .012);
           group.add(leg);
-          const crease = new THREE.Mesh(new THREE.BoxGeometry(.012, (isShorts ? .32 : 1.02) * legScale, .012), fit3dMaterial(0x41444b, .88, 0));
-          crease.position.set(side * legOffset, isShorts ? .5 : .17, (isWidePants ? .17 : .148));
+          const crease = new THREE.Mesh(new THREE.BoxGeometry(isWidePants ? .016 : .012, (isShorts ? .32 : 1.02) * legScale, .012), fit3dMaterial(0x41444b, .88, 0));
+          crease.position.set(side * legOffset, isShorts ? .5 : .17, (isWidePants ? .205 : .148));
           group.add(crease);
           const shoeMesh = fit3dRoundedBox(.32, .1, .42, .035, 8, shoe);
           shoeMesh.position.set(side * legOffset, -.52, .055);
