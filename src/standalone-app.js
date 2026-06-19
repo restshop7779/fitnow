@@ -9082,22 +9082,13 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       }
 
       function realFitPreviewStyle(profile, metrics) {
-        const heightScale = Math.min(1.07, Math.max(.94, 1 + (profile.height - 172.5) * .0022));
-        const y = Math.min(12, Math.max(-12, (172.5 - profile.height) * .18));
-        const shoulderScale = Math.min(1.08, Math.max(.94, 1 + (metrics.shoulderRatio - 1) * .34));
-        const chestScale = Math.min(1.08, Math.max(.94, 1 + (metrics.chestRatio - 1) * .32));
-        const waistScale = Math.min(1.09, Math.max(.92, 1 + (metrics.waistRatio - 1) * .3));
-        const hipScale = Math.min(1.08, Math.max(.93, 1 + (metrics.hipRatio - 1) * .28));
-        const legScale = Math.min(1.06, Math.max(.95, 1 + (metrics.legRatio - 1) * .16));
-        const thighScale = Math.min(1.07, Math.max(.94, 1 + (metrics.thighRatio - 1) * .2));
+        const heightScale = Math.min(1.035, Math.max(.97, 1 + (profile.height - 172.5) * .0012));
+        const widthBlend = (metrics.shoulderRatio + metrics.chestRatio + metrics.waistRatio + metrics.hipRatio) / 4;
+        const widthScale = Math.min(1.035, Math.max(.97, 1 + (widthBlend - 1) * .12));
+        const y = Math.min(8, Math.max(-8, (172.5 - profile.height) * .12));
         return [
           "--real-fit-height:" + heightScale.toFixed(3),
-          "--real-fit-shoulder:" + shoulderScale.toFixed(3),
-          "--real-fit-chest:" + chestScale.toFixed(3),
-          "--real-fit-waist:" + waistScale.toFixed(3),
-          "--real-fit-hip:" + hipScale.toFixed(3),
-          "--real-fit-leg:" + legScale.toFixed(3),
-          "--real-fit-thigh:" + thighScale.toFixed(3),
+          "--real-fit-width:" + widthScale.toFixed(3),
           "--real-fit-y:" + Math.round(y) + "px",
         ].join(";");
       }
@@ -9490,12 +9481,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         body.innerHTML = `
           <section class="fit-room-layout">
             <div class="real-fit-stage ${avatarBodyClass}" style="${realFitStyle}">
-              <div class="real-fit-model-stack" aria-label="실제 모델 착장 미리보기">
-                <img class="real-fit-model real-fit-base" src="${realFitModelImage}" alt="" />
-                <img class="real-fit-model real-fit-upper" src="${realFitModelImage}" alt="" />
-                <img class="real-fit-model real-fit-waist" src="${realFitModelImage}" alt="" />
-                <img class="real-fit-model real-fit-lower" src="${realFitModelImage}" alt="" />
-              </div>
+              <img class="real-fit-model" src="${realFitModelImage}" alt="실제 모델 착장 미리보기" />
               <div class="real-fit-badge">
                 <strong>${metrics.label}</strong>
                 <span>상의 ${profile.topSize} · 하의 ${profile.bottomSize}</span>
