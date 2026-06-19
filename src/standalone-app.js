@@ -9361,6 +9361,40 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         }
       }
 
+      function fit3dAddFaceDetails(group, materials) {
+        const { skin, hair, faceLine } = materials;
+        const nose = new THREE.Mesh(new THREE.ConeGeometry(.026, .085, 18), skin);
+        nose.position.set(0, 2.58, .19);
+        nose.rotation.x = Math.PI / 2;
+        group.add(nose);
+        [["left", -1], ["right", 1]].forEach(([, side]) => {
+          const eye = new THREE.Mesh(new THREE.SphereGeometry(.015, 12, 8), faceLine);
+          eye.position.set(side * .062, 2.575, .177);
+          eye.scale.set(1.25, .58, .45);
+          group.add(eye);
+          const brow = new THREE.Mesh(new THREE.BoxGeometry(.052, .006, .006), faceLine);
+          brow.position.set(side * .064, 2.625, .181);
+          brow.rotation.z = side * .08;
+          group.add(brow);
+          const ear = new THREE.Mesh(new THREE.SphereGeometry(.042, 16, 10), skin);
+          ear.position.set(side * .205, 2.57, -.01);
+          ear.scale.set(.42, .9, .28);
+          group.add(ear);
+          const fringe = fit3dCapsule(.014, .18, hair);
+          fringe.position.set(side * .062, 2.76, .145);
+          fringe.rotation.z = side * .28;
+          fringe.rotation.x = .12;
+          group.add(fringe);
+        });
+        const mouth = new THREE.Mesh(new THREE.BoxGeometry(.074, .007, .006), faceLine);
+        mouth.position.set(0, 2.465, .178);
+        mouth.scale.x = .9;
+        group.add(mouth);
+        const chinShade = new THREE.Mesh(new THREE.BoxGeometry(.09, .006, .006), fit3dMaterial(0xc99f83, .9, 0));
+        chinShade.position.set(0, 2.43, .165);
+        group.add(chinShade);
+      }
+
       function fit3dAddAccessories(group, items = [], scales = {}) {
         const bag = fit3dAccessoryItems(items)[0];
         if (!bag) return;
@@ -9377,6 +9411,10 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         flap.position.set(.4 * (scales.shoulderScale || 1), 1.24, .498);
         flap.rotation.z = -.08;
         group.add(flap);
+        const buckle = new THREE.Mesh(new THREE.TorusGeometry(.032, .006, 8, 18), fit3dMaterial(0xd7b56d, .5, .35));
+        buckle.position.set(.23 * (scales.shoulderScale || 1), 1.35, .505);
+        buckle.rotation.z = -.08;
+        group.add(buckle);
       }
 
       function fit3dBuildAvatar(profile, metrics, items = []) {
@@ -9401,6 +9439,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
 
         const skin = fit3dMaterial(0xd8b296, .84, .01);
         const hair = fit3dMaterial(0x171717, .88, .01);
+        const faceLine = fit3dMaterial(0x2a2420, .82, 0);
         const shirt = fit3dFabricMaterial(fit3dGarmentColor(topItem), .9);
         const shirtShadow = fit3dFabricMaterial(0xded9cc, .92);
         const pants = fit3dFabricMaterial(fit3dGarmentColor(bottomItem.category ? bottomItem : { category: "하의" }), .82);
@@ -9420,6 +9459,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         hairCap.position.set(0, 2.73, -.018);
         hairCap.scale.set(.84, .54, .78);
         group.add(hairCap);
+        fit3dAddFaceDetails(group, { skin, hair, faceLine });
 
         const neck = new THREE.Mesh(new THREE.CylinderGeometry(.095, .12, .23, 28), skin);
         neck.position.y = 2.25;
@@ -9429,6 +9469,12 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         torso.position.y = 1.58;
         torso.rotation.x = .015;
         group.add(torso);
+        [["left", -1], ["right", 1]].forEach(([, side]) => {
+          const frontDrape = new THREE.Mesh(new THREE.BoxGeometry(.01, .82, .008), fit3dMaterial(0xe7dfcf, .92, 0));
+          frontDrape.position.set(side * .22 * waistScale, 1.55, .232 * chestScale);
+          frontDrape.rotation.z = side * .035;
+          group.add(frontDrape);
+        });
 
         const shirtDrape = new THREE.Mesh(new THREE.CylinderGeometry((isOuter ? .47 : .43) * waistScale, (isOuter ? .55 : .51) * hipScale, isOuter ? .38 : .34, 48), shirt);
         shirtDrape.position.y = .97;
@@ -9465,6 +9511,15 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           arm.rotation.z = side * .08;
           arm.scale.set(.86, 1, .82);
           group.add(arm);
+          const hand = new THREE.Mesh(new THREE.SphereGeometry(.075, 18, 12), skin);
+          hand.position.set(side * (.65 * shoulderScale), isLongSleeve ? .76 : .9, .045);
+          hand.scale.set(.72, 1.08, .56);
+          group.add(hand);
+          const wristShadow = new THREE.Mesh(new THREE.TorusGeometry(.068, .006, 8, 24), fit3dMaterial(0xc99f83, .9, 0));
+          wristShadow.position.set(side * (.64 * shoulderScale), isLongSleeve ? .84 : .99, .043);
+          wristShadow.scale.z = .42;
+          wristShadow.rotation.x = Math.PI / 2;
+          group.add(wristShadow);
         });
 
         [["left", -1], ["right", 1]].forEach(([, side]) => {
@@ -9490,6 +9545,9 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         shoulderLine.castShadow = true;
         shoulderLine.receiveShadow = true;
         group.add(shoulderLine);
+        const collarShadow = new THREE.Mesh(new THREE.BoxGeometry(.42 * shoulderScale, .012, .01), fit3dMaterial(0xcfc8b8, .9, 0));
+        collarShadow.position.set(0, 2.01, .238 * chestScale);
+        group.add(collarShadow);
 
         const centerSeam = new THREE.Mesh(new THREE.BoxGeometry(.012, .84, .012), seamMaterial);
         centerSeam.position.set(0, 1.55, .235 * chestScale);
@@ -9545,6 +9603,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         scene.add(floor);
 
         const avatar = fit3dBuildAvatar(profile, metrics, items);
+        avatar.rotation.y = fit3dQuickAngle("front");
         scene.add(avatar);
 
         const runtime = {
@@ -9556,7 +9615,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           frame: 0,
           dragging: false,
           lastX: 0,
-          velocity: .0035,
+          velocity: 0,
           resizeObserver: null,
           onPointerDown: null,
           onPointerMove: null,
@@ -9605,6 +9664,9 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           runtime.frame = window.requestAnimationFrame(animate);
         };
         fit3dRuntime = runtime;
+        runtime.resumeTimer = window.setTimeout(() => {
+          if (fit3dRuntime === runtime && !runtime.dragging) runtime.velocity = .0035;
+        }, 1800);
         animate();
       }
 
