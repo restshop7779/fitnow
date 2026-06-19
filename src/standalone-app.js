@@ -9201,6 +9201,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       function disposeFit3dPreview() {
         if (!fit3dRuntime) return;
         if (fit3dRuntime.frame) window.cancelAnimationFrame(fit3dRuntime.frame);
+        if (fit3dRuntime.resumeTimer) window.clearTimeout(fit3dRuntime.resumeTimer);
         if (fit3dRuntime.resizeObserver) fit3dRuntime.resizeObserver.disconnect();
         if (fit3dRuntime.canvas) {
           fit3dRuntime.canvas.removeEventListener("pointerdown", fit3dRuntime.onPointerDown);
@@ -9551,6 +9552,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           onPointerDown: null,
           onPointerMove: null,
           onPointerUp: null,
+          resumeTimer: null,
         };
 
         const resize = () => {
@@ -9605,6 +9607,31 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         stage.style.setProperty("--fallback-shoulder", Math.round(112 * Math.min(1.22, Math.max(.86, metrics.shoulderRatio))) + "px");
         stage.style.setProperty("--fallback-waist", Math.round(82 * Math.min(1.22, Math.max(.86, metrics.waistRatio))) + "px");
         stage.style.setProperty("--fallback-leg", Math.round(86 * Math.min(1.22, Math.max(.92, metrics.legRatio))) + "px");
+      }
+
+      function fit3dQuickAngle(view) {
+        const map = {
+          front: 0,
+          side: Math.PI / 2,
+          back: Math.PI,
+        };
+        return map[view] ?? 0;
+      }
+
+      function setFit3dQuickView(view) {
+        const angle = fit3dQuickAngle(view);
+        document.querySelectorAll("[data-fit-quick-view]").forEach((button) => {
+          button.classList.toggle("active-control", button.dataset.fitQuickView === view);
+        });
+        const stage = document.getElementById("fit3dStage");
+        if (stage) stage.style.setProperty("--fallback-quick-angle", angle + "rad");
+        if (!fit3dRuntime || !fit3dRuntime.avatar) return;
+        fit3dRuntime.avatar.rotation.y = angle;
+        fit3dRuntime.velocity = 0;
+        window.clearTimeout(fit3dRuntime.resumeTimer);
+        fit3dRuntime.resumeTimer = window.setTimeout(() => {
+          if (fit3dRuntime && fit3dRuntime.avatar) fit3dRuntime.velocity = .0035;
+        }, 2600);
       }
 
       function setFitViewMode(mode) {
@@ -10114,6 +10141,11 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
                   <i class="fallback-leg left"></i>
                   <i class="fallback-leg right"></i>
                 </div>
+              </div>
+              <div class="fit-3d-view-controls" aria-label="3D 빠른보기">
+                <button class="active-control" type="button" data-fit-quick-view="front" onclick="setFit3dQuickView('front')">앞</button>
+                <button type="button" data-fit-quick-view="side" onclick="setFit3dQuickView('side')">옆</button>
+                <button type="button" data-fit-quick-view="back" onclick="setFit3dQuickView('back')">뒤</button>
               </div>
               <div class="fit-3d-hud">
                 <strong>${metrics.label}</strong>
@@ -11631,6 +11663,7 @@ exposeHandlers({
   setAdminSettlementView,
   setAdminStatusFilter,
   setCategory,
+  setFit3dQuickView,
   setPriceRange,
   setRegion,
   setFitViewMode,

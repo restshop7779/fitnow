@@ -3135,11 +3135,12 @@
         --fallback-shoulder: 112px;
         --fallback-waist: 82px;
         --fallback-leg: 86px;
+        --fallback-quick-angle: 0rad;
         position: relative;
         width: 170px;
         height: 360px;
         transform-style: preserve-3d;
-        transform: scale(var(--fallback-height));
+        transform: scale(var(--fallback-height)) rotateY(var(--fallback-quick-angle));
         filter: drop-shadow(0 22px 28px rgba(23,23,23,.18));
         animation: fitFallbackSpin 7s linear infinite;
       }
@@ -3218,7 +3219,32 @@
         margin-left: 3px;
       }
       @keyframes fitFallbackSpin {
-        to { transform: scale(var(--fallback-height)) rotateY(360deg); }
+        to { transform: scale(var(--fallback-height)) rotateY(calc(var(--fallback-quick-angle) + 360deg)); }
+      }
+      .fit-3d-view-controls {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        right: 12px;
+        z-index: 3;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+      }
+      .fit-3d-view-controls button {
+        min-height: 34px;
+        border: 1px solid rgba(23,23,23,.12);
+        border-radius: 8px;
+        background: rgba(255,255,255,.78);
+        color: #171717;
+        font-size: 12px;
+        font-weight: 950;
+        backdrop-filter: blur(10px);
+      }
+      .fit-3d-view-controls button.active-control {
+        border-color: #171717;
+        background: #171717;
+        color: #fff;
       }
       .fit-3d-hud {
         position: absolute;
