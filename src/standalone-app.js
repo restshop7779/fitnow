@@ -9461,14 +9461,15 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           const legWidth = (isWidePants ? .31 : .24) * Math.max(.92, hipScale);
           const legHeight = (isShorts ? .52 : 1.22) * legScale;
           const leg = fit3dRoundedBox(legWidth, legHeight, isWidePants ? .32 : .28, .06, 8, pants);
-          leg.position.set(side * (isWidePants ? .17 : .15) * hipScale, isShorts ? .49 : .15, 0);
+          const legOffset = (isWidePants ? .22 : .19) * hipScale;
+          leg.position.set(side * legOffset, isShorts ? .49 : .15, 0);
           leg.rotation.z = side * .012;
           group.add(leg);
           const crease = new THREE.Mesh(new THREE.BoxGeometry(.012, (isShorts ? .32 : 1.02) * legScale, .012), fit3dMaterial(0x41444b, .88, 0));
-          crease.position.set(side * (isWidePants ? .17 : .15) * hipScale, isShorts ? .5 : .17, (isWidePants ? .17 : .148));
+          crease.position.set(side * legOffset, isShorts ? .5 : .17, (isWidePants ? .17 : .148));
           group.add(crease);
           const shoeMesh = fit3dRoundedBox(.32, .1, .42, .035, 8, shoe);
-          shoeMesh.position.set(side * .15 * hipScale, -.52, .055);
+          shoeMesh.position.set(side * legOffset, -.52, .055);
           shoeMesh.castShadow = true;
           shoeMesh.receiveShadow = true;
           group.add(shoeMesh);
@@ -9545,7 +9546,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           frame: 0,
           dragging: false,
           lastX: 0,
-          velocity: .006,
+          velocity: .0035,
           resizeObserver: null,
           onPointerDown: null,
           onPointerMove: null,
@@ -9575,7 +9576,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         };
         runtime.onPointerUp = (event) => {
           runtime.dragging = false;
-          runtime.velocity = .006;
+          runtime.velocity = .0035;
           try { canvas.releasePointerCapture(event.pointerId); } catch (error) {}
         };
 
