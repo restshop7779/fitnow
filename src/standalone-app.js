@@ -9039,7 +9039,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         if (metrics.bmi < 19 && /slim|크롭|슬림/i.test(itemFit + item.name)) score += 5;
         if (metrics.bmi >= 23 && /relaxed|오버|와이드|루즈|릴랙스/i.test(itemFit + item.name)) score += 6;
         if (specs.shoulder) score -= Math.min(8, Math.abs(metrics.shoulder / 2 - specs.shoulder) * 0.35);
-        if (specs.chest) score -= Math.min(8, Math.max(0, metrics.waist / 2 - specs.chest) * 0.45);
+        if (specs.chest) score -= Math.min(8, Math.max(0, metrics.chest / 2 - specs.chest) * 0.45);
         if (specs.length) {
           const idealLength = item.category === "하의" ? metrics.leg * 0.92 : profile.height * 0.32;
           score -= Math.min(6, Math.abs(idealLength - specs.length) * 0.18);
@@ -9091,6 +9091,80 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           "--real-fit-width:" + widthScale.toFixed(3),
           "--real-fit-y:" + Math.round(y) + "px",
         ].join(";");
+      }
+
+      function fitRatioPercent(ratio) {
+        return Math.min(100, Math.max(8, Math.round(ratio * 50)));
+      }
+
+      function fitMetricRows(metrics) {
+        return [
+          { label: "어깨", value: metrics.shoulder, ratio: metrics.shoulderRatio },
+          { label: "가슴", value: metrics.chest, ratio: metrics.chestRatio },
+          { label: "허리", value: metrics.waist, ratio: metrics.waistRatio },
+          { label: "골반", value: metrics.hip, ratio: metrics.hipRatio },
+          { label: "허벅지", value: metrics.thigh, ratio: metrics.thighRatio },
+          { label: "다리", value: metrics.leg, ratio: metrics.legRatio },
+        ];
+      }
+
+      function fitEaseLabel(delta, type = "width") {
+        if (delta === null) return "실측 대기";
+        if (type === "length") {
+          if (delta >= 12) return "긴 기장";
+          if (delta >= 6) return "여유 기장";
+          if (delta <= -8) return "짧은 기장";
+          return "적정 기장";
+        }
+        if (delta >= 12) return "오버핏";
+        if (delta >= 6) return "여유핏";
+        if (delta <= -2) return "타이트";
+        return "정핏";
+      }
+
+      function fitGarmentDeltas(item, profile, metrics) {
+        const specs = garmentSpecs(item);
+        const idealTopLength = profile.height * 0.32;
+        return [
+          { label: "어깨 여유", delta: specs.shoulder ? specs.shoulder - metrics.shoulder / 2 : null, unit: "cm" },
+          { label: "가슴 여유", delta: specs.chest ? specs.chest - metrics.chest / 2 : null, unit: "cm" },
+          { label: "허리 여유", delta: specs.waist ? specs.waist - metrics.waist / 2 : null, unit: "cm" },
+          { label: "기장 차이", delta: specs.length ? specs.length - idealTopLength : null, unit: "cm", type: "length" },
+        ];
+      }
+
+      function fitAnalysisMarkup(profile, metrics, item, match) {
+        const metricRows = fitMetricRows(metrics).map((row) => `
+          <div class="fit-metric-row">
+            <span>${row.label}</span>
+            <i><b style="width:${fitRatioPercent(row.ratio)}%"></b></i>
+            <strong>${Math.round(row.value)}cm</strong>
+          </div>
+        `).join("");
+        const deltas = fitGarmentDeltas(item, profile, metrics).map((row) => {
+          const hasDelta = row.delta !== null;
+          const deltaText = hasDelta ? (row.delta > 0 ? "+" : "") + row.delta.toFixed(1) + row.unit : "-";
+          return `
+            <div class="fit-ease-chip">
+              <span>${row.label}</span>
+              <strong>${deltaText}</strong>
+              <em>${fitEaseLabel(hasDelta ? row.delta : null, row.type)}</em>
+            </div>
+          `;
+        }).join("");
+        return `
+          <section class="fit-analysis-panel">
+            <div class="fit-analysis-head">
+              <div>
+                <p>체형 분석</p>
+                <strong>${metrics.label} · BMI ${metrics.bmi.toFixed(1)}</strong>
+              </div>
+              <span>${match}%</span>
+            </div>
+            <div class="fit-metric-list">${metricRows}</div>
+            <div class="fit-ease-grid">${deltas}</div>
+          </section>
+        `;
       }
 
       function avatarTryOnPanelMarkup(item, match) {
@@ -9519,6 +9593,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
                 </select>
               </label>
               ${items.length ? "" : '<p class="fit-empty-hint">상품 카드의 하트(♡)를 눌러 찜하면 여기에서 입어볼 수 있습니다.</p>'}
+              ${fitAnalysisMarkup(profile, metrics, mainItem, match)}
               ${avatarTryOnPanelMarkup(mainItem, match)}
               <button class="primary" type="button" onclick="saveFitProfile()">내 체형 저장</button>
             </div>

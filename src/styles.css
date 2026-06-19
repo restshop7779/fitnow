@@ -3426,6 +3426,103 @@
         font-weight: 850;
         line-height: 1.45;
       }
+      .fit-analysis-panel {
+        display: grid;
+        gap: 12px;
+        padding: 12px;
+        border: 1px solid rgba(23,23,23,.12);
+        border-radius: 8px;
+        background: #fff;
+        box-shadow: 0 8px 20px rgba(23,23,23,.05);
+      }
+      .fit-analysis-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .fit-analysis-head p {
+        margin: 0 0 5px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 950;
+      }
+      .fit-analysis-head strong {
+        display: block;
+        color: #171717;
+        font-size: 13px;
+        font-weight: 950;
+        line-height: 1.35;
+        word-break: keep-all;
+      }
+      .fit-analysis-head > span {
+        min-width: 52px;
+        min-height: 38px;
+        display: grid;
+        place-items: center;
+        border-radius: 8px;
+        background: #171717;
+        color: #fff;
+        font-size: 13px;
+        font-weight: 950;
+      }
+      .fit-metric-list {
+        display: grid;
+        gap: 8px;
+      }
+      .fit-metric-row {
+        display: grid;
+        grid-template-columns: 44px 1fr 48px;
+        gap: 8px;
+        align-items: center;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 950;
+      }
+      .fit-metric-row i {
+        position: relative;
+        height: 8px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: #ece8df;
+      }
+      .fit-metric-row b {
+        position: absolute;
+        inset: 0 auto 0 0;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #171717, #7a7f35);
+      }
+      .fit-metric-row strong {
+        color: #171717;
+        text-align: right;
+        font-size: 11px;
+      }
+      .fit-ease-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .fit-ease-chip {
+        min-height: 62px;
+        display: grid;
+        gap: 3px;
+        padding: 9px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfaf6;
+      }
+      .fit-ease-chip span,
+      .fit-ease-chip em {
+        color: var(--muted);
+        font-size: 10px;
+        font-style: normal;
+        font-weight: 900;
+      }
+      .fit-ease-chip strong {
+        color: #171717;
+        font-size: 13px;
+        font-weight: 950;
+      }
       .avatar-tryon-panel {
         display: grid;
         gap: 10px;
@@ -3559,7 +3656,8 @@
         }
         .real-fit-badge span { text-align: left; }
         .avatar-tryon-actions,
-        .avatar-tryon-result {
+        .avatar-tryon-result,
+        .fit-ease-grid {
           grid-template-columns: 1fr;
         }
       }
