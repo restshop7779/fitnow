@@ -8947,12 +8947,12 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
 
       function fitBodySamples() {
         return [
-          { key: "slim", label: "슬림형", desc: "어깨·허리 얇은 체형", shoulder: -5, waist: -6, leg: 2 },
-          { key: "regular", label: "표준형", desc: "평균 균형 체형", shoulder: 0, waist: 0, leg: 0 },
-          { key: "athletic", label: "운동형", desc: "어깨 넓고 상체 발달", shoulder: 8, waist: -2, leg: 1 },
-          { key: "straight", label: "일자형", desc: "상하체 폭이 비슷함", shoulder: 2, waist: 5, leg: 0 },
-          { key: "pear", label: "하체형", desc: "골반·하체 볼륨형", shoulder: -2, waist: 4, leg: 8 },
-          { key: "plus", label: "볼륨형", desc: "전체적으로 여유 있는 체형", shoulder: 6, waist: 11, leg: 6 },
+          { key: "slim", label: "슬림형", desc: "어깨·허리 얇은 체형", shoulder: -5, chest: -5, waist: -7, hip: -4, thigh: -3, leg: 2 },
+          { key: "regular", label: "표준형", desc: "평균 균형 체형", shoulder: 0, chest: 0, waist: 0, hip: 0, thigh: 0, leg: 0 },
+          { key: "athletic", label: "운동형", desc: "어깨 넓고 상체 발달", shoulder: 8, chest: 5, waist: -2, hip: 1, thigh: 2, leg: 1 },
+          { key: "straight", label: "일자형", desc: "상하체 폭이 비슷함", shoulder: 2, chest: 2, waist: 6, hip: 2, thigh: 1, leg: 0 },
+          { key: "pear", label: "하체형", desc: "골반·하체 볼륨형", shoulder: -2, chest: -1, waist: 3, hip: 8, thigh: 7, leg: 4 },
+          { key: "plus", label: "볼륨형", desc: "전체적으로 여유 있는 체형", shoulder: 6, chest: 8, waist: 12, hip: 9, thigh: 7, leg: 2 },
         ];
       }
 
@@ -8983,12 +8983,25 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         const sample = fitBodySample(profile);
         const topAdjust = fitSizeAdjustment(profile.topSize);
         const bottomAdjust = fitSizeAdjustment(profile.bottomSize);
-        const shoulder = Math.min(120, Math.max(78, 88 + (profile.height - 160) * 0.16 + (bmi - 21) * 1.4 + sample.shoulder + topAdjust * 0.45));
-        const waist = Math.min(116, Math.max(68, 80 + (bmi - 21) * 2.1 + sample.waist + topAdjust * 0.2 + bottomAdjust * 0.35));
-        const leg = Math.min(124, Math.max(80, 88 + (profile.height - 160) * 0.45 + sample.leg + bottomAdjust * 0.55));
+        const standardHeight = 172.5;
+        const standardBmi = 23.2;
+        const heightDelta = profile.height - standardHeight;
+        const bmiDelta = bmi - standardBmi;
+        const shoulder = Math.min(122, Math.max(78, 92 + heightDelta * 0.1 + bmiDelta * 1.05 + sample.shoulder + topAdjust * 0.32));
+        const chest = Math.min(126, Math.max(78, 94 + heightDelta * 0.12 + bmiDelta * 1.8 + sample.chest + topAdjust * 0.42));
+        const waist = Math.min(122, Math.max(68, 82 + heightDelta * 0.04 + bmiDelta * 2.35 + sample.waist + topAdjust * 0.12 + bottomAdjust * 0.32));
+        const hip = Math.min(124, Math.max(76, 94 + heightDelta * 0.07 + bmiDelta * 1.55 + sample.hip + bottomAdjust * 0.5));
+        const thigh = Math.min(74, Math.max(48, 56 + heightDelta * 0.04 + bmiDelta * 0.95 + sample.thigh + bottomAdjust * 0.34));
+        const leg = Math.min(126, Math.max(82, 92 + heightDelta * 0.36 + sample.leg + bottomAdjust * 0.35));
+        const shoulderRatio = shoulder / 92;
+        const chestRatio = chest / 94;
+        const waistRatio = waist / 82;
+        const hipRatio = hip / 94;
+        const thighRatio = thigh / 56;
+        const legRatio = leg / 92;
         const bmiLabel = bmi < 18.5 ? "슬림" : bmi < 23 ? "레귤러" : bmi < 27 ? "릴랙스" : "오버핏 추천";
         const label = sample.label + " · " + bmiLabel;
-        return { bmi, shoulder, waist, leg, label, sample };
+        return { bmi, shoulder, chest, waist, hip, thigh, leg, shoulderRatio, chestRatio, waistRatio, hipRatio, thighRatio, legRatio, label, sample };
       }
 
       function garmentSpecs(item = {}) {
@@ -9069,13 +9082,22 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       }
 
       function realFitPreviewStyle(profile, metrics) {
-        const sample = metrics.sample || fitBodySample(profile);
-        const scale = Math.min(1.08, Math.max(.92, .99 + (profile.height - 168) * .0035));
-        const widthScale = Math.min(1.1, Math.max(.9, 1 + (metrics.shoulder - 92) * .0035 + sample.waist * .002));
-        const y = Math.min(10, Math.max(-14, (168 - profile.height) * .22));
+        const heightScale = Math.min(1.07, Math.max(.94, 1 + (profile.height - 172.5) * .0022));
+        const y = Math.min(12, Math.max(-12, (172.5 - profile.height) * .18));
+        const shoulderScale = Math.min(1.08, Math.max(.94, 1 + (metrics.shoulderRatio - 1) * .34));
+        const chestScale = Math.min(1.08, Math.max(.94, 1 + (metrics.chestRatio - 1) * .32));
+        const waistScale = Math.min(1.09, Math.max(.92, 1 + (metrics.waistRatio - 1) * .3));
+        const hipScale = Math.min(1.08, Math.max(.93, 1 + (metrics.hipRatio - 1) * .28));
+        const legScale = Math.min(1.06, Math.max(.95, 1 + (metrics.legRatio - 1) * .16));
+        const thighScale = Math.min(1.07, Math.max(.94, 1 + (metrics.thighRatio - 1) * .2));
         return [
-          "--real-fit-scale:" + scale.toFixed(3),
-          "--real-fit-width:" + widthScale.toFixed(3),
+          "--real-fit-height:" + heightScale.toFixed(3),
+          "--real-fit-shoulder:" + shoulderScale.toFixed(3),
+          "--real-fit-chest:" + chestScale.toFixed(3),
+          "--real-fit-waist:" + waistScale.toFixed(3),
+          "--real-fit-hip:" + hipScale.toFixed(3),
+          "--real-fit-leg:" + legScale.toFixed(3),
+          "--real-fit-thigh:" + thighScale.toFixed(3),
           "--real-fit-y:" + Math.round(y) + "px",
         ].join(";");
       }
@@ -9468,7 +9490,12 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         body.innerHTML = `
           <section class="fit-room-layout">
             <div class="real-fit-stage ${avatarBodyClass}" style="${realFitStyle}">
-              <img class="real-fit-model" src="${realFitModelImage}" alt="실제 모델 착장 미리보기" />
+              <div class="real-fit-model-stack" aria-label="실제 모델 착장 미리보기">
+                <img class="real-fit-model real-fit-base" src="${realFitModelImage}" alt="" />
+                <img class="real-fit-model real-fit-upper" src="${realFitModelImage}" alt="" />
+                <img class="real-fit-model real-fit-waist" src="${realFitModelImage}" alt="" />
+                <img class="real-fit-model real-fit-lower" src="${realFitModelImage}" alt="" />
+              </div>
               <div class="real-fit-badge">
                 <strong>${metrics.label}</strong>
                 <span>상의 ${profile.topSize} · 하의 ${profile.bottomSize}</span>
@@ -9514,6 +9541,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
             <h3>${cart.length ? "장바구니 피팅 미리보기" : (mainItem ? mainItem.name : "상품 선택 대기")}</h3>
             <div class="line-item"><span>체형 타입</span><strong>${metrics.label}</strong></div>
             <div class="line-item"><span>평소 사이즈</span><strong>상의 ${profile.topSize} · 하의 ${profile.bottomSize}</strong></div>
+            <div class="line-item"><span>표준체형 보정</span><strong>어깨 ${Math.round(metrics.shoulder)} · 가슴 ${Math.round(metrics.chest)} · 허리 ${Math.round(metrics.waist)} · 골반 ${Math.round(metrics.hip)}</strong></div>
             <div class="line-item"><span>가상 핏 매칭</span><strong>${match}%</strong></div>
             <div class="line-item"><span>착용 상품</span><strong>${avatarItems.length}개</strong></div>
             <div class="line-item"><span>노출 입점업체</span><strong>${avatarLookStores(avatarItems).join(" · ") || "-"}</strong></div>

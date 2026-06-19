@@ -3025,6 +3025,12 @@
         z-index: 2;
         pointer-events: none;
       }
+      .real-fit-model-stack {
+        position: absolute;
+        inset: 0;
+        transform: translateY(var(--real-fit-y, 0)) scaleY(var(--real-fit-height, 1));
+        transform-origin: 50% 58%;
+      }
       .real-fit-model {
         position: absolute;
         inset: 0;
@@ -3033,9 +3039,25 @@
         display: block;
         object-fit: cover;
         object-position: 50% 45%;
-        transform: translateY(var(--real-fit-y, 0)) scale(var(--real-fit-width, 1), var(--real-fit-scale, 1));
-        transform-origin: 50% 58%;
         filter: saturate(1.02) contrast(1.02);
+      }
+      .real-fit-base {
+        opacity: .58;
+      }
+      .real-fit-upper {
+        clip-path: inset(7% 8% 45% 8%);
+        transform: scaleX(calc((var(--real-fit-shoulder, 1) * .55) + (var(--real-fit-chest, 1) * .45)));
+        transform-origin: 50% 32%;
+      }
+      .real-fit-waist {
+        clip-path: inset(31% 13% 35% 13%);
+        transform: scaleX(var(--real-fit-waist, 1));
+        transform-origin: 50% 48%;
+      }
+      .real-fit-lower {
+        clip-path: inset(48% 9% 0 9%);
+        transform: scale(calc((var(--real-fit-hip, 1) * .58) + (var(--real-fit-thigh, 1) * .42)), var(--real-fit-leg, 1));
+        transform-origin: 50% 60%;
       }
       .real-fit-badge {
         position: absolute;
