@@ -3134,7 +3134,7 @@
         --fallback-height: 1;
         --fallback-shoulder: 112px;
         --fallback-waist: 82px;
-        --fallback-leg: 72px;
+        --fallback-leg: 86px;
         position: relative;
         width: 170px;
         height: 360px;
@@ -3203,9 +3203,9 @@
         transform: rotateZ(-7deg) translateZ(-20px);
       }
       .fallback-leg {
-        top: 244px;
+        top: 232px;
         width: calc(var(--fallback-leg) / 2.2);
-        height: 106px;
+        height: 126px;
         border-radius: 9px 9px 16px 16px;
         background:
           linear-gradient(90deg, rgba(255,255,255,.08), transparent 42%),

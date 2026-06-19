@@ -1538,6 +1538,38 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         return products[insertIndex];
       }
 
+      function fit3dTypeTestProducts() {
+        const showroom = "어반클로젯 동탄";
+        return [
+          { key: "fit3d-test-tshirt", name: "3D 테스트 화이트 반팔티", category: "상의", visual: "tshirt", fit: "레귤러 반팔", colorNote: "기본 티셔츠" },
+          { key: "fit3d-test-shirt", name: "3D 테스트 셔츠 블라우스", category: "상의", visual: "shirt", fit: "셔츠/블라우스", colorNote: "단추 라인" },
+          { key: "fit3d-test-hoodie", name: "3D 테스트 후드 맨투맨", category: "상의", visual: "hoodie", fit: "후드 오버핏", colorNote: "후드 스트링" },
+          { key: "fit3d-test-jacket", name: "3D 테스트 자켓 아우터", category: "상의", visual: "jacket", fit: "자켓/아우터", colorNote: "라펠 레이어" },
+          { key: "fit3d-test-wide-pants", name: "3D 테스트 와이드 팬츠", category: "하의", visual: "wide-pants", fit: "와이드 조거 팬츠", colorNote: "넓은 하의" },
+          { key: "fit3d-test-bag", name: "3D 테스트 크로스백", category: "잡화", visual: "bag", fit: "가방/잡화", colorNote: "크로스백" },
+        ].map((item, index) => ({
+          ...item,
+          price: 39000 + index * 5000,
+          discountRate: 10,
+          showroom,
+          stock: 8,
+          minutes: 28 + index,
+          match: 88,
+          material: index === 4 ? "코튼 트윌" : "코튼 혼방",
+          size: index === 4 ? "M / L / XL" : "Free / M / L",
+          garmentLength: index === 4 ? 98 : 70,
+          shoulderWidth: index === 4 ? 0 : 52,
+          chestWidth: index === 4 ? 0 : 58,
+          waistWidth: index === 4 ? 40 : 56,
+          modelHeight: 176,
+          modelWeight: 68,
+          note: item.colorNote + " 3D 가상착용 QA용 테스트 상품입니다.",
+          vendorAdded: true,
+          status: "selling",
+          sizeStock: index === 4 ? { M: 3, L: 3, XL: 2 } : { Free: 2, M: 3, L: 3 },
+        }));
+      }
+
       function lookSetRowToItem(row) {
         return {
           dbId: row.id,
@@ -6644,6 +6676,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           </div>
           <div class="admin-tool-actions">
             <button class="admin-tool-action primary" type="button" onclick="openAdminFinalQaScenario()">QA 시나리오</button>
+            <button class="admin-tool-action" type="button" onclick="createFit3dTypeTestProducts()">3D 타입 테스트 상품 생성</button>
             <button class="admin-tool-action" type="button" data-admin-cleanup-check="true">DB 삭제권한 점검</button>
           </div>
           <div class="admin-utility-status" data-return-refund-visibility-status aria-live="polite">반품/환불 표시 점검 결과가 여기에 표시됩니다.</div>
@@ -6686,6 +6719,33 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
             });
           };
         });
+      }
+
+      function createFit3dTypeTestProducts() {
+        if (!currentAdmin || currentAdmin.role !== "total") {
+          setSyncStatus("3D 타입 테스트 상품 생성은 총관리자만 가능합니다");
+          return;
+        }
+        const testItems = fit3dTypeTestProducts();
+        testItems.forEach((item) => {
+          const existing = products.find((product) => product.key === item.key);
+          if (existing) {
+            Object.assign(existing, item, { dbId: existing.dbId, showroomId: existing.showroomId, image: existing.image || item.image || "" });
+          } else {
+            products.unshift(item);
+          }
+          if (!wishlist.includes(item.key)) wishlist.push(item.key);
+        });
+        activeFitPreviewKey = testItems[0].key;
+        selectedShowroom = "전체";
+        saveWishlistStore();
+        renderProducts();
+        renderCart();
+        renderVendorProducts();
+        renderVendorLookPicker();
+        renderVendorLooks();
+        setSyncStatus("3D 타입 테스트 상품 " + testItems.length + "개 생성 - 마이아바타에서 바로 확인 가능");
+        if (document.getElementById("fitRoomModal")?.classList.contains("open")) renderFitRoom();
       }
 
       function setupAdminUtilityHandlers() {
@@ -9316,7 +9376,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         const chestScale = Math.min(1.24, Math.max(.84, metrics.chestRatio));
         const waistScale = Math.min(1.28, Math.max(.82, metrics.waistRatio));
         const hipScale = Math.min(1.28, Math.max(.84, metrics.hipRatio));
-        const legScale = Math.min(1.18, Math.max(.88, metrics.legRatio));
+        const legScale = Math.min(1.22, Math.max(.9, metrics.legRatio));
         group.scale.set(1, heightScale, 1);
         group.position.y = -.18;
 
@@ -9399,16 +9459,16 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
 
         [["left", -1], ["right", 1]].forEach(([, side]) => {
           const legWidth = (isWidePants ? .31 : .24) * Math.max(.92, hipScale);
-          const legHeight = (isShorts ? .42 : .98) * legScale;
+          const legHeight = (isShorts ? .52 : 1.22) * legScale;
           const leg = fit3dRoundedBox(legWidth, legHeight, isWidePants ? .32 : .28, .06, 8, pants);
-          leg.position.set(side * (isWidePants ? .17 : .15) * hipScale, isShorts ? .54 : .26, 0);
+          leg.position.set(side * (isWidePants ? .17 : .15) * hipScale, isShorts ? .49 : .15, 0);
           leg.rotation.z = side * .012;
           group.add(leg);
-          const crease = new THREE.Mesh(new THREE.BoxGeometry(.012, (isShorts ? .28 : .82) * legScale, .012), fit3dMaterial(0x41444b, .88, 0));
-          crease.position.set(side * (isWidePants ? .17 : .15) * hipScale, isShorts ? .55 : .29, (isWidePants ? .17 : .148));
+          const crease = new THREE.Mesh(new THREE.BoxGeometry(.012, (isShorts ? .32 : 1.02) * legScale, .012), fit3dMaterial(0x41444b, .88, 0));
+          crease.position.set(side * (isWidePants ? .17 : .15) * hipScale, isShorts ? .5 : .17, (isWidePants ? .17 : .148));
           group.add(crease);
           const shoeMesh = fit3dRoundedBox(.32, .1, .42, .035, 8, shoe);
-          shoeMesh.position.set(side * .15 * hipScale, -.29, .055);
+          shoeMesh.position.set(side * .15 * hipScale, -.52, .055);
           shoeMesh.castShadow = true;
           shoeMesh.receiveShadow = true;
           group.add(shoeMesh);
@@ -9439,8 +9499,8 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0xf3efe7);
         const camera = new THREE.PerspectiveCamera(34, 1, .1, 100);
-        camera.position.set(0, 1.22, 6.15);
-        camera.lookAt(0, 1.18, 0);
+        camera.position.set(0, 1.16, 6.45);
+        camera.lookAt(0, 1.04, 0);
 
         let renderer;
         try {
@@ -9469,7 +9529,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           new THREE.MeshStandardMaterial({ color: 0xded8cc, roughness: .8 })
         );
         floor.rotation.x = -Math.PI / 2;
-        floor.position.y = -.24;
+        floor.position.y = -.58;
         floor.receiveShadow = true;
         scene.add(floor);
 
@@ -9543,7 +9603,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         stage.style.setProperty("--fallback-height", Math.min(1.16, Math.max(.9, profile.height / 172.5)).toFixed(3));
         stage.style.setProperty("--fallback-shoulder", Math.round(112 * Math.min(1.22, Math.max(.86, metrics.shoulderRatio))) + "px");
         stage.style.setProperty("--fallback-waist", Math.round(82 * Math.min(1.22, Math.max(.86, metrics.waistRatio))) + "px");
-        stage.style.setProperty("--fallback-leg", Math.round(72 * Math.min(1.18, Math.max(.9, metrics.legRatio))) + "px");
+        stage.style.setProperty("--fallback-leg", Math.round(86 * Math.min(1.22, Math.max(.92, metrics.legRatio))) + "px");
       }
 
       function setFitViewMode(mode) {
@@ -11134,6 +11194,7 @@ Object.assign(window, {
   checkSupabaseSetup,
   checkSupabaseCleanupPermission,
   clearAdminTestDataFromPreRelease,
+  createFit3dTypeTestProducts,
   syncVendorVisualWithCategory,
   openManagement,
   closeManagement,
@@ -11246,6 +11307,7 @@ exposeHandlers({
   checkAdminTestDataCleanupState,
   checkSupabaseSetup,
   checkSupabaseCleanupPermission,
+  createFit3dTypeTestProducts,
   copyAvatarLookShareLink,
   copyAvatarLookShareText,
   clearAdminTestDataFromPreRelease,
