@@ -9122,8 +9122,45 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         return new THREE.MeshStandardMaterial({ color, roughness, metalness });
       }
 
+      function fit3dFabricMaterial(color, roughness = .86) {
+        return new THREE.MeshStandardMaterial({
+          color,
+          roughness,
+          metalness: .01,
+          emissive: new THREE.Color(color).multiplyScalar(.035),
+        });
+      }
+
       function fit3dCapsule(radius, length, material) {
         const mesh = new THREE.Mesh(new THREE.CapsuleGeometry(radius, length, 12, 24), material);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        return mesh;
+      }
+
+      function fit3dRoundedBox(width, height, depth, radius, smoothness, material) {
+        const shape = new THREE.Shape();
+        const x = -width / 2;
+        const y = -height / 2;
+        shape.moveTo(x + radius, y);
+        shape.lineTo(x + width - radius, y);
+        shape.quadraticCurveTo(x + width, y, x + width, y + radius);
+        shape.lineTo(x + width, y + height - radius);
+        shape.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+        shape.lineTo(x + radius, y + height);
+        shape.quadraticCurveTo(x, y + height, x, y + height - radius);
+        shape.lineTo(x, y + radius);
+        shape.quadraticCurveTo(x, y, x + radius, y);
+        const geometry = new THREE.ExtrudeGeometry(shape, {
+          depth,
+          bevelEnabled: true,
+          bevelSegments: smoothness,
+          bevelSize: radius * .42,
+          bevelThickness: radius * .42,
+          curveSegments: smoothness,
+        });
+        geometry.center();
+        const mesh = new THREE.Mesh(geometry, material);
         mesh.castShadow = true;
         mesh.receiveShadow = true;
         return mesh;
@@ -9148,75 +9185,95 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         group.scale.set(1, heightScale, 1);
         group.position.y = -.18;
 
-        const skin = fit3dMaterial(0xd7a57f, .78, .02);
-        const hair = fit3dMaterial(0x1f1b18, .82, .02);
-        const shirt = fit3dMaterial(fit3dGarmentColor(items.find((item) => item.category !== "하의")), .64, .02);
-        const pants = fit3dMaterial(fit3dGarmentColor(items.find((item) => item.category === "하의") || { category: "하의" }), .7, .03);
-        const shoe = fit3dMaterial(0x151515, .66, .06);
+        const skin = fit3dMaterial(0xd8b296, .84, .01);
+        const hair = fit3dMaterial(0x171717, .88, .01);
+        const shirt = fit3dFabricMaterial(fit3dGarmentColor(items.find((item) => item.category !== "하의")), .9);
+        const shirtShadow = fit3dFabricMaterial(0xded9cc, .92);
+        const pants = fit3dFabricMaterial(fit3dGarmentColor(items.find((item) => item.category === "하의") || { category: "하의" }), .82);
+        const shoe = fit3dMaterial(0x111111, .7, .05);
 
-        const head = new THREE.Mesh(new THREE.SphereGeometry(.28, 32, 24), skin);
-        head.position.y = 2.6;
-        head.scale.set(.86, 1.05, .82);
+        const head = new THREE.Mesh(new THREE.SphereGeometry(.245, 40, 28), skin);
+        head.position.y = 2.58;
+        head.scale.set(.78, 1.12, .72);
         group.add(head);
 
-        const hairCap = new THREE.Mesh(new THREE.SphereGeometry(.29, 32, 16, 0, Math.PI * 2, 0, Math.PI * .58), hair);
-        hairCap.position.set(0, 2.73, -.015);
-        hairCap.scale.set(.92, .62, .9);
+        const faceVeil = new THREE.Mesh(new THREE.SphereGeometry(.247, 32, 20), fit3dMaterial(0xd6b79f, .94, 0));
+        faceVeil.position.set(0, 2.56, .026);
+        faceVeil.scale.set(.76, 1.02, .14);
+        group.add(faceVeil);
+
+        const hairCap = new THREE.Mesh(new THREE.SphereGeometry(.258, 40, 18, 0, Math.PI * 2, 0, Math.PI * .54), hair);
+        hairCap.position.set(0, 2.73, -.018);
+        hairCap.scale.set(.84, .54, .78);
         group.add(hairCap);
 
-        const neck = new THREE.Mesh(new THREE.CylinderGeometry(.11, .13, .22, 24), skin);
-        neck.position.y = 2.27;
+        const neck = new THREE.Mesh(new THREE.CylinderGeometry(.095, .12, .23, 28), skin);
+        neck.position.y = 2.25;
         group.add(neck);
 
-        const torso = fit3dCapsule(.42, .82, shirt);
-        torso.position.y = 1.66;
-        torso.scale.set(shoulderScale, 1, chestScale * .78);
+        const torso = fit3dRoundedBox(.84 * shoulderScale, 1.08, .44 * chestScale, .15, 12, shirt);
+        torso.position.y = 1.58;
+        torso.rotation.x = .015;
         group.add(torso);
 
-        const waist = new THREE.Mesh(new THREE.CylinderGeometry(.34 * waistScale, .42 * hipScale, .36, 32), shirt);
-        waist.position.y = 1.09;
-        waist.castShadow = true;
-        waist.receiveShadow = true;
-        group.add(waist);
+        const shirtDrape = new THREE.Mesh(new THREE.CylinderGeometry(.43 * waistScale, .51 * hipScale, .34, 48), shirt);
+        shirtDrape.position.y = .97;
+        shirtDrape.scale.z = .62;
+        shirtDrape.castShadow = true;
+        shirtDrape.receiveShadow = true;
+        group.add(shirtDrape);
 
-        const hem = new THREE.Mesh(new THREE.TorusGeometry(.36 * Math.max(waistScale, hipScale), .012, 8, 48), fit3dMaterial(0xddd7ca, .7, .02));
-        hem.position.y = .88;
+        const hem = new THREE.Mesh(new THREE.TorusGeometry(.42 * Math.max(waistScale, hipScale), .01, 8, 56), shirtShadow);
+        hem.position.y = .78;
+        hem.scale.z = .58;
         hem.rotation.x = Math.PI / 2;
         group.add(hem);
 
-        const armLength = .9 * heightScale;
+        const seamMaterial = fit3dMaterial(0xcfc8b8, .86, .01);
+        const collar = new THREE.Mesh(new THREE.TorusGeometry(.17, .012, 8, 48), seamMaterial);
+        collar.position.y = 2.12;
+        collar.scale.set(1.25, .48, .72);
+        collar.rotation.x = Math.PI / 2;
+        group.add(collar);
+
+        const armLength = .86 * heightScale;
         [["left", -1], ["right", 1]].forEach(([, side]) => {
-          const upperArm = fit3dCapsule(.095, armLength * .5, skin);
-          upperArm.position.set(side * (.53 * shoulderScale), 1.77, 0);
-          upperArm.rotation.z = side * .22;
-          group.add(upperArm);
-          const sleeve = fit3dCapsule(.118, .28, shirt);
-          sleeve.position.set(side * (.45 * shoulderScale), 1.97, 0);
-          sleeve.rotation.z = side * .22;
+          const sleeve = fit3dCapsule(.125, .36, shirt);
+          sleeve.position.set(side * (.51 * shoulderScale), 1.87, .005);
+          sleeve.rotation.z = side * .18;
           group.add(sleeve);
-          const foreArm = fit3dCapsule(.085, armLength * .46, skin);
-          foreArm.position.set(side * (.64 * shoulderScale), 1.24, .02);
-          foreArm.rotation.z = side * -.05;
-          group.add(foreArm);
+
+          const arm = fit3dCapsule(.082, armLength * .88, skin);
+          arm.position.set(side * (.62 * shoulderScale), 1.34, .02);
+          arm.rotation.z = side * .08;
+          arm.scale.set(.86, 1, .82);
+          group.add(arm);
         });
 
         [["left", -1], ["right", 1]].forEach(([, side]) => {
-          const leg = fit3dCapsule(.14 * Math.max(.9, hipScale), .9 * legScale, pants);
-          leg.position.set(side * .18 * hipScale, .42, 0);
-          leg.rotation.z = side * .03;
+          const leg = fit3dRoundedBox(.24 * Math.max(.92, hipScale), .98 * legScale, .28, .06, 8, pants);
+          leg.position.set(side * .15 * hipScale, .26, 0);
+          leg.rotation.z = side * .012;
           group.add(leg);
-          const shoeMesh = new THREE.Mesh(new THREE.BoxGeometry(.34, .11, .46), shoe);
-          shoeMesh.position.set(side * .18 * hipScale, -.15, .05);
+          const crease = new THREE.Mesh(new THREE.BoxGeometry(.012, .82 * legScale, .012), fit3dMaterial(0x41444b, .88, 0));
+          crease.position.set(side * .15 * hipScale, .29, .148);
+          group.add(crease);
+          const shoeMesh = fit3dRoundedBox(.32, .1, .42, .035, 8, shoe);
+          shoeMesh.position.set(side * .15 * hipScale, -.29, .055);
           shoeMesh.castShadow = true;
           shoeMesh.receiveShadow = true;
           group.add(shoeMesh);
         });
 
-        const shoulderLine = new THREE.Mesh(new THREE.BoxGeometry(1.06 * shoulderScale, .08, .18), shirt);
-        shoulderLine.position.y = 2.12;
+        const shoulderLine = fit3dRoundedBox(1.02 * shoulderScale, .1, .28, .055, 8, shirt);
+        shoulderLine.position.y = 2.08;
         shoulderLine.castShadow = true;
         shoulderLine.receiveShadow = true;
         group.add(shoulderLine);
+
+        const centerSeam = new THREE.Mesh(new THREE.BoxGeometry(.012, .84, .012), seamMaterial);
+        centerSeam.position.set(0, 1.55, .235 * chestScale);
+        group.add(centerSeam);
 
         return group;
       }

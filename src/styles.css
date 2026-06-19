@@ -3140,6 +3140,7 @@
         height: 360px;
         transform-style: preserve-3d;
         transform: scale(var(--fallback-height));
+        filter: drop-shadow(0 22px 28px rgba(23,23,23,.18));
         animation: fitFallbackSpin 7s linear infinite;
       }
       .fit-3d-fallback-avatar i {
@@ -3150,12 +3151,12 @@
         box-shadow: inset -18px 0 26px rgba(23,23,23,.12), 0 14px 22px rgba(23,23,23,.12);
       }
       .fallback-head {
-        top: 8px;
-        width: 52px;
-        height: 66px;
-        margin-left: -26px;
-        border-radius: 42% 42% 48% 48%;
-        background: linear-gradient(90deg, #efc096, #c98f68);
+        top: 10px;
+        width: 46px;
+        height: 64px;
+        margin-left: -23px;
+        border-radius: 44% 44% 48% 48%;
+        background: linear-gradient(90deg, #d9b69c, #c89a78);
       }
       .fallback-head::before {
         content: "";
@@ -3167,12 +3168,13 @@
       .fallback-body {
         top: 78px;
         width: var(--fallback-shoulder);
-        height: 160px;
+        height: 166px;
         margin-left: calc(var(--fallback-shoulder) / -2);
-        border-radius: 42px 42px 26px 26px / 48px 48px 24px 24px;
+        border-radius: 34px 34px 22px 22px / 42px 42px 20px 20px;
         background:
-          radial-gradient(circle at 50% 8%, rgba(255,255,255,.95), transparent 18%),
-          linear-gradient(90deg, #fff, #ece8da);
+          linear-gradient(90deg, rgba(23,23,23,.06), transparent 15% 84%, rgba(23,23,23,.08)),
+          radial-gradient(circle at 50% 8%, rgba(255,255,255,.96), transparent 18%),
+          linear-gradient(90deg, #fff, #ede8dc);
       }
       .fallback-body::after {
         content: "";
@@ -3180,17 +3182,17 @@
         left: 50%;
         bottom: -8px;
         width: var(--fallback-waist);
-        height: 30px;
+        height: 34px;
         margin-left: calc(var(--fallback-waist) / -2);
-        border-radius: 12px 12px 28px 28px;
+        border-radius: 10px 10px 28px 28px;
         background: #f7f2e8;
       }
       .fallback-arm {
         top: 104px;
-        width: 28px;
-        height: 146px;
+        width: 24px;
+        height: 150px;
         border-radius: 999px;
-        background: linear-gradient(90deg, #efc096, #c98f68);
+        background: linear-gradient(90deg, #d9b69c, #c89a78);
       }
       .fallback-arm.left {
         margin-left: calc(var(--fallback-shoulder) / -2 - 30px);
@@ -3201,11 +3203,13 @@
         transform: rotateZ(-7deg) translateZ(-20px);
       }
       .fallback-leg {
-        top: 238px;
-        width: calc(var(--fallback-leg) / 2);
-        height: 112px;
-        border-radius: 13px 13px 20px 20px;
-        background: linear-gradient(90deg, #282b32, #111318);
+        top: 244px;
+        width: calc(var(--fallback-leg) / 2.2);
+        height: 106px;
+        border-radius: 9px 9px 16px 16px;
+        background:
+          linear-gradient(90deg, rgba(255,255,255,.08), transparent 42%),
+          linear-gradient(90deg, #282b32, #111318);
       }
       .fallback-leg.left {
         margin-left: calc(var(--fallback-leg) / -2 - 3px);
