@@ -9168,10 +9168,103 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
 
       function fit3dGarmentColor(item = {}) {
         if (item.visual === "tshirt" || /화이트|white/i.test(item.name || "")) return 0xf7f3ea;
+        if (/후드|hood/i.test(item.name || item.fit || "")) return 0xd8dde5;
+        if (/셔츠|shirt/i.test(item.name || item.fit || "")) return 0xf4f0e7;
+        if (/자켓|재킷|jacket|아우터|outer/i.test(item.name || item.fit || item.visual || "")) return 0x273142;
         if (item.category === "하의") return 0x22252c;
         if (item.category === "잡화") return 0xc4a873;
         if (item.category === "신발") return 0x111111;
         return 0x2f5bff;
+      }
+
+      function fit3dGarmentType(item = {}) {
+        const text = [item.name, item.fit, item.visual, item.category].filter(Boolean).join(" ").toLowerCase();
+        if (/후드|hood/.test(text)) return "hoodie";
+        if (/자켓|재킷|jacket|아우터|outer|coat/.test(text)) return "jacket";
+        if (/셔츠|shirt|블라우스|blouse/.test(text)) return "shirt";
+        if (/맨투맨|sweat|니트|knit/.test(text)) return "sweatshirt";
+        if (/쇼츠|반바지|short/.test(text)) return "shorts";
+        if (/와이드|wide|조거|jogger/.test(text)) return "wide-pants";
+        if (item.visual === "tshirt") return "tshirt";
+        return item.category === "하의" ? "pants" : "tshirt";
+      }
+
+      function fit3dTopItem(items = []) {
+        return items.find((item) => ["상의", "아우터", "원피스"].includes(item.category)) || items.find((item) => item.category !== "하의" && item.category !== "신발" && item.category !== "잡화") || {};
+      }
+
+      function fit3dBottomItem(items = []) {
+        return items.find((item) => item.category === "하의") || {};
+      }
+
+      function fit3dAccessoryItems(items = []) {
+        return items.filter((item) => item.category === "잡화").slice(0, 2);
+      }
+
+      function fit3dAddTopDetails(group, type, scales, materials) {
+        const { shoulderScale, chestScale, waistScale, hipScale } = scales;
+        const { shirt, shirtShadow, seamMaterial } = materials;
+        if (type === "shirt" || type === "jacket") {
+          const placket = new THREE.Mesh(new THREE.BoxGeometry(.018, .86, .018), seamMaterial);
+          placket.position.set(0, 1.55, .24 * chestScale);
+          group.add(placket);
+          [1.9, 1.7, 1.5, 1.3].forEach((y) => {
+            const button = new THREE.Mesh(new THREE.SphereGeometry(.018, 16, 10), seamMaterial);
+            button.position.set(0, y, .254 * chestScale);
+            group.add(button);
+          });
+        }
+        if (type === "jacket") {
+          const jacket = fit3dRoundedBox(.93 * shoulderScale, 1.05, .5 * chestScale, .12, 10, fit3dFabricMaterial(0x293241, .88));
+          jacket.position.y = 1.55;
+          jacket.position.z = .015;
+          group.add(jacket);
+          const opening = new THREE.Mesh(new THREE.BoxGeometry(.18, .92, .024), fit3dFabricMaterial(0xf7f2e8, .92));
+          opening.position.set(0, 1.55, .268 * chestScale);
+          group.add(opening);
+          [["left", -1], ["right", 1]].forEach(([, side]) => {
+            const lapel = fit3dRoundedBox(.18, .54, .028, .025, 6, fit3dFabricMaterial(0x354052, .88));
+            lapel.position.set(side * .12, 1.76, .286 * chestScale);
+            lapel.rotation.z = side * .18;
+            group.add(lapel);
+          });
+        }
+        if (type === "hoodie") {
+          const hood = new THREE.Mesh(new THREE.TorusGeometry(.24, .045, 16, 48), shirt);
+          hood.position.set(0, 2.16, -.08);
+          hood.rotation.x = Math.PI / 2.5;
+          hood.scale.set(1.05, .72, 1);
+          hood.castShadow = true;
+          hood.receiveShadow = true;
+          group.add(hood);
+          [["left", -1], ["right", 1]].forEach(([, side]) => {
+            const string = new THREE.Mesh(new THREE.CylinderGeometry(.007, .007, .36, 8), seamMaterial);
+            string.position.set(side * .055, 1.88, .255 * chestScale);
+            string.rotation.z = side * .04;
+            group.add(string);
+          });
+        }
+        if (type === "sweatshirt" || type === "hoodie") {
+          const rib = new THREE.Mesh(new THREE.TorusGeometry(.4 * Math.max(waistScale, hipScale), .018, 8, 56), shirtShadow);
+          rib.position.y = .79;
+          rib.scale.z = .56;
+          rib.rotation.x = Math.PI / 2;
+          group.add(rib);
+        }
+      }
+
+      function fit3dAddAccessories(group, items = [], scales = {}) {
+        const bag = fit3dAccessoryItems(items)[0];
+        if (!bag) return;
+        const strap = new THREE.Mesh(new THREE.TorusGeometry(.66, .012, 8, 72), fit3dMaterial(0x2a251f, .72, .02));
+        strap.position.set(0, 1.55, .07);
+        strap.scale.set(.52, 1.05, .16);
+        strap.rotation.z = -.62;
+        group.add(strap);
+        const body = fit3dRoundedBox(.32, .24, .12, .045, 8, fit3dFabricMaterial(fit3dGarmentColor(bag), .78));
+        body.position.set(.38 * (scales.shoulderScale || 1), 1.14, .25);
+        body.rotation.z = -.08;
+        group.add(body);
       }
 
       function fit3dBuildAvatar(profile, metrics, items = []) {
@@ -9185,11 +9278,20 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         group.scale.set(1, heightScale, 1);
         group.position.y = -.18;
 
+        const topItem = fit3dTopItem(items);
+        const bottomItem = fit3dBottomItem(items);
+        const topType = fit3dGarmentType(topItem);
+        const bottomType = fit3dGarmentType(bottomItem);
+        const isOuter = topType === "jacket";
+        const isLongSleeve = ["hoodie", "jacket", "shirt", "sweatshirt"].includes(topType);
+        const isWidePants = bottomType === "wide-pants" || /와이드|wide|조거|jogger/i.test(bottomItem.name || bottomItem.fit || "");
+        const isShorts = bottomType === "shorts";
+
         const skin = fit3dMaterial(0xd8b296, .84, .01);
         const hair = fit3dMaterial(0x171717, .88, .01);
-        const shirt = fit3dFabricMaterial(fit3dGarmentColor(items.find((item) => item.category !== "하의")), .9);
+        const shirt = fit3dFabricMaterial(fit3dGarmentColor(topItem), .9);
         const shirtShadow = fit3dFabricMaterial(0xded9cc, .92);
-        const pants = fit3dFabricMaterial(fit3dGarmentColor(items.find((item) => item.category === "하의") || { category: "하의" }), .82);
+        const pants = fit3dFabricMaterial(fit3dGarmentColor(bottomItem.category ? bottomItem : { category: "하의" }), .82);
         const shoe = fit3dMaterial(0x111111, .7, .05);
 
         const head = new THREE.Mesh(new THREE.SphereGeometry(.245, 40, 28), skin);
@@ -9211,19 +9313,19 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         neck.position.y = 2.25;
         group.add(neck);
 
-        const torso = fit3dRoundedBox(.84 * shoulderScale, 1.08, .44 * chestScale, .15, 12, shirt);
+        const torso = fit3dRoundedBox((isOuter ? .9 : .84) * shoulderScale, isOuter ? 1.12 : 1.08, (isOuter ? .5 : .44) * chestScale, .15, 12, shirt);
         torso.position.y = 1.58;
         torso.rotation.x = .015;
         group.add(torso);
 
-        const shirtDrape = new THREE.Mesh(new THREE.CylinderGeometry(.43 * waistScale, .51 * hipScale, .34, 48), shirt);
+        const shirtDrape = new THREE.Mesh(new THREE.CylinderGeometry((isOuter ? .47 : .43) * waistScale, (isOuter ? .55 : .51) * hipScale, isOuter ? .38 : .34, 48), shirt);
         shirtDrape.position.y = .97;
         shirtDrape.scale.z = .62;
         shirtDrape.castShadow = true;
         shirtDrape.receiveShadow = true;
         group.add(shirtDrape);
 
-        const hem = new THREE.Mesh(new THREE.TorusGeometry(.42 * Math.max(waistScale, hipScale), .01, 8, 56), shirtShadow);
+        const hem = new THREE.Mesh(new THREE.TorusGeometry((isOuter ? .46 : .42) * Math.max(waistScale, hipScale), .01, 8, 56), shirtShadow);
         hem.position.y = .78;
         hem.scale.z = .58;
         hem.rotation.x = Math.PI / 2;
@@ -9236,27 +9338,32 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         collar.rotation.x = Math.PI / 2;
         group.add(collar);
 
+        fit3dAddTopDetails(group, topType, { shoulderScale, chestScale, waistScale, hipScale }, { shirt, shirtShadow, seamMaterial });
+
         const armLength = .86 * heightScale;
         [["left", -1], ["right", 1]].forEach(([, side]) => {
-          const sleeve = fit3dCapsule(.125, .36, shirt);
-          sleeve.position.set(side * (.51 * shoulderScale), 1.87, .005);
+          const sleeve = fit3dCapsule(isLongSleeve ? .105 : .125, isLongSleeve ? .82 : .36, shirt);
+          sleeve.position.set(side * (.51 * shoulderScale), isLongSleeve ? 1.58 : 1.87, .005);
           sleeve.rotation.z = side * .18;
+          sleeve.scale.set(1, 1, .92);
           group.add(sleeve);
 
-          const arm = fit3dCapsule(.082, armLength * .88, skin);
-          arm.position.set(side * (.62 * shoulderScale), 1.34, .02);
+          const arm = fit3dCapsule(.082, isLongSleeve ? armLength * .34 : armLength * .88, skin);
+          arm.position.set(side * (.62 * shoulderScale), isLongSleeve ? .96 : 1.34, .02);
           arm.rotation.z = side * .08;
           arm.scale.set(.86, 1, .82);
           group.add(arm);
         });
 
         [["left", -1], ["right", 1]].forEach(([, side]) => {
-          const leg = fit3dRoundedBox(.24 * Math.max(.92, hipScale), .98 * legScale, .28, .06, 8, pants);
-          leg.position.set(side * .15 * hipScale, .26, 0);
+          const legWidth = (isWidePants ? .31 : .24) * Math.max(.92, hipScale);
+          const legHeight = (isShorts ? .42 : .98) * legScale;
+          const leg = fit3dRoundedBox(legWidth, legHeight, isWidePants ? .32 : .28, .06, 8, pants);
+          leg.position.set(side * (isWidePants ? .17 : .15) * hipScale, isShorts ? .54 : .26, 0);
           leg.rotation.z = side * .012;
           group.add(leg);
-          const crease = new THREE.Mesh(new THREE.BoxGeometry(.012, .82 * legScale, .012), fit3dMaterial(0x41444b, .88, 0));
-          crease.position.set(side * .15 * hipScale, .29, .148);
+          const crease = new THREE.Mesh(new THREE.BoxGeometry(.012, (isShorts ? .28 : .82) * legScale, .012), fit3dMaterial(0x41444b, .88, 0));
+          crease.position.set(side * (isWidePants ? .17 : .15) * hipScale, isShorts ? .55 : .29, (isWidePants ? .17 : .148));
           group.add(crease);
           const shoeMesh = fit3dRoundedBox(.32, .1, .42, .035, 8, shoe);
           shoeMesh.position.set(side * .15 * hipScale, -.29, .055);
@@ -9274,6 +9381,8 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         const centerSeam = new THREE.Mesh(new THREE.BoxGeometry(.012, .84, .012), seamMaterial);
         centerSeam.position.set(0, 1.55, .235 * chestScale);
         group.add(centerSeam);
+
+        fit3dAddAccessories(group, items, { shoulderScale });
 
         return group;
       }
