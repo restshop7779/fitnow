@@ -3104,17 +3104,124 @@
         touch-action: none;
       }
       .fit-3d-stage canvas {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
         width: 100%;
         height: 100%;
         min-height: 520px;
         display: block;
+      }
+      .fit-3d-fallback {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        display: none;
+        place-items: center;
+        overflow: hidden;
+        background:
+          radial-gradient(ellipse at 50% 84%, rgba(23,23,23,.18), transparent 36%),
+          linear-gradient(180deg, #f5f0e8, #ebe4d8);
+        perspective: 900px;
+      }
+      .fit-3d-stage.using-fallback canvas {
+        display: none;
+      }
+      .fit-3d-stage.using-fallback .fit-3d-fallback {
+        display: grid;
+      }
+      .fit-3d-fallback-avatar {
+        --fallback-height: 1;
+        --fallback-shoulder: 112px;
+        --fallback-waist: 82px;
+        --fallback-leg: 72px;
+        position: relative;
+        width: 170px;
+        height: 360px;
+        transform-style: preserve-3d;
+        transform: scale(var(--fallback-height));
+        animation: fitFallbackSpin 7s linear infinite;
+      }
+      .fit-3d-fallback-avatar i {
+        position: absolute;
+        left: 50%;
+        display: block;
+        transform-style: preserve-3d;
+        box-shadow: inset -18px 0 26px rgba(23,23,23,.12), 0 14px 22px rgba(23,23,23,.12);
+      }
+      .fallback-head {
+        top: 8px;
+        width: 52px;
+        height: 66px;
+        margin-left: -26px;
+        border-radius: 42% 42% 48% 48%;
+        background: linear-gradient(90deg, #efc096, #c98f68);
+      }
+      .fallback-head::before {
+        content: "";
+        position: absolute;
+        inset: -8px -5px 44px;
+        border-radius: 50% 50% 34% 34%;
+        background: #171717;
+      }
+      .fallback-body {
+        top: 78px;
+        width: var(--fallback-shoulder);
+        height: 160px;
+        margin-left: calc(var(--fallback-shoulder) / -2);
+        border-radius: 42px 42px 26px 26px / 48px 48px 24px 24px;
+        background:
+          radial-gradient(circle at 50% 8%, rgba(255,255,255,.95), transparent 18%),
+          linear-gradient(90deg, #fff, #ece8da);
+      }
+      .fallback-body::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        bottom: -8px;
+        width: var(--fallback-waist);
+        height: 30px;
+        margin-left: calc(var(--fallback-waist) / -2);
+        border-radius: 12px 12px 28px 28px;
+        background: #f7f2e8;
+      }
+      .fallback-arm {
+        top: 104px;
+        width: 28px;
+        height: 146px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #efc096, #c98f68);
+      }
+      .fallback-arm.left {
+        margin-left: calc(var(--fallback-shoulder) / -2 - 30px);
+        transform: rotateZ(7deg) translateZ(20px);
+      }
+      .fallback-arm.right {
+        margin-left: calc(var(--fallback-shoulder) / 2 + 2px);
+        transform: rotateZ(-7deg) translateZ(-20px);
+      }
+      .fallback-leg {
+        top: 238px;
+        width: calc(var(--fallback-leg) / 2);
+        height: 112px;
+        border-radius: 13px 13px 20px 20px;
+        background: linear-gradient(90deg, #282b32, #111318);
+      }
+      .fallback-leg.left {
+        margin-left: calc(var(--fallback-leg) / -2 - 3px);
+      }
+      .fallback-leg.right {
+        margin-left: 3px;
+      }
+      @keyframes fitFallbackSpin {
+        to { transform: scale(var(--fallback-height)) rotateY(360deg); }
       }
       .fit-3d-hud {
         position: absolute;
         left: 12px;
         right: 12px;
         bottom: 12px;
-        z-index: 2;
+        z-index: 3;
         display: flex;
         justify-content: space-between;
         gap: 10px;

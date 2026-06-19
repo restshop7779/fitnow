@@ -9226,6 +9226,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         const stage = document.getElementById("fit3dStage");
         if (!canvas || !stage || stage.classList.contains("is-hidden")) return;
         disposeFit3dPreview();
+        stage.classList.remove("using-fallback", "webgl-error");
 
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0xf3efe7);
@@ -9233,7 +9234,14 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         camera.position.set(0, 1.22, 6.15);
         camera.lookAt(0, 1.18, 0);
 
-        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, preserveDrawingBuffer: true });
+        let renderer;
+        try {
+          renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, preserveDrawingBuffer: true });
+        } catch (error) {
+          renderFit3dFallback(profile, metrics);
+          setSyncStatus("이 기기에서는 WebGL 3D 대신 호환 360도 보기를 표시합니다");
+          return;
+        }
         renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -9318,6 +9326,16 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         };
         fit3dRuntime = runtime;
         animate();
+      }
+
+      function renderFit3dFallback(profile, metrics) {
+        const stage = document.getElementById("fit3dStage");
+        if (!stage) return;
+        stage.classList.add("using-fallback", "webgl-error");
+        stage.style.setProperty("--fallback-height", Math.min(1.16, Math.max(.9, profile.height / 172.5)).toFixed(3));
+        stage.style.setProperty("--fallback-shoulder", Math.round(112 * Math.min(1.22, Math.max(.86, metrics.shoulderRatio))) + "px");
+        stage.style.setProperty("--fallback-waist", Math.round(82 * Math.min(1.22, Math.max(.86, metrics.waistRatio))) + "px");
+        stage.style.setProperty("--fallback-leg", Math.round(72 * Math.min(1.18, Math.max(.9, metrics.legRatio))) + "px");
       }
 
       function setFitViewMode(mode) {
@@ -9818,6 +9836,16 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
             </div>
             <div class="fit-3d-stage ${avatarBodyClass} ${activeFitViewMode === "3d" ? "" : "is-hidden"}" id="fit3dStage">
               <canvas id="fit3dCanvas" aria-label="360도 3D 체형 착용 미리보기"></canvas>
+              <div class="fit-3d-fallback" aria-hidden="true">
+                <div class="fit-3d-fallback-avatar">
+                  <i class="fallback-head"></i>
+                  <i class="fallback-body"></i>
+                  <i class="fallback-arm left"></i>
+                  <i class="fallback-arm right"></i>
+                  <i class="fallback-leg left"></i>
+                  <i class="fallback-leg right"></i>
+                </div>
+              </div>
               <div class="fit-3d-hud">
                 <strong>${metrics.label}</strong>
                 <span>드래그해서 360도 회전</span>
