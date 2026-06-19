@@ -11134,6 +11134,7 @@ Object.assign(window, {
   checkSupabaseSetup,
   checkSupabaseCleanupPermission,
   clearAdminTestDataFromPreRelease,
+  syncVendorVisualWithCategory,
   openManagement,
   closeManagement,
   openAdmin,
