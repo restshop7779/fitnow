@@ -152,6 +152,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       let activeFitPreviewKey = "";
       let activeAvatarLookSnapshot = null;
       let lastFitRoomAvatarSnapshot = null;
+      let avatarTryOnState = { status: "idle", photoDataUrl: "", photoName: "" };
       function readReviewStore() {
         try {
           const parsed = JSON.parse(localStorage.getItem(REVIEW_STORAGE_KEY) || "[]");
@@ -9079,6 +9080,85 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         ].join(";");
       }
 
+      function avatarTryOnPanelMarkup(item, match) {
+        const photoName = qaScenarioStatusEscape(avatarTryOnState.photoName || "선택한 사진");
+        const itemName = qaScenarioStatusEscape(item?.name || "입어볼 상품");
+        const thumb = avatarTryOnState.photoDataUrl
+          ? '<img class="avatar-tryon-thumb" src="' + avatarTryOnState.photoDataUrl + '" alt="내 사진 미리보기" />'
+          : '<div class="avatar-tryon-empty">사진</div>';
+        const statusCopy = {
+          idle: "전신 사진 1장을 올리면 내 사진 기준 피팅 생성 단계로 이어집니다.",
+          ready: photoName + " 준비됨",
+          generating: "AI 피팅 이미지 생성 준비 중",
+          complete: itemName + " 피팅 미리보기 준비됨",
+        }[avatarTryOnState.status] || "사진을 올려 주세요";
+        const actionMarkup = avatarTryOnState.status === "generating"
+          ? '<div class="avatar-tryon-progress"><i></i><span>상품 사진과 체형 정보를 맞추는 중</span></div>'
+          : avatarTryOnState.photoDataUrl
+            ? '<div class="avatar-tryon-actions"><button class="secondary" type="button" onclick="startAvatarTryOnGeneration()">AI 입어보기 생성</button><button class="secondary" type="button" onclick="clearAvatarTryOnPhoto()">사진 제거</button></div>'
+            : '<label class="avatar-tryon-upload">내 사진 선택<input type="file" accept="image/*" onchange="handleAvatarTryOnPhotoUpload(event)" /></label>';
+        const resultMarkup = avatarTryOnState.status === "complete"
+          ? '<div class="avatar-tryon-result"><span>생성 결과</span><strong>' + match + '% 핏 매칭 · 실제 AI 합성 API 연결 전 데모</strong></div>'
+          : "";
+        return `
+          <section class="avatar-tryon-panel">
+            <div class="avatar-tryon-head">
+              <div>
+                <p>내 사진으로 입어보기</p>
+                <strong>${statusCopy}</strong>
+              </div>
+              ${thumb}
+            </div>
+            ${actionMarkup}
+            ${resultMarkup}
+            <p class="avatar-tryon-privacy">현재 단계에서는 사진을 서버에 저장하거나 외부 AI로 전송하지 않습니다. 실제 AI 생성 연결 전에는 별도 동의와 삭제 정책을 먼저 붙입니다.</p>
+          </section>
+        `;
+      }
+
+      function handleAvatarTryOnPhotoUpload(event) {
+        const file = event?.target?.files?.[0];
+        if (!file) return;
+        if (!file.type || !file.type.startsWith("image/")) {
+          setSyncStatus("이미지 파일만 업로드할 수 있습니다");
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => {
+          avatarTryOnState = {
+            status: "ready",
+            photoDataUrl: String(reader.result || ""),
+            photoName: file.name || "내 사진",
+          };
+          setSyncStatus("내 사진 미리보기 준비 완료 - 저장/전송 없음");
+          renderFitRoom();
+        };
+        reader.onerror = () => setSyncStatus("사진을 불러오지 못했습니다");
+        reader.readAsDataURL(file);
+      }
+
+      function startAvatarTryOnGeneration() {
+        if (!avatarTryOnState.photoDataUrl) {
+          setSyncStatus("먼저 전신 사진 1장을 선택해 주세요");
+          return;
+        }
+        avatarTryOnState = { ...avatarTryOnState, status: "generating" };
+        setSyncStatus("AI 입어보기 생성 준비 중 - 데모 흐름");
+        renderFitRoom();
+        window.setTimeout(() => {
+          if (avatarTryOnState.status !== "generating") return;
+          avatarTryOnState = { ...avatarTryOnState, status: "complete" };
+          setSyncStatus("내 사진 입어보기 데모 결과 준비 완료");
+          renderFitRoom();
+        }, 1400);
+      }
+
+      function clearAvatarTryOnPhoto() {
+        avatarTryOnState = { status: "idle", photoDataUrl: "", photoName: "" };
+        setSyncStatus("내 사진 미리보기를 제거했습니다");
+        renderFitRoom();
+      }
+
       function avatarLookListMarkup(items = []) {
         if (!items.length) return '<div class="line-item"><span>착용 아이템</span><strong>장바구니에 상품을 담아보세요</strong></div>';
         return items.map((item) => `
@@ -9426,11 +9506,12 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
                 </select>
               </label>
               ${items.length ? "" : '<p class="fit-empty-hint">상품 카드의 하트(♡)를 눌러 찜하면 여기에서 입어볼 수 있습니다.</p>'}
+              ${avatarTryOnPanelMarkup(mainItem, match)}
               <button class="primary" type="button" onclick="saveFitProfile()">내 체형 저장</button>
             </div>
           </section>
           <section class="summary-card fit-result-card">
-            <h3>${cart.length ? "장바구니 아바타 착용" : (mainItem ? mainItem.name : "상품 선택 대기")}</h3>
+            <h3>${cart.length ? "장바구니 피팅 미리보기" : (mainItem ? mainItem.name : "상품 선택 대기")}</h3>
             <div class="line-item"><span>체형 타입</span><strong>${metrics.label}</strong></div>
             <div class="line-item"><span>평소 사이즈</span><strong>상의 ${profile.topSize} · 하의 ${profile.bottomSize}</strong></div>
             <div class="line-item"><span>가상 핏 매칭</span><strong>${match}%</strong></div>
@@ -9440,7 +9521,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
             <div class="line-item"><span>상품 실측</span><strong>${mainItem ? garmentSpecSummary(mainItem) : "-"}</strong></div>
             <div class="line-item"><span>모델 기준</span><strong>${mainItem ? modelSpecSummary(mainItem) : "-"}</strong></div>
             ${avatarLookListMarkup(avatarItems)}
-            <p class="fit-note">사진 합성형 3D가 아닌 1차 체형 비율 미리보기입니다. 실제 색감과 기장은 상품 사진, 사이즈표, 리뷰와 함께 확인해 주세요.</p>
+            <p class="fit-note">현재는 대표 실사 모델과 체형 비율 기반의 피팅 미리보기입니다. 내 사진 기반 AI 생성은 업로드 동의, 삭제 정책, 생성 API 연결 후 실제 결과 이미지로 전환합니다.</p>
           </section>
           <div class="detail-actions" style="margin-top: 12px;">
             <button class="secondary" type="button" ${item ? "" : "disabled"} onclick="addFitPreviewToCart()">이 상품 담기</button>
@@ -10515,8 +10596,11 @@ Object.assign(window, {
   clearSettlementFlowCheckLogs,
   clearAdminTestData,
   clearExpiredDeliveryProofPhotos,
+  clearAvatarTryOnPhoto,
   setTestDataRetention,
   selectFitBodySample,
+  startAvatarTryOnGeneration,
+  handleAvatarTryOnPhotoUpload,
   downloadSettlementCsv,
   openSettlementStatement,
   closeSettlementPeriod,
@@ -10579,6 +10663,7 @@ exposeHandlers({
   clearAdminTestDataFromPreRelease,
   claimDeliveryOrder,
   claimDeliveryOrderFromDetail,
+  clearAvatarTryOnPhoto,
   clearDeliveryForm,
   clearExpiredDeliveryProofPhotos,
   closeAdmin,
@@ -10903,6 +10988,8 @@ exposeHandlers({
   setSizeFilter,
   setSort,
   setSyncStatus,
+  startAvatarTryOnGeneration,
+  handleAvatarTryOnPhotoUpload,
   settlementBatchOrders,
   settlementAuditEvents,
   settlementClosableOrders,

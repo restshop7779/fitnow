@@ -3426,6 +3426,130 @@
         font-weight: 850;
         line-height: 1.45;
       }
+      .avatar-tryon-panel {
+        display: grid;
+        gap: 10px;
+        padding: 12px;
+        border: 1px solid rgba(23,23,23,.12);
+        border-radius: 8px;
+        background: #fff;
+        box-shadow: 0 8px 20px rgba(23,23,23,.05);
+      }
+      .avatar-tryon-head {
+        display: grid;
+        grid-template-columns: 1fr 68px;
+        gap: 10px;
+        align-items: center;
+      }
+      .avatar-tryon-head p {
+        margin: 0 0 5px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 950;
+      }
+      .avatar-tryon-head strong {
+        display: block;
+        color: #171717;
+        font-size: 13px;
+        font-weight: 950;
+        line-height: 1.35;
+        word-break: keep-all;
+      }
+      .avatar-tryon-thumb,
+      .avatar-tryon-empty {
+        width: 68px;
+        height: 82px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: #f5efe5;
+      }
+      .avatar-tryon-thumb {
+        display: block;
+        object-fit: cover;
+      }
+      .avatar-tryon-empty {
+        display: grid;
+        place-items: center;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 950;
+      }
+      .avatar-tryon-upload {
+        min-height: 42px;
+        display: grid;
+        place-items: center;
+        border: 1px solid #171717;
+        border-radius: 8px;
+        background: #171717;
+        color: #fff;
+        font-size: 13px;
+        font-weight: 950;
+        cursor: pointer;
+      }
+      .fit-room-controls .avatar-tryon-upload {
+        color: #fff;
+      }
+      .avatar-tryon-upload input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        opacity: 0;
+        pointer-events: none;
+      }
+      .avatar-tryon-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      .avatar-tryon-progress {
+        min-height: 42px;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        background: #171717;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 950;
+      }
+      .avatar-tryon-progress i {
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255,255,255,.35);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: avatarTryOnSpin .8s linear infinite;
+      }
+      .avatar-tryon-result {
+        display: grid;
+        grid-template-columns: .7fr 1fr;
+        gap: 8px;
+        align-items: center;
+        padding: 10px;
+        border-radius: 8px;
+        background: #f4f6ef;
+        font-size: 12px;
+        font-weight: 900;
+      }
+      .avatar-tryon-result span {
+        color: var(--muted);
+      }
+      .avatar-tryon-result strong {
+        line-height: 1.35;
+      }
+      .avatar-tryon-privacy {
+        margin: 0;
+        padding-top: 2px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 850;
+        line-height: 1.45;
+        word-break: keep-all;
+      }
+      @keyframes avatarTryOnSpin {
+        to { transform: rotate(360deg); }
+      }
       .fit-result-card { margin-top: 12px; }
       @media (max-width: 420px) {
         .real-fit-stage { min-height: 430px; }
@@ -3434,6 +3558,10 @@
           flex-direction: column;
         }
         .real-fit-badge span { text-align: left; }
+        .avatar-tryon-actions,
+        .avatar-tryon-result {
+          grid-template-columns: 1fr;
+        }
       }
       .avatar-look-card {
         display: grid;
