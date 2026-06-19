@@ -4186,8 +4186,7 @@
         background: var(--lime);
       }
       .admin-home-board {
-        display: grid;
-        gap: 10px;
+        display: block;
         margin: 0 0 12px;
         padding: 12px;
         border: 1px solid var(--line);

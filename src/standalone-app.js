@@ -9293,7 +9293,12 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       }
 
       function fit3dTopItem(items = []) {
-        return items.find((item) => ["상의", "아우터", "원피스"].includes(item.category)) || items.find((item) => item.category !== "하의" && item.category !== "신발" && item.category !== "잡화") || {};
+        return items.find((item) => ["상의", "아우터", "원피스"].includes(item.category)) || items.find((item) => item.category !== "하의" && item.category !== "신발" && item.category !== "잡화") || {
+          category: "상의",
+          visual: "tshirt",
+          name: "기본 피팅 이너",
+          color: "#f7f2e8"
+        };
       }
 
       function fit3dBottomItem(items = []) {
@@ -9360,14 +9365,18 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         const bag = fit3dAccessoryItems(items)[0];
         if (!bag) return;
         const strap = new THREE.Mesh(new THREE.TorusGeometry(.66, .012, 8, 72), fit3dMaterial(0x2a251f, .72, .02));
-        strap.position.set(0, 1.55, .07);
-        strap.scale.set(.52, 1.05, .16);
+        strap.position.set(.03, 1.55, .31);
+        strap.scale.set(.55, 1.08, .2);
         strap.rotation.z = -.62;
         group.add(strap);
-        const body = fit3dRoundedBox(.32, .24, .12, .045, 8, fit3dFabricMaterial(fit3dGarmentColor(bag), .78));
-        body.position.set(.38 * (scales.shoulderScale || 1), 1.14, .25);
+        const body = fit3dRoundedBox(.39, .29, .15, .055, 10, fit3dFabricMaterial(fit3dGarmentColor(bag), .78));
+        body.position.set(.4 * (scales.shoulderScale || 1), 1.15, .41);
         body.rotation.z = -.08;
         group.add(body);
+        const flap = fit3dRoundedBox(.33, .07, .018, .02, 6, fit3dFabricMaterial(0x8f744f, .82));
+        flap.position.set(.4 * (scales.shoulderScale || 1), 1.24, .498);
+        flap.rotation.z = -.08;
+        group.add(flap);
       }
 
       function fit3dBuildAvatar(profile, metrics, items = []) {
