@@ -129,29 +129,37 @@ export function productGridMarkup(items, helpers) {
 
 export function emptyCartDetailMarkup() {
   return `
-    <section class="summary-card">
+    <section class="summary-card cart-empty-state">
       <h3>장바구니가 비어 있습니다</h3>
-      <div class="line-item"><span>룩이나 상품을 담으면</span><strong>여기서 확인 가능</strong></div>
+      <div class="line-item"><span>마음에 드는 상품을 담으면</span><strong>무료배송 예약 가능</strong></div>
+      <p>홈에서 상품을 담은 뒤 수량과 사이즈를 확인하고 바로 배송 예약할 수 있습니다.</p>
     </section>
   `;
 }
 
 export function cartDetailMarkup(cart, totals) {
+  const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const fastest = cart.length ? Math.min(...cart.map((item) => item.minutes || 0).filter(Boolean)) : 0;
   const rows = cart.map((item, index) => `
-    <div class="vendor-product-row">
+    <div class="vendor-product-row cart-line-row">
       <div>
         <strong>${item.name}</strong>
         <span>${item.showroom} · ${item.size || "FREE"} · ${item.quantity}개</span>
         <span>정상가 ${formatKRW(itemNormalPrice(item))} · ${normalizedDiscount(item.discountRate)}% 할인 · 할인가 ${formatKRW(itemSalePrice(item))}</span>
       </div>
       <div class="mini-actions">
-        <button type="button" onclick="updateCartQuantity(${index}, -1)">-</button>
-        <button type="button" onclick="updateCartQuantity(${index}, 1)">+</button>
+        <button type="button" aria-label="수량 줄이기" onclick="updateCartQuantity(${index}, -1)">-</button>
+        <button type="button" aria-label="수량 늘리기" onclick="updateCartQuantity(${index}, 1)">+</button>
         <button class="danger" type="button" onclick="removeCartItem(${index})">삭제</button>
       </div>
     </div>
   `).join("");
   return `
+    <section class="cart-checkout-summary">
+      <div><span>담긴 상품</span><strong>${itemCount}개</strong></div>
+      <div><span>배송비</span><strong>무료</strong></div>
+      <div><span>예상 도착</span><strong>${fastest ? fastest + "분대" : "확인 중"}</strong></div>
+    </section>
     <section class="summary-card">
       <h3>담긴 상품</h3>
       <div class="vendor-preview-list">${rows}</div>
@@ -161,12 +169,12 @@ export function cartDetailMarkup(cart, totals) {
       <div class="price-row"><span>정상가 합계</span><strong>${formatKRW(totals.normalSubtotal)}</strong></div>
       <div class="price-row"><span>할인 금액</span><strong>${totals.discountAmount ? "-" + formatKRW(totals.discountAmount) : "KRW 0"}</strong></div>
       <div class="price-row"><span>상품 할인가</span><strong>${formatKRW(totals.saleSubtotal)}</strong></div>
-      <div class="price-row"><span>지금배송비</span><strong>${totals.deliveryFee ? formatKRW(totals.deliveryFee) : "무료"}</strong></div>
+      <div class="price-row"><span>지금배송비</span><strong>무료</strong></div>
       <div class="price-row total-row"><span>총 결제 예정</span><strong>${formatKRW(totals.total)}</strong></div>
     </section>
     <div class="detail-actions" style="margin-top: 12px;">
       <button class="secondary" type="button" onclick="closeCartDetail()">계속 담기</button>
-      <button class="primary" type="button" onclick="checkoutFromCart()">배송 예약</button>
+      <button class="primary" type="button" onclick="checkoutFromCart()">무료배송 예약</button>
     </div>
   `;
 }

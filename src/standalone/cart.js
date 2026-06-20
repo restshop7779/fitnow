@@ -7,7 +7,7 @@ export function calculateCartTotals(cart) {
   const normalSubtotal = cart.reduce((sum, item) => sum + itemNormalPrice(item) * item.quantity, 0);
   const saleSubtotal = cart.reduce((sum, item) => sum + itemSalePrice(item) * item.quantity, 0);
   const discountAmount = Math.max(0, normalSubtotal - saleSubtotal);
-  const deliveryFee = saleSubtotal >= 120000 ? 0 : 3500;
+  const deliveryFee = 0;
   return { normalSubtotal, saleSubtotal, discountAmount, deliveryFee, total: saleSubtotal + deliveryFee };
 }
 

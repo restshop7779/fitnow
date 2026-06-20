@@ -9245,12 +9245,29 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         checkout();
       }
 
+      function cartFastestEta() {
+        return cart.length ? Math.min(...cart.map((item) => eta(item))) : 0;
+      }
+
+      function cartStoreCount() {
+        return new Set(cart.map((item) => item.showroom).filter(Boolean)).size;
+      }
+
       function renderCart() {
         const count = cart.reduce((sum, item) => sum + item.quantity, 0);
-        const total = cart.reduce((sum, item) => sum + itemSalePrice(item) * item.quantity, 0);
-        document.getElementById("cartCount").textContent = count + "개 선택됨";
-        document.getElementById("cartTotal").textContent = formatKRW(total);
-        document.getElementById("cartHint").textContent = count ? "눌러서 수량, 사이즈, 할인 확인" : "눌러서 장바구니 상세 확인";
+        const totals = cartTotals();
+        const checkoutButton = document.getElementById("cartCheckoutButton");
+        const etaNode = document.getElementById("cartEta");
+        document.getElementById("cartCount").textContent = count ? count + "개 담김" : "장바구니 비어 있음";
+        document.getElementById("cartTotal").textContent = formatKRW(totals.total);
+        document.getElementById("cartHint").textContent = count
+          ? cartStoreCount() + "개 매장 · 무료배송 · 눌러서 수량 확인"
+          : "상품을 담으면 무료배송 예약이 열립니다";
+        if (etaNode) etaNode.textContent = count ? "최단 " + cartFastestEta() + "분" : "무료배송";
+        if (checkoutButton) {
+          checkoutButton.disabled = !count;
+          checkoutButton.textContent = count ? "바로 예약" : "예약";
+        }
         if (document.getElementById("cartModal").classList.contains("open")) renderCartDetail();
       }
 
@@ -11206,6 +11223,10 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       }
 
       function checkoutFromCart() {
+        if (!cart.length) {
+          setSyncStatus("배송 예약 전에 상품을 먼저 담아주세요");
+          return;
+        }
         closeCartDetail();
         checkout();
       }

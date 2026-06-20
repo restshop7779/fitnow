@@ -154,10 +154,13 @@
             <div>
               <p id="cartCount">0개 선택됨</p>
               <strong id="cartTotal">KRW 0</strong>
-              <small id="cartHint">눌러서 장바구니 상세 확인</small>
+              <small id="cartHint">상품을 담으면 무료배송 예약이 열립니다</small>
             </div>
           </div>
-          <button type="button" onclick="event.stopPropagation(); checkout()">배송 예약</button>
+          <div class="cart-action">
+            <span id="cartEta">무료배송</span>
+            <button id="cartCheckoutButton" type="button" onclick="event.stopPropagation(); checkoutFromCart()" disabled>예약</button>
+          </div>
         </aside>
 
         <nav class="bottom-tabs">
