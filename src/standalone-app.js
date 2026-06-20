@@ -10046,7 +10046,14 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       function readAvatarLookSavedStore() {
         try {
           const parsed = JSON.parse(localStorage.getItem(AVATAR_LOOK_SAVED_STORAGE_KEY) || "[]");
-          return Array.isArray(parsed) ? parsed.filter((entry) => entry && entry.key && entry.snapshot) : [];
+          return Array.isArray(parsed) ? parsed
+            .filter((entry) => entry && entry.key && entry.snapshot)
+            .map((entry) => ({
+              ...entry,
+              title: entry.title || entry.snapshot.title || entry.snapshot.displayName || "",
+              visibility: entry.visibility === "private" ? "private" : "public",
+              featured: !!entry.featured,
+            })) : [];
         } catch (error) {
           localStorage.removeItem(AVATAR_LOOK_SAVED_STORAGE_KEY);
           return [];
@@ -10064,7 +10071,19 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           key,
           saved: !!entry,
           savedAt: entry?.savedAt || "",
+          title: entry?.title || "",
+          visibility: entry?.visibility || "public",
+          featured: !!entry?.featured,
         };
+      }
+
+      function avatarLookSavedEntryByKey(key) {
+        return readAvatarLookSavedStore().find((entry) => entry.key === key) || null;
+      }
+
+      function avatarLookSavedTitle(snapshot, items = []) {
+        const saved = avatarLookSavedState(snapshot);
+        return saved.title || snapshot?.title || (items[0] && items[0].name) || "마이아바타룩";
       }
 
       function avatarLookFeedSnapshots() {
@@ -10111,18 +10130,35 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         const cards = ranked.length ? ranked.map(({ snapshot, recommendation }) => {
           const fallbackItem = products.find((product) => product.key === activeFitPreviewKey) || fitPreviewItems()[0];
           const items = avatarLookItemsFromSnapshot(snapshot, fallbackItem);
-          const title = qaScenarioStatusEscape((items[0] && items[0].name) || "마이아바타룩");
+          const title = qaScenarioStatusEscape(avatarLookSavedTitle(snapshot, items));
           const stores = avatarLookStores(items).join(" · ") || "-";
           const key = avatarLookRecommendKey(snapshot);
           const encoded = encodeAvatarLookPayload(snapshot);
           const savedState = avatarLookSavedState(snapshot);
+          const badgeText = savedState.saved
+            ? `${savedState.featured ? "대표 룩" : "저장됨"} · ${savedState.visibility === "private" ? "비공개" : "공개"} · 추천 ${recommendation.count}`
+            : `추천 · 추천 ${recommendation.count}`;
+          const controls = savedState.saved ? `
+            <div class="avatar-feed-actions">
+              <button type="button" onclick="openAvatarLookDetail('${encoded}')">보기</button>
+              <button type="button" onclick="renameAvatarLook('${key}')">이름 변경</button>
+              <button type="button" onclick="toggleAvatarLookFeatured('${key}')">${savedState.featured ? "대표 해제" : "대표 설정"}</button>
+              <button type="button" onclick="toggleAvatarLookVisibility('${key}')">${savedState.visibility === "public" ? "비공개" : "공개"}</button>
+              <button class="danger" type="button" onclick="deleteSavedAvatarLook('${key}')">삭제</button>
+            </div>
+          ` : `
+            <div class="avatar-feed-actions">
+              <button type="button" onclick="openAvatarLookDetail('${encoded}')">보기</button>
+            </div>
+          `;
           return `
-            <button class="avatar-feed-card" type="button" onclick="openAvatarLookDetail('${encoded}')">
-              <span>${savedState.saved ? "저장됨" : "추천"} · 추천 ${recommendation.count}</span>
+            <article class="avatar-feed-card ${savedState.featured ? "featured" : ""}">
+              <span>${badgeText}</span>
               <strong>${title}</strong>
               <em>${qaScenarioStatusEscape(stores)} · ${items.length}개 아이템</em>
               <small>${key}</small>
-            </button>
+              ${controls}
+            </article>
           `;
         }).join("") : `<div class="avatar-feed-empty">${mode === "saved" ? "저장한 룩이 없습니다. 상세에서 저장을 눌러보세요." : "찜한 상품을 추가하면 마이아바타룩 피드가 만들어집니다."}</div>`;
         return `
@@ -10181,16 +10217,100 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           const nextSnapshot = {
             ...snapshot,
             name: snapshot?.name || currentCustomer.name || "게스트",
+            title: snapshot?.title || "",
             createdAt: snapshot?.createdAt || savedAt,
             savedAt,
           };
-          saveAvatarLookSavedStore([{ key: state.key, savedAt, snapshot: nextSnapshot }].concat(list.filter((entry) => entry.key !== state.key)));
+          saveAvatarLookSavedStore([{ key: state.key, savedAt, snapshot: nextSnapshot, title: nextSnapshot.title || "", visibility: "public", featured: !list.some((entry) => entry.featured) }].concat(list.filter((entry) => entry.key !== state.key)));
           activeAvatarLookSnapshot = nextSnapshot;
         }
         setSyncStatus(nextSaved ? "마이아바타룩을 저장했습니다" : "마이아바타룩 저장을 해제했습니다");
         if (document.getElementById("avatarLookModal")?.classList.contains("open")) {
           document.getElementById("avatarLookBody").innerHTML = avatarLookCardMarkup(activeAvatarLookSnapshot || snapshot);
         }
+      }
+
+      function updateSavedAvatarLook(key, updater) {
+        const list = readAvatarLookSavedStore();
+        const index = list.findIndex((entry) => entry.key === key);
+        if (index < 0) return null;
+        const next = updater({ ...list[index], snapshot: { ...list[index].snapshot } }, list);
+        if (!next) return null;
+        list[index] = next;
+        saveAvatarLookSavedStore(list);
+        return next;
+      }
+
+      function renameAvatarLook(key) {
+        const entry = avatarLookSavedEntryByKey(key);
+        if (!entry) {
+          setSyncStatus("저장한 마이아바타룩을 찾을 수 없습니다");
+          return;
+        }
+        const currentTitle = entry.title || entry.snapshot.title || "";
+        const title = window.prompt("저장한 룩 이름을 입력해 주세요", currentTitle || "오늘의 마이아바타룩");
+        if (title === null) return;
+        const cleanTitle = title.trim().slice(0, 24);
+        if (!cleanTitle) {
+          setSyncStatus("룩 이름을 입력해 주세요");
+          return;
+        }
+        updateSavedAvatarLook(key, (saved) => ({
+          ...saved,
+          title: cleanTitle,
+          snapshot: { ...saved.snapshot, title: cleanTitle },
+          updatedAt: new Date().toISOString(),
+        }));
+        setSyncStatus("마이아바타룩 이름을 변경했습니다");
+        renderAvatarLookFeed("saved");
+      }
+
+      function toggleAvatarLookFeatured(key) {
+        const list = readAvatarLookSavedStore();
+        const current = list.find((entry) => entry.key === key);
+        if (!current) {
+          setSyncStatus("저장한 마이아바타룩을 찾을 수 없습니다");
+          return;
+        }
+        const nextFeatured = !current.featured;
+        saveAvatarLookSavedStore(list.map((entry) => ({
+          ...entry,
+          featured: entry.key === key ? nextFeatured : false,
+          updatedAt: entry.key === key ? new Date().toISOString() : entry.updatedAt,
+        })));
+        setSyncStatus(nextFeatured ? "대표 마이아바타룩으로 설정했습니다" : "대표 마이아바타룩을 해제했습니다");
+        renderAvatarLookFeed("saved");
+      }
+
+      function toggleAvatarLookVisibility(key) {
+        const next = updateSavedAvatarLook(key, (saved) => {
+          const visibility = saved.visibility === "private" ? "public" : "private";
+          return {
+            ...saved,
+            visibility,
+            snapshot: { ...saved.snapshot, visibility },
+            updatedAt: new Date().toISOString(),
+          };
+        });
+        if (!next) {
+          setSyncStatus("저장한 마이아바타룩을 찾을 수 없습니다");
+          return;
+        }
+        setSyncStatus(next.visibility === "public" ? "마이아바타룩을 공개로 전환했습니다" : "마이아바타룩을 비공개로 전환했습니다");
+        renderAvatarLookFeed("saved");
+      }
+
+      function deleteSavedAvatarLook(key) {
+        const list = readAvatarLookSavedStore();
+        const nextList = list.filter((entry) => entry.key !== key);
+        if (nextList.length === list.length) {
+          setSyncStatus("삭제할 마이아바타룩을 찾을 수 없습니다");
+          return;
+        }
+        saveAvatarLookSavedStore(nextList);
+        activeAvatarLookSnapshot = null;
+        setSyncStatus("저장한 마이아바타룩을 삭제했습니다");
+        renderAvatarLookFeed("saved");
       }
 
       function openAvatarLookDetail(encodedSnapshot = "") {
@@ -10733,6 +10853,10 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           openAvatarLookDetail,
           toggleAvatarLookRecommendation,
           toggleAvatarLookSave,
+          renameAvatarLook,
+          toggleAvatarLookFeatured,
+          toggleAvatarLookVisibility,
+          deleteSavedAvatarLook,
         };
         document.addEventListener("click", (event) => {
           const target = event.target?.closest?.("[onclick]");
@@ -11679,6 +11803,10 @@ Object.assign(window, {
   clearAvatarTryOnPhoto,
   toggleAvatarLookRecommendation,
   toggleAvatarLookSave,
+  renameAvatarLook,
+  toggleAvatarLookFeatured,
+  toggleAvatarLookVisibility,
+  deleteSavedAvatarLook,
   renderAvatarLookFeed,
   openAvatarLookDetail,
   setTestDataRetention,
@@ -12078,6 +12206,10 @@ exposeHandlers({
   startAvatarTryOnGeneration,
   toggleAvatarLookRecommendation,
   toggleAvatarLookSave,
+  renameAvatarLook,
+  toggleAvatarLookFeatured,
+  toggleAvatarLookVisibility,
+  deleteSavedAvatarLook,
   renderAvatarLookFeed,
   openAvatarLookDetail,
   handleAvatarTryOnPhotoUpload,

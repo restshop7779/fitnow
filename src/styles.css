@@ -4021,6 +4021,10 @@
         color: #171717;
         text-align: left;
       }
+      .avatar-feed-card.featured {
+        border-color: rgba(216,243,106,.9);
+        box-shadow: inset 0 0 0 2px rgba(216,243,106,.6);
+      }
       .avatar-feed-card span {
         justify-self: start;
         padding: 4px 8px;
@@ -4042,6 +4046,31 @@
         font-style: normal;
         font-weight: 850;
         line-height: 1.35;
+      }
+      .avatar-feed-actions {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 6px;
+        margin-top: 6px;
+      }
+      .avatar-feed-actions button {
+        min-height: 34px;
+        padding: 7px 6px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        color: #171717;
+        font-size: 11px;
+        font-weight: 950;
+        line-height: 1.2;
+      }
+      .avatar-feed-actions button:first-child {
+        background: #171717;
+        color: #fff;
+      }
+      .avatar-feed-actions button.danger {
+        border-color: rgba(185,28,28,.24);
+        color: #b91c1c;
       }
       .avatar-feed-empty {
         padding: 14px;
