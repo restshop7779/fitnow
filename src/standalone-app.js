@@ -76,6 +76,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       const ADMIN_QA_CHECKLIST_KEY = "fitnow_admin_qa_checklist";
       const FIT_PROFILE_STORAGE_KEY = "fitnow_fit_profile";
       const AVATAR_LOOK_RECOMMEND_STORAGE_KEY = "fitnow_avatar_look_recommendations";
+      const AVATAR_LOOK_SAVED_STORAGE_KEY = "fitnow_avatar_look_saved";
       const AVATAR_LOOK_SHARE_PARAM = "avatarLook";
       const DELIVERY_PROOF_RETENTION_DAYS = 30;
       const DELIVERY_PROOF_RETENTION_MS = DELIVERY_PROOF_RETENTION_DAYS * 24 * 60 * 60 * 1000;
@@ -1539,8 +1540,35 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         return products[insertIndex];
       }
 
+      function fit3dTestProductImage(label, color) {
+        const svg = `
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 920">
+            <defs>
+              <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0" stop-color="#f8f3e9"/>
+                <stop offset="1" stop-color="#ded6c8"/>
+              </linearGradient>
+              <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#171717" flood-opacity=".18"/>
+              </filter>
+            </defs>
+            <rect width="720" height="920" fill="url(#bg)"/>
+            <rect x="92" y="88" width="536" height="744" rx="32" fill="#fffaf0" opacity=".72"/>
+            <g filter="url(#shadow)">
+              <path d="M220 238c42-42 238-42 280 0l58 62-72 68-34-30v312H268V338l-34 30-72-68 58-62z" fill="${color}"/>
+              <path d="M266 238c18 44 170 44 188 0" fill="none" stroke="#171717" stroke-opacity=".18" stroke-width="16" stroke-linecap="round"/>
+              <path d="M284 414h152M284 472h152M284 530h128" stroke="#171717" stroke-opacity=".12" stroke-width="12" stroke-linecap="round"/>
+            </g>
+            <text x="360" y="760" text-anchor="middle" font-family="Arial, sans-serif" font-size="34" font-weight="800" fill="#171717">${label}</text>
+            <text x="360" y="806" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#68635d">FitNow QA product image</text>
+          </svg>
+        `;
+        return "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg);
+      }
+
       function fit3dTypeTestProducts() {
         const showroom = "어반클로젯 동탄";
+        const palette = ["#f4f0e8", "#cfe4f7", "#2f3b46", "#9f8f7d", "#222a33", "#ccb08a"];
         return [
           { key: "fit3d-test-tshirt", name: "3D 테스트 화이트 반팔티", category: "상의", visual: "tshirt", fit: "레귤러 반팔", colorNote: "기본 티셔츠" },
           { key: "fit3d-test-shirt", name: "3D 테스트 셔츠 블라우스", category: "상의", visual: "shirt", fit: "셔츠/블라우스", colorNote: "단추 라인" },
@@ -1564,6 +1592,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           waistWidth: index === 4 ? 40 : 56,
           modelHeight: 176,
           modelWeight: 68,
+          image: fit3dTestProductImage(item.colorNote, palette[index] || "#d8d0c4"),
           note: item.colorNote + " 3D 가상착용 QA용 테스트 상품입니다.",
           vendorAdded: true,
           status: "selling",
@@ -6677,7 +6706,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           </div>
           <div class="admin-tool-actions">
             <button class="admin-tool-action primary" type="button" onclick="openAdminFinalQaScenario()">QA 시나리오</button>
-            <button class="admin-tool-action" type="button" onclick="createFit3dTypeTestProducts()">3D 타입 테스트 상품 생성</button>
+            <button class="admin-tool-action" type="button" data-fit3d-test-products="true" onclick="createFit3dTypeTestProducts()">3D 타입 테스트 상품 생성</button>
             <button class="admin-tool-action" type="button" data-admin-cleanup-check="true">DB 삭제권한 점검</button>
           </div>
           <div class="admin-utility-status" data-return-refund-visibility-status aria-live="polite">반품/환불 표시 점검 결과가 여기에 표시됩니다.</div>
@@ -6710,6 +6739,14 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       }
 
       function bindAdminUtilityButtons(root = document) {
+        root.querySelectorAll("[data-fit3d-test-products]").forEach((button) => {
+          button.onclick = (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            if (button.disabled) return;
+            createFit3dTypeTestProducts();
+          };
+        });
         root.querySelectorAll("[data-admin-cleanup-check]").forEach((button) => {
           button.onclick = (event) => {
             event.preventDefault();
@@ -10006,6 +10043,30 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         };
       }
 
+      function readAvatarLookSavedStore() {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(AVATAR_LOOK_SAVED_STORAGE_KEY) || "[]");
+          return Array.isArray(parsed) ? parsed.filter((entry) => entry && entry.key && entry.snapshot) : [];
+        } catch (error) {
+          localStorage.removeItem(AVATAR_LOOK_SAVED_STORAGE_KEY);
+          return [];
+        }
+      }
+
+      function saveAvatarLookSavedStore(list) {
+        localStorage.setItem(AVATAR_LOOK_SAVED_STORAGE_KEY, JSON.stringify((Array.isArray(list) ? list : []).slice(0, 40)));
+      }
+
+      function avatarLookSavedState(snapshot = currentAvatarLookSnapshot()) {
+        const key = avatarLookRecommendKey(snapshot);
+        const entry = readAvatarLookSavedStore().find((item) => item.key === key);
+        return {
+          key,
+          saved: !!entry,
+          savedAt: entry?.savedAt || "",
+        };
+      }
+
       function avatarLookFeedSnapshots() {
         const profile = readFitProfile();
         const wishedItems = fitPreviewItems().slice(0, 6);
@@ -10020,12 +10081,17 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         if (top && bottom) groups.push([top, bottom, accessory].filter(Boolean));
         sourceItems.slice(0, 4).forEach((item) => groups.push([item]));
         const seen = new Set();
-        return groups
+        const savedSnapshots = readAvatarLookSavedStore()
+          .map((entry) => ({ ...entry.snapshot, savedAt: entry.savedAt || entry.snapshot.savedAt || entry.snapshot.createdAt, source: "saved" }))
+          .filter((snapshot) => Array.isArray(snapshot.itemKeys) && snapshot.itemKeys.length);
+        const generatedSnapshots = groups
           .filter((items) => items.length)
           .map((items, index) => ({
             ...avatarLookSnapshotFromItems(items, profile),
             name: index === 0 ? (currentCustomer.name || "게스트") : "핏나우 추천",
-          }))
+            source: "auto",
+          }));
+        return savedSnapshots.concat(generatedSnapshots)
           .filter((snapshot) => {
             const key = avatarLookRecommendKey(snapshot);
             if (seen.has(key)) return false;
@@ -10036,11 +10102,11 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       }
 
       function avatarLookFeedMarkup(mode = "latest") {
-        const snapshots = avatarLookFeedSnapshots();
+        const snapshots = avatarLookFeedSnapshots().filter((snapshot) => mode !== "saved" || avatarLookSavedState(snapshot).saved);
         const ranked = snapshots.map((snapshot) => ({ snapshot, recommendation: avatarLookRecommendationState(snapshot) }));
         ranked.sort((a, b) => {
           if (mode === "recommended") return b.recommendation.count - a.recommendation.count || new Date(b.snapshot.createdAt) - new Date(a.snapshot.createdAt);
-          return new Date(b.snapshot.createdAt) - new Date(a.snapshot.createdAt) || b.recommendation.count - a.recommendation.count;
+          return new Date(b.snapshot.savedAt || b.snapshot.createdAt) - new Date(a.snapshot.savedAt || a.snapshot.createdAt) || b.recommendation.count - a.recommendation.count;
         });
         const cards = ranked.length ? ranked.map(({ snapshot, recommendation }) => {
           const fallbackItem = products.find((product) => product.key === activeFitPreviewKey) || fitPreviewItems()[0];
@@ -10049,15 +10115,16 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           const stores = avatarLookStores(items).join(" · ") || "-";
           const key = avatarLookRecommendKey(snapshot);
           const encoded = encodeAvatarLookPayload(snapshot);
+          const savedState = avatarLookSavedState(snapshot);
           return `
             <button class="avatar-feed-card" type="button" onclick="openAvatarLookDetail('${encoded}')">
-              <span>${recommendation.recommended ? "추천됨" : "추천"} ${recommendation.count}</span>
+              <span>${savedState.saved ? "저장됨" : "추천"} · 추천 ${recommendation.count}</span>
               <strong>${title}</strong>
               <em>${qaScenarioStatusEscape(stores)} · ${items.length}개 아이템</em>
               <small>${key}</small>
             </button>
           `;
-        }).join("") : '<div class="avatar-feed-empty">찜한 상품을 추가하면 마이아바타룩 피드가 만들어집니다.</div>';
+        }).join("") : `<div class="avatar-feed-empty">${mode === "saved" ? "저장한 룩이 없습니다. 상세에서 저장을 눌러보세요." : "찜한 상품을 추가하면 마이아바타룩 피드가 만들어집니다."}</div>`;
         return `
           <section class="avatar-feed-panel">
             <div class="avatar-feed-head">
@@ -10070,6 +10137,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
             <div class="avatar-feed-tabs">
               <button class="${mode === "latest" ? "active-control" : ""}" type="button" onclick="renderAvatarLookFeed('latest')">최신순</button>
               <button class="${mode === "recommended" ? "active-control" : ""}" type="button" onclick="renderAvatarLookFeed('recommended')">추천순</button>
+              <button class="${mode === "saved" ? "active-control" : ""}" type="button" onclick="renderAvatarLookFeed('saved')">저장한 룩</button>
             </div>
             <div class="avatar-feed-list">${cards}</div>
           </section>
@@ -10097,6 +10165,31 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         setSyncStatus(nextRecommended ? "마이아바타룩을 추천했습니다" : "마이아바타룩 추천을 취소했습니다");
         if (document.getElementById("avatarLookModal")?.classList.contains("open")) {
           document.getElementById("avatarLookBody").innerHTML = avatarLookCardMarkup(snapshot);
+        }
+      }
+
+      function toggleAvatarLookSave() {
+        const snapshot = currentAvatarLookSnapshot();
+        const state = avatarLookSavedState(snapshot);
+        const list = readAvatarLookSavedStore();
+        let nextSaved = false;
+        if (state.saved) {
+          saveAvatarLookSavedStore(list.filter((entry) => entry.key !== state.key));
+        } else {
+          nextSaved = true;
+          const savedAt = new Date().toISOString();
+          const nextSnapshot = {
+            ...snapshot,
+            name: snapshot?.name || currentCustomer.name || "게스트",
+            createdAt: snapshot?.createdAt || savedAt,
+            savedAt,
+          };
+          saveAvatarLookSavedStore([{ key: state.key, savedAt, snapshot: nextSnapshot }].concat(list.filter((entry) => entry.key !== state.key)));
+          activeAvatarLookSnapshot = nextSnapshot;
+        }
+        setSyncStatus(nextSaved ? "마이아바타룩을 저장했습니다" : "마이아바타룩 저장을 해제했습니다");
+        if (document.getElementById("avatarLookModal")?.classList.contains("open")) {
+          document.getElementById("avatarLookBody").innerHTML = avatarLookCardMarkup(activeAvatarLookSnapshot || snapshot);
         }
       }
 
@@ -10545,6 +10638,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         const total = items.reduce((sum, item) => sum + itemSalePrice(item), 0);
         const ownerName = qaScenarioStatusEscape(snapshot?.name || currentCustomer.name || "나");
         const recommendation = avatarLookRecommendationState(snapshot || currentAvatarLookSnapshot());
+        const savedState = avatarLookSavedState(snapshot || currentAvatarLookSnapshot());
         const avatarStyle = [
           "--avatar-height:" + Math.round(190 + (profile.height - 168) * 1.4) + "px",
           "--avatar-shoulder:" + Math.round(metrics.shoulder) + "px",
@@ -10566,10 +10660,15 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
               <p class="eyebrow">FITNOW AVATAR LOOK</p>
               <h3>${ownerName}의 지금배송 룩</h3>
               <span>${metrics.label} 체형 · ${items.length}개 아이템 · ${formatKRW(total)}</span>
-              <button class="avatar-recommend-button ${recommendation.recommended ? "active" : ""}" type="button" onclick="toggleAvatarLookRecommendation()" aria-pressed="${recommendation.recommended ? "true" : "false"}">
-                <span>${recommendation.recommended ? "추천됨" : "추천"}</span>
-                <strong>${recommendation.count}</strong>
-              </button>
+              <div class="avatar-look-actions">
+                <button class="avatar-recommend-button ${recommendation.recommended ? "active" : ""}" type="button" onclick="toggleAvatarLookRecommendation()" aria-pressed="${recommendation.recommended ? "true" : "false"}">
+                  <span>${recommendation.recommended ? "추천됨" : "추천"}</span>
+                  <strong>${recommendation.count}</strong>
+                </button>
+                <button class="avatar-save-button ${savedState.saved ? "active" : ""}" type="button" onclick="toggleAvatarLookSave()" aria-pressed="${savedState.saved ? "true" : "false"}">
+                  <span>${savedState.saved ? "저장됨" : "저장"}</span>
+                </button>
+              </div>
             </div>
           </section>
           <section class="summary-card fit-result-card">
@@ -10605,6 +10704,47 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         document.getElementById("avatarLookModal").classList.remove("open");
         document.getElementById("avatarLookModal").setAttribute("aria-hidden", "true");
         activeAvatarLookSnapshot = null;
+      }
+
+      function parseAvatarInlineArgs(source = "") {
+        const text = String(source || "").trim();
+        if (!text) return [];
+        const matches = text.match(/'[^']*'|"[^"]*"|[^,]+/g) || [];
+        return matches.map((part) => {
+          const value = part.trim();
+          if ((value.startsWith("'") && value.endsWith("'")) || (value.startsWith('"') && value.endsWith('"'))) {
+            return value.slice(1, -1);
+          }
+          if (value === "true") return true;
+          if (value === "false") return false;
+          if (value === "null") return null;
+          return value;
+        });
+      }
+
+      function setupAvatarInlineHandlers() {
+        if (setupAvatarInlineHandlers.ready) return;
+        setupAvatarInlineHandlers.ready = true;
+        const handlers = {
+          createFit3dTypeTestProducts,
+          openMyAvatar,
+          openMyAvatarLook,
+          renderAvatarLookFeed,
+          openAvatarLookDetail,
+          toggleAvatarLookRecommendation,
+          toggleAvatarLookSave,
+        };
+        document.addEventListener("click", (event) => {
+          const target = event.target?.closest?.("[onclick]");
+          if (!target || target.disabled) return;
+          const raw = target.getAttribute("onclick") || "";
+          const match = raw.match(/^([A-Za-z_$][\w$]*)\((.*)\)$/);
+          if (!match || typeof handlers[match[1]] !== "function") return;
+          if (typeof window[match[1]] === "function") return;
+          event.preventDefault();
+          event.stopPropagation();
+          handlers[match[1]](...parseAvatarInlineArgs(match[2]));
+        });
       }
 
       function openSharedAvatarLookFromUrl() {
@@ -11470,6 +11610,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       setupAdminTodoHandlers();
       setupAdminUtilityHandlers();
       setupAdminSettlementViewHandlers();
+      setupAvatarInlineHandlers();
       ensureAvatarTestProduct();
       renderProducts();
       renderCart();
@@ -11537,6 +11678,7 @@ Object.assign(window, {
   clearExpiredDeliveryProofPhotos,
   clearAvatarTryOnPhoto,
   toggleAvatarLookRecommendation,
+  toggleAvatarLookSave,
   renderAvatarLookFeed,
   openAvatarLookDetail,
   setTestDataRetention,
@@ -11935,6 +12077,7 @@ exposeHandlers({
   setSyncStatus,
   startAvatarTryOnGeneration,
   toggleAvatarLookRecommendation,
+  toggleAvatarLookSave,
   renderAvatarLookFeed,
   openAvatarLookDetail,
   handleAvatarTryOnPhotoUpload,

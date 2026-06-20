@@ -3918,12 +3918,18 @@
         line-height: 1.4;
         word-break: keep-all;
       }
-      .avatar-recommend-button {
+      .avatar-look-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .avatar-recommend-button,
+      .avatar-save-button {
         display: inline-flex;
         align-items: center;
         gap: 8px;
         min-height: 38px;
-        margin-top: 12px;
         padding: 9px 12px;
         border: 1px solid rgba(255,255,255,.2);
         border-radius: 999px;
@@ -3933,18 +3939,28 @@
         font-weight: 950;
         line-height: 1;
       }
-      .avatar-recommend-button::before {
+      .avatar-recommend-button::before,
+      .avatar-save-button::before {
         content: "♡";
         font-size: 16px;
         line-height: 1;
       }
-      .avatar-recommend-button.active {
+      .avatar-save-button::before {
+        content: "+";
+        font-size: 15px;
+        font-weight: 950;
+      }
+      .avatar-recommend-button.active,
+      .avatar-save-button.active {
         border-color: rgba(216,243,106,.75);
         background: var(--lime);
         color: #171c05;
       }
       .avatar-recommend-button.active::before {
         content: "♥";
+      }
+      .avatar-save-button.active::before {
+        content: "✓";
       }
       .avatar-recommend-button strong {
         min-width: 18px;
@@ -3973,7 +3989,7 @@
       }
       .avatar-feed-tabs {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 8px;
       }
       .avatar-feed-tabs button {
