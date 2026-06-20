@@ -6706,7 +6706,6 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           </div>
           <div class="admin-tool-actions">
             <button class="admin-tool-action primary" type="button" onclick="openAdminFinalQaScenario()">QA 시나리오</button>
-            <button class="admin-tool-action" type="button" data-fit3d-test-products="true" onclick="createFit3dTypeTestProducts()">3D 타입 테스트 상품 생성</button>
             <button class="admin-tool-action" type="button" data-admin-cleanup-check="true">DB 삭제권한 점검</button>
           </div>
           <div class="admin-utility-status" data-return-refund-visibility-status aria-live="polite">반품/환불 표시 점검 결과가 여기에 표시됩니다.</div>
@@ -8942,7 +8941,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
             <div class="meta-box"><span>재고</span><strong>${item.stock}개</strong></div>
           </div>
           <div class="summary-card">
-            <h3>가상착용 기준</h3>
+            <h3>상품 실측 정보</h3>
             <div class="line-item"><span>상품 실측</span><strong>${garmentSpecSummary(item)}</strong></div>
             <div class="line-item"><span>모델 기준</span><strong>${modelSpecSummary(item)}</strong></div>
           </div>
@@ -8963,7 +8962,6 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           ${detailRecommendationMarkup(item)}
           <div class="detail-actions three-actions">
             <button class="wish-button ${isWishlisted(item.key) ? "active-control" : ""}" type="button" onclick="toggleWishlist('${item.key}')">${isWishlisted(item.key) ? "♥" : "♡"}</button>
-            <button class="secondary" type="button" onclick="openFitRoom('${item.key}')">가상 착용</button>
             <button class="primary" type="button" onclick="reserveFromDetail('${item.key}')">바로 예약</button>
           </div>
           <div class="detail-actions" style="margin-top: 8px;">
@@ -10921,6 +10919,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       function openSharedAvatarLookFromUrl() {
         const snapshot = sharedAvatarLookFromUrl();
         if (!snapshot || !Array.isArray(snapshot.itemKeys) || !snapshot.itemKeys.length) return;
+        if (!document.getElementById("avatarLookModal")) return;
         openMyAvatarLook(snapshot);
         setSyncStatus("공유받은 마이아바타룩을 열었습니다");
       }

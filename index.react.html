@@ -10,9 +10,9 @@
 <main class="app-shell">
       <section class="phone-frame">
         <header class="top-bar">
-          <button class="icon-button avatar-menu" type="button" onclick="openMyAvatar()" aria-label="마이아바타 열기" title="마이아바타">마이<br />아바타</button>
+          <button class="icon-button" type="button" onclick="document.getElementById('search').focus()" aria-label="검색으로 이동">검색</button>
           <button class="brand" type="button" onclick="goHome()" aria-label="홈으로 이동">FITNOW<small>오산, 동탄 지금배송</small></button>
-          <button class="icon-button avatar-menu" type="button" onclick="openMyAvatarLook()" aria-label="마이아바타룩 열기" title="마이아바타룩">마이<br />아바타룩</button>
+          <button class="icon-button" type="button" onclick="openMyPage()" aria-label="마이페이지 열기">마이</button>
         </header>
 
         <p class="status admin-only" id="syncStatus">FITNOW_STANDALONE_OK - Supabase 연결 준비 중</p>
@@ -21,12 +21,41 @@
           <p id="setupCheckResult">SQL 실행 후 이 버튼을 누르면 테이블과 이미지 저장소를 확인합니다.</p>
         </section>
 
-        <section class="panel dark">
+        <section class="shopping-hero">
           <div>
-            <p class="eyebrow">STYLE DELIVERY</p>
-            <h2>근처 쇼룸 재고, 스타일 체크, 빠른 도착을 한 흐름으로.</h2>
+            <p class="eyebrow">FITNOW SHOPPING</p>
+            <h1>하나만 사도<br />오늘 바로 무료배송</h1>
+            <span>동탄·오산 쇼룸 재고를 한 번에 보고 지금 받을 수 있는 패션 아이템만 모았어요.</span>
           </div>
-          <button class="primary" type="button" onclick="addSet()">자동 추천</button>
+          <button class="primary" type="button" onclick="addSet()">오늘 추천 담기</button>
+        </section>
+
+        <section class="quick-category-strip" aria-label="쇼핑 카테고리">
+          <button type="button" onclick="setCategory('전체')"><strong>전체</strong><span>신상 모아보기</span></button>
+          <button type="button" onclick="setCategory('상의')"><strong>상의</strong><span>티셔츠·니트</span></button>
+          <button type="button" onclick="setCategory('하의')"><strong>하의</strong><span>데님·팬츠</span></button>
+          <button type="button" onclick="setCategory('잡화')"><strong>잡화</strong><span>가방·액세서리</span></button>
+        </section>
+
+        <section class="promo-rail">
+          <button class="promo-card primary-promo" type="button" onclick="toggleFast()">
+            <span>바로도착</span>
+            <strong>45분 이내 상품</strong>
+            <small>근처 쇼룸 재고만 빠르게 보기</small>
+          </button>
+          <button class="promo-card" type="button" onclick="setPriceRange('under50000')">
+            <span>무료배송</span>
+            <strong>5만원 이하 추천</strong>
+            <small>하나만 사도 부담 없이</small>
+          </button>
+        </section>
+
+        <section class="panel dark shopping-status">
+          <div>
+            <p class="eyebrow">TODAY DELIVERY</p>
+            <h2>근처 쇼룸 재고와 빠른 도착 상품을 먼저 보여드려요.</h2>
+          </div>
+          <button class="primary" type="button" onclick="addSet()">추천 담기</button>
         </section>
 
         <section class="panel location-panel">
@@ -45,10 +74,10 @@
         <section class="hero">
           <img src="./assets/fashion-delivery-hero.png" alt="Fashion delivery preview" />
           <div class="hero-copy">
-            <p class="eyebrow">45분 큐레이션</p>
-            <h1>오늘의 순간이 시작되기 전에 핏이 먼저 도착합니다.</h1>
-            <span>근처 부티크 재고를 보고 오늘 밤 바로 받을 아이템을 예약하세요.</span>
-            <button class="primary" type="button" onclick="addSet()">스타일리스트 추천</button>
+            <p class="eyebrow">NEW DROP</p>
+            <h1>오늘 입을 신상만<br />빠르게 골라보세요.</h1>
+            <span>에이블리처럼 가볍게 둘러보고, FitNow는 근처 재고를 바로 배송합니다.</span>
+            <button class="primary" type="button" onclick="setSort('fastest')">빠른배송 보기</button>
           </div>
         </section>
 
@@ -78,7 +107,7 @@
         </section>
 
         <section class="section-head">
-          <div><p class="eyebrow">READY TO WEAR</p><h2>지금 도착 가능한 룩</h2></div>
+          <div><p class="eyebrow">SHOP FEED</p><h2>지금 인기 있는 상품</h2></div>
           <button class="chip" id="fastToggle" type="button" onclick="toggleFast()">45분 이내</button>
         </section>
 
@@ -147,32 +176,6 @@
           <button class="close" type="button" onclick="closeCartDetail()">X</button>
         </div>
         <div id="cartDetailBody"></div>
-      </div>
-    </section>
-
-    <section class="modal" id="fitRoomModal" aria-hidden="true">
-      <div class="receipt">
-        <div class="receipt-head">
-          <div>
-            <p class="eyebrow">BODY FIT</p>
-            <h2>가상 착용실</h2>
-          </div>
-          <button class="close" type="button" onclick="closeFitRoom()">X</button>
-        </div>
-        <div id="fitRoomBody"></div>
-      </div>
-    </section>
-
-    <section class="modal" id="avatarLookModal" aria-hidden="true">
-      <div class="receipt">
-        <div class="receipt-head">
-          <div>
-            <p class="eyebrow">MY AVATAR LOOK</p>
-            <h2>마이아바타룩</h2>
-          </div>
-          <button class="close" type="button" onclick="closeMyAvatarLook()">X</button>
-        </div>
-        <div id="avatarLookBody"></div>
       </div>
     </section>
 
@@ -301,7 +304,7 @@
               <input id="vendorMaterial" type="text" value="코튼 니트" required />
             </label>
             <details class="vendor-form-section">
-              <summary>가상착용 실측 정보</summary>
+              <summary>상품 실측 정보</summary>
               <div class="form-grid">
                 <label>총기장 cm
                   <input id="vendorGarmentLength" type="number" min="0" step="0.5" value="54" />
@@ -326,7 +329,7 @@
                   <input id="vendorModelWeight" type="number" min="0" step="1" value="55" />
                 </label>
               </div>
-              <p class="section-hint">입력값은 고객 체형 아바타와 가상 핏 매칭에 사용됩니다.</p>
+              <p class="section-hint">입력값은 상세페이지의 사이즈 안내와 상품 추천 정확도에 사용됩니다.</p>
             </details>
             <label>상품 설명
               <textarea id="vendorNote" required>동탄, 오산 퇴근길에 바로 받기 좋은 레이어드 아이템이에요.</textarea>
