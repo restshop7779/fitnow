@@ -10006,6 +10006,82 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         };
       }
 
+      function avatarLookFeedSnapshots() {
+        const profile = readFitProfile();
+        const wishedItems = fitPreviewItems().slice(0, 6);
+        const fallbackItems = products.filter(storeIsVisible).slice(0, 6);
+        const sourceItems = wishedItems.length ? wishedItems : fallbackItems;
+        const groups = [];
+        if (sourceItems.length) groups.push(sourceItems.slice(0, Math.min(3, sourceItems.length)));
+        const top = sourceItems.find((item) => item.category === "상의");
+        const bottom = sourceItems.find((item) => item.category === "하의");
+        const accessory = sourceItems.find((item) => item.category === "잡화");
+        if (top) groups.push([top, accessory].filter(Boolean));
+        if (top && bottom) groups.push([top, bottom, accessory].filter(Boolean));
+        sourceItems.slice(0, 4).forEach((item) => groups.push([item]));
+        const seen = new Set();
+        return groups
+          .filter((items) => items.length)
+          .map((items, index) => ({
+            ...avatarLookSnapshotFromItems(items, profile),
+            name: index === 0 ? (currentCustomer.name || "게스트") : "핏나우 추천",
+          }))
+          .filter((snapshot) => {
+            const key = avatarLookRecommendKey(snapshot);
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          })
+          .slice(0, 8);
+      }
+
+      function avatarLookFeedMarkup(mode = "latest") {
+        const snapshots = avatarLookFeedSnapshots();
+        const ranked = snapshots.map((snapshot) => ({ snapshot, recommendation: avatarLookRecommendationState(snapshot) }));
+        ranked.sort((a, b) => {
+          if (mode === "recommended") return b.recommendation.count - a.recommendation.count || new Date(b.snapshot.createdAt) - new Date(a.snapshot.createdAt);
+          return new Date(b.snapshot.createdAt) - new Date(a.snapshot.createdAt) || b.recommendation.count - a.recommendation.count;
+        });
+        const cards = ranked.length ? ranked.map(({ snapshot, recommendation }) => {
+          const fallbackItem = products.find((product) => product.key === activeFitPreviewKey) || fitPreviewItems()[0];
+          const items = avatarLookItemsFromSnapshot(snapshot, fallbackItem);
+          const title = qaScenarioStatusEscape((items[0] && items[0].name) || "마이아바타룩");
+          const stores = avatarLookStores(items).join(" · ") || "-";
+          const key = avatarLookRecommendKey(snapshot);
+          const encoded = encodeAvatarLookPayload(snapshot);
+          return `
+            <button class="avatar-feed-card" type="button" onclick="openAvatarLookDetail('${encoded}')">
+              <span>${recommendation.recommended ? "추천됨" : "추천"} ${recommendation.count}</span>
+              <strong>${title}</strong>
+              <em>${qaScenarioStatusEscape(stores)} · ${items.length}개 아이템</em>
+              <small>${key}</small>
+            </button>
+          `;
+        }).join("") : '<div class="avatar-feed-empty">찜한 상품을 추가하면 마이아바타룩 피드가 만들어집니다.</div>';
+        return `
+          <section class="avatar-feed-panel">
+            <div class="avatar-feed-head">
+              <div>
+                <p class="eyebrow">AVATAR LOOK FEED</p>
+                <h3>마이아바타룩 피드</h3>
+              </div>
+              <button class="secondary" type="button" onclick="openAvatarLookDetail()">내 룩 보기</button>
+            </div>
+            <div class="avatar-feed-tabs">
+              <button class="${mode === "latest" ? "active-control" : ""}" type="button" onclick="renderAvatarLookFeed('latest')">최신순</button>
+              <button class="${mode === "recommended" ? "active-control" : ""}" type="button" onclick="renderAvatarLookFeed('recommended')">추천순</button>
+            </div>
+            <div class="avatar-feed-list">${cards}</div>
+          </section>
+        `;
+      }
+
+      function renderAvatarLookFeed(mode = "latest") {
+        activeAvatarLookSnapshot = null;
+        const body = document.getElementById("avatarLookBody");
+        if (body) body.innerHTML = avatarLookFeedMarkup(mode);
+      }
+
       function toggleAvatarLookRecommendation() {
         const snapshot = currentAvatarLookSnapshot();
         const state = avatarLookRecommendationState(snapshot);
@@ -10022,6 +10098,12 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         if (document.getElementById("avatarLookModal")?.classList.contains("open")) {
           document.getElementById("avatarLookBody").innerHTML = avatarLookCardMarkup(snapshot);
         }
+      }
+
+      function openAvatarLookDetail(encodedSnapshot = "") {
+        const snapshot = encodedSnapshot ? decodeAvatarLookPayload(encodedSnapshot) : currentAvatarLookSnapshot();
+        activeAvatarLookSnapshot = snapshot;
+        document.getElementById("avatarLookBody").innerHTML = avatarLookCardMarkup(snapshot);
       }
 
       function currentAvatarLookSnapshot() {
@@ -10502,7 +10584,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
             <button class="secondary" type="button" ${items.length ? "" : "disabled"} onclick="downloadAvatarLookImage()">이미지 저장</button>
           </div>
           <div class="detail-actions" style="margin-top: 12px;">
-            <button class="secondary" type="button" onclick="openMyAvatar()">아바타 수정</button>
+            <button class="secondary" type="button" onclick="renderAvatarLookFeed()">피드로 돌아가기</button>
             <button class="primary" type="button" ${items.length ? "" : "disabled"} onclick="checkoutAvatarLook()">이 룩 구매</button>
           </div>
         `;
@@ -10513,8 +10595,8 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         const fitRoomWasOpen = fitRoomModal && fitRoomModal.classList.contains("open");
         if (fitRoomModal && fitRoomModal.classList.contains("open")) closeFitRoom();
         const fallbackItem = products.find((product) => product.key === activeFitPreviewKey) || fitPreviewItems()[0];
-        activeAvatarLookSnapshot = snapshot || (fitRoomWasOpen ? lastFitRoomAvatarSnapshot : null) || avatarLookSnapshot(fallbackItem);
-        document.getElementById("avatarLookBody").innerHTML = avatarLookCardMarkup(activeAvatarLookSnapshot);
+        activeAvatarLookSnapshot = snapshot || (fitRoomWasOpen ? lastFitRoomAvatarSnapshot : null) || null;
+        document.getElementById("avatarLookBody").innerHTML = activeAvatarLookSnapshot ? avatarLookCardMarkup(activeAvatarLookSnapshot) : avatarLookFeedMarkup();
         document.getElementById("avatarLookModal").classList.add("open");
         document.getElementById("avatarLookModal").setAttribute("aria-hidden", "false");
       }
@@ -11455,6 +11537,8 @@ Object.assign(window, {
   clearExpiredDeliveryProofPhotos,
   clearAvatarTryOnPhoto,
   toggleAvatarLookRecommendation,
+  renderAvatarLookFeed,
+  openAvatarLookDetail,
   setTestDataRetention,
   selectFitBodySample,
   startAvatarTryOnGeneration,
@@ -11851,6 +11935,8 @@ exposeHandlers({
   setSyncStatus,
   startAvatarTryOnGeneration,
   toggleAvatarLookRecommendation,
+  renderAvatarLookFeed,
+  openAvatarLookDetail,
   handleAvatarTryOnPhotoUpload,
   settlementBatchOrders,
   settlementAuditEvents,

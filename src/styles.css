@@ -3950,6 +3950,91 @@
         min-width: 18px;
         text-align: right;
       }
+      .avatar-feed-panel {
+        display: grid;
+        gap: 12px;
+      }
+      .avatar-feed-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .avatar-feed-head h3 {
+        margin: 2px 0 0;
+        font-size: 20px;
+      }
+      .avatar-feed-head button {
+        min-height: 36px;
+        padding: 8px 10px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 950;
+      }
+      .avatar-feed-tabs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      .avatar-feed-tabs button {
+        min-height: 40px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fffaf0;
+        color: #171717;
+        font-size: 12px;
+        font-weight: 950;
+      }
+      .avatar-feed-tabs button.active-control {
+        background: #171717;
+        color: #fff;
+      }
+      .avatar-feed-list {
+        display: grid;
+        gap: 9px;
+      }
+      .avatar-feed-card {
+        display: grid;
+        gap: 5px;
+        width: 100%;
+        min-height: 86px;
+        padding: 12px;
+        border: 1px solid rgba(23,23,23,.12);
+        border-radius: 8px;
+        background: #fffaf0;
+        color: #171717;
+        text-align: left;
+      }
+      .avatar-feed-card span {
+        justify-self: start;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: #171717;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 950;
+      }
+      .avatar-feed-card strong {
+        font-size: 14px;
+        line-height: 1.3;
+        word-break: keep-all;
+      }
+      .avatar-feed-card em,
+      .avatar-feed-card small {
+        color: var(--muted);
+        font-size: 11px;
+        font-style: normal;
+        font-weight: 850;
+        line-height: 1.35;
+      }
+      .avatar-feed-empty {
+        padding: 14px;
+        border: 1px dashed var(--line);
+        border-radius: 8px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 850;
+      }
       .fit-layer-1 { inset: 40px 6px 10px; opacity: .95; }
       .fit-layer-2 { inset: 24px auto auto 60%; width: 58px; height: 58px; border-radius: 18px; }
       .fit-layer-3 { inset: auto 12px -110px 12px; height: 28px; border-radius: 999px; }
