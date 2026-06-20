@@ -120,6 +120,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       let sortMode = "rating";
       let onlyFast = false;
       let activeFeedTab = "popular";
+      let filterPanelOpen = false;
       let cart = [];
       let vendorProductCount = 0;
       let vendorImageData = "";
@@ -8645,27 +8646,119 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         ).join("");
       }
 
+      function priceRangeLabel(key) {
+        const labels = {
+          "전체": "전체 가격",
+          under50000: "5만원 이하",
+          "50000to100000": "5-10만원",
+          over100000: "10만원 이상",
+        };
+        return labels[key] || key;
+      }
+
+      function sortModeLabel(mode) {
+        const labels = {
+          fastest: "빠른 도착",
+          match: "매칭률",
+          stock: "재고순",
+          rating: "평점순",
+          review: "리뷰 많은순",
+        };
+        return labels[mode] || mode;
+      }
+
+      function searchValue() {
+        const input = document.getElementById("search");
+        return input ? input.value.trim() : "";
+      }
+
+      function searchSuggestionTerms() {
+        const base = [
+          "화이트 반팔",
+          "오늘도착",
+          "무료배송",
+          "5만원 이하",
+          "오버핏",
+          "가방",
+        ];
+        const recent = recentViewItems().map((item) => item.category || item.name).filter(Boolean);
+        const categories = [...new Set(products.map((item) => item.category).filter(Boolean))];
+        return [...new Set(base.concat(recent, categories))].slice(0, 8);
+      }
+
+      function renderSearchSuggestions() {
+        const node = document.getElementById("searchSuggestions");
+        if (!node) return;
+        const query = searchValue();
+        node.innerHTML = searchSuggestionTerms().map((term) =>
+          '<button class="' + (query === term ? 'active-control' : '') + '" type="button" onclick="setSearchQuery(\'' + term + '\')">' + term + '</button>'
+        ).join("");
+      }
+
+      function activeFilterLabels() {
+        const labels = [];
+        const query = searchValue();
+        if (query) labels.push("검색 " + query);
+        if (selectedShowroom !== "전체") labels.push(selectedShowroom);
+        if (selectedCategory !== "전체") labels.push(selectedCategory);
+        if (selectedSizeFilter !== "전체") labels.push(selectedSizeFilter);
+        if (selectedPriceRange !== "전체") labels.push(priceRangeLabel(selectedPriceRange));
+        if (onlyFast) labels.push("45분 이내");
+        if (sortMode !== currentFeedTabConfig().sort) labels.push(sortModeLabel(sortMode));
+        return labels;
+      }
+
+      function renderFilterPanelState() {
+        const panel = document.getElementById("filterPanel");
+        const toggle = document.getElementById("filterToggle");
+        const summary = document.getElementById("activeFilterSummary");
+        if (panel) panel.classList.toggle("collapsed", !filterPanelOpen);
+        if (toggle) toggle.textContent = filterPanelOpen ? "필터 접기" : "필터 열기";
+        if (summary) {
+          const labels = activeFilterLabels();
+          summary.innerHTML = labels.length
+            ? labels.map((label) => '<span>' + label + '</span>').join("")
+            : '<span>추천순 기본값</span>';
+        }
+      }
+
+      function toggleFilterPanel() {
+        filterPanelOpen = !filterPanelOpen;
+        renderFilterPanelState();
+      }
+
+      function setSearchQuery(query) {
+        const input = document.getElementById("search");
+        if (input) input.value = query || "";
+        selectedLookKeys = [];
+        renderProducts();
+      }
+
       function setShowroom(name) {
         selectedLookKeys = [];
         selectedShowroom = name;
+        filterPanelOpen = false;
         renderProducts();
       }
 
       function setCategory(name) {
         selectedLookKeys = [];
         selectedCategory = name;
+        filterPanelOpen = false;
         renderProducts();
       }
 
       function setSizeFilter(name) {
         selectedLookKeys = [];
         selectedSizeFilter = name;
+        filterPanelOpen = false;
         renderProducts();
       }
 
       function setPriceRange(name) {
         selectedLookKeys = [];
         selectedPriceRange = name;
+        filterPanelOpen = false;
         renderProducts();
       }
 
@@ -8770,6 +8863,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         selectedLookKeys = [];
         onlyFast = activeFeedTab === "fast";
         sortMode = currentFeedTabConfig().sort;
+        filterPanelOpen = false;
         renderProducts();
       }
 
@@ -8795,6 +8889,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         sortMode = "rating";
         onlyFast = false;
         activeFeedTab = "popular";
+        filterPanelOpen = false;
         document.getElementById("search").value = "";
         setSort("rating");
       }
@@ -8973,7 +9068,9 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         products.forEach(ensureSizeStock);
         renderRegions();
         setupFilters();
+        renderSearchSuggestions();
         renderFeedState();
+        renderFilterPanelState();
         renderRecommendations();
         const items = visibleProducts();
         const first = items[0] || products[0];
@@ -11989,6 +12086,8 @@ Object.assign(window, {
   clearExpiredDeliveryProofPhotos,
   clearAvatarTryOnPhoto,
   setFeedTab,
+  setSearchQuery,
+  toggleFilterPanel,
   toggleAvatarLookRecommendation,
   toggleAvatarLookSave,
   renameAvatarLook,
@@ -12392,7 +12491,9 @@ exposeHandlers({
   setSizeFilter,
   setSort,
   setSyncStatus,
+  setSearchQuery,
   startAvatarTryOnGeneration,
+  toggleFilterPanel,
   toggleAvatarLookRecommendation,
   toggleAvatarLookSave,
   renameAvatarLook,

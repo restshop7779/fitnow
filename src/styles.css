@@ -677,6 +677,81 @@
         color: var(--ink);
         font-weight: 850;
       }
+      .search-suggestions {
+        display: flex;
+        gap: 7px;
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+      .search-suggestions::-webkit-scrollbar {
+        display: none;
+      }
+      .search-suggestions button,
+      .filter-toggle,
+      .active-filter-summary span {
+        flex: 0 0 auto;
+        min-height: 30px;
+        padding: 0 10px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: #fff;
+        color: #3f4a54;
+        font-size: 11px;
+        font-weight: 900;
+        white-space: nowrap;
+      }
+      .search-suggestions button.active-control {
+        border-color: #ff4778;
+        background: #fff0f5;
+        color: #d4144f;
+      }
+      .filter-toolbar {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 8px;
+        align-items: start;
+      }
+      .filter-toggle {
+        background: #171717;
+        color: #fff;
+        border-color: #171717;
+      }
+      .active-filter-summary {
+        display: flex;
+        gap: 6px;
+        min-width: 0;
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+      .active-filter-summary::-webkit-scrollbar {
+        display: none;
+      }
+      .active-filter-summary span {
+        display: inline-flex;
+        align-items: center;
+        background: #fffaf0;
+        color: #2d3338;
+      }
+      .filter-panel {
+        display: grid;
+        gap: 10px;
+        padding: 11px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+      }
+      .filter-panel.collapsed {
+        display: none;
+      }
+      .filter-group {
+        display: grid;
+        gap: 6px;
+      }
+      .filter-group > span {
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 950;
+      }
       .chips, .sorts { display: flex; gap: 8px; overflow-x: auto; }
       .sorts { display: grid; grid-template-columns: repeat(3, 1fr); }
       .chip, .sort {

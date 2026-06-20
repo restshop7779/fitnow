@@ -125,16 +125,23 @@
 
         <section class="catalog-controls">
           <label class="search"><input id="search" type="search" placeholder="상품, 쇼룸, 소재 검색" oninput="renderProducts()" /></label>
-          <div class="chips" id="showroomFilters"></div>
-          <div class="chips" id="categoryFilters"></div>
-          <div class="chips" id="sizeFilters"></div>
-          <div class="chips" id="priceFilters"></div>
-          <div class="sorts">
-            <button class="sort active-control" data-sort="fastest" type="button" onclick="setSort('fastest')">빠른 도착</button>
-            <button class="sort" data-sort="match" type="button" onclick="setSort('match')">매칭률</button>
-            <button class="sort" data-sort="stock" type="button" onclick="setSort('stock')">재고순</button>
-            <button class="sort" data-sort="rating" type="button" onclick="setSort('rating')">평점순</button>
-            <button class="sort" data-sort="review" type="button" onclick="setSort('review')">리뷰 많은순</button>
+          <div class="search-suggestions" id="searchSuggestions" aria-label="추천 검색어"></div>
+          <div class="filter-toolbar">
+            <button class="filter-toggle" id="filterToggle" type="button" onclick="toggleFilterPanel()">필터 열기</button>
+            <div class="active-filter-summary" id="activeFilterSummary"></div>
+          </div>
+          <div class="filter-panel collapsed" id="filterPanel">
+            <div class="filter-group"><span>매장</span><div class="chips" id="showroomFilters"></div></div>
+            <div class="filter-group"><span>카테고리</span><div class="chips" id="categoryFilters"></div></div>
+            <div class="filter-group"><span>사이즈</span><div class="chips" id="sizeFilters"></div></div>
+            <div class="filter-group"><span>가격</span><div class="chips" id="priceFilters"></div></div>
+            <div class="filter-group"><span>정렬</span><div class="sorts">
+              <button class="sort active-control" data-sort="fastest" type="button" onclick="setSort('fastest')">빠른 도착</button>
+              <button class="sort" data-sort="match" type="button" onclick="setSort('match')">매칭률</button>
+              <button class="sort" data-sort="stock" type="button" onclick="setSort('stock')">재고순</button>
+              <button class="sort" data-sort="rating" type="button" onclick="setSort('rating')">평점순</button>
+              <button class="sort" data-sort="review" type="button" onclick="setSort('review')">리뷰 많은순</button>
+            </div></div>
           </div>
           <div class="result-summary"><span id="resultCount">0개 아이템</span><button class="chip" type="button" onclick="resetControls()">초기화</button></div>
         </section>
