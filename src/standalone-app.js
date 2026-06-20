@@ -9034,19 +9034,51 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         const previousDetailKey = activeDetailKey;
         selectedDetailSize = availableSizes.includes(selectedDetailSize) && previousDetailKey === key ? selectedDetailSize : (availableSizes[0] || sizes[0] || item.size || "FREE");
         activeDetailKey = key;
-        const stockAlert = item.stock <= 2 ? `<div class="stock-alert">재고 ${item.stock}개 남음. 지금 예약하면 픽업 우선 배정됩니다.</div>` : "";
+        const arrivalMinutes = eta(item);
+        const discountRate = normalizedDiscount(item.discountRate);
+        const salePrice = itemSalePrice(item);
+        const normalPrice = itemNormalPrice(item);
+        const deliveryLabel = arrivalMinutes <= 45 ? "오늘도착" : "예약배송";
+        const stockStatusLabel = item.stock <= 2 ? "품절임박 " + item.stock + "개" : "재고 " + item.stock + "개";
+        const stockAlert = item.stock <= 2 ? `<div class="stock-alert">품절임박 ${item.stock}개 남음. 지금 예약하면 픽업 우선 배정됩니다.</div>` : "";
+        const detailBadges = [
+          "무료배송",
+          deliveryLabel,
+          discountRate ? discountRate + "% 세일" : "",
+          item.stock <= 2 ? "품절임박" : "",
+        ].filter(Boolean);
         document.getElementById("detailName").textContent = item.name;
         document.getElementById("detailBody").innerHTML = `
-          ${visualMarkup(item, "detail-visual")}
-          <div class="badge"><i></i>${eta(item)}분 도착 가능</div>
-          ${priceMarkup(itemNormalPrice(item), item.discountRate, itemSalePrice(item))}
-          <small>${item.showroom}</small>
-          <small>${ratingLabelForProduct(item)} · ${ratingLabelForStore(item.showroom)}</small>
+          <div class="detail-hero">
+            ${visualMarkup(item, "detail-visual")}
+            <div class="detail-badge-row">${detailBadges.map((label) => `<span>${label}</span>`).join("")}</div>
+          </div>
+          <div class="detail-purchase-panel">
+            <div class="detail-arrival-summary">
+              <div>
+                <span>예상 도착</span>
+                <strong>${arrivalMinutes}분</strong>
+              </div>
+              <div>
+                <span>배송비</span>
+                <strong>무료</strong>
+              </div>
+              <div>
+                <span>재고</span>
+                <strong>${stockStatusLabel}</strong>
+              </div>
+            </div>
+            ${priceMarkup(normalPrice, discountRate, salePrice)}
+            <div class="detail-store-line">
+              <strong>${item.showroom}</strong>
+              <span>${ratingLabelForProduct(item)} · ${ratingLabelForStore(item.showroom)}</span>
+            </div>
+          </div>
           ${stockAlert}
           <div class="detail-meta">
             <div class="meta-box"><span>핏</span><strong>${item.fit}</strong></div>
-            <div class="meta-box"><span>배송 가능</span><strong>${eta(item)}분</strong></div>
-            <div class="meta-box"><span>재고</span><strong>${item.stock}개</strong></div>
+            <div class="meta-box"><span>배송</span><strong>${deliveryLabel}</strong></div>
+            <div class="meta-box"><span>추천률</span><strong>${item.match}%</strong></div>
           </div>
           <div class="summary-card">
             <h3>상품 실측 정보</h3>
@@ -9061,10 +9093,11 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
             }).join("")}</div>
           </div>
           <div class="summary-card" style="margin-top: 12px;">
-            <h3>소재와 매칭</h3>
+            <h3>배송/구매 안내</h3>
             <div class="line-item"><span>${item.material}</span><strong>${item.match}% 매칭</strong></div>
             <div class="line-item"><span>매장 픽업 준비</span><strong>${prepMinutes ? prepMinutes + "분" : "즉시 준비"}</strong></div>
-            <div class="line-item"><span>교환/반품</span><strong>수령 후 24시간 내 상담</strong></div>
+            <div class="line-item"><span>배송비</span><strong>무료배송</strong></div>
+            <div class="line-item"><span>반품/환불</span><strong>배송완료 후 14일 이내 요청</strong></div>
           </div>
           <p class="fit-note">${item.note}</p>
           ${detailRecommendationMarkup(item)}
