@@ -9147,6 +9147,33 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         return { bmi, shoulder, chest, waist, hip, thigh, leg, shoulderRatio, chestRatio, waistRatio, hipRatio, thighRatio, legRatio, label, sample };
       }
 
+      function fitClamp(value, min, max) {
+        return Math.min(max, Math.max(min, value));
+      }
+
+      function fitAvatarStyle(profile, metrics) {
+        const heightDelta = profile.height - 168;
+        const torso = fitClamp(130 + (profile.height - 172.5) * 0.42 + (metrics.chestRatio - 1) * 10, 120, 150);
+        const legHeight = fitClamp(112 + (profile.height - 172.5) * 0.66 + (metrics.legRatio - 1) * 18, 98, 146);
+        const armHeight = fitClamp(110 + (profile.height - 172.5) * 0.45 + (metrics.shoulderRatio - 1) * 6, 100, 132);
+        const head = fitClamp(55 + (profile.height - 172.5) * 0.04, 52, 58);
+        const totalHeight = head + torso + legHeight + 10;
+        return [
+          "--avatar-height:" + Math.round(fitClamp(190 + heightDelta * 1.38, 176, 246)) + "px",
+          "--avatar-shoulder:" + Math.round(metrics.shoulder) + "px",
+          "--avatar-chest:" + Math.round(metrics.chest) + "px",
+          "--avatar-waist:" + Math.round(metrics.waist) + "px",
+          "--avatar-hip:" + Math.round(metrics.hip) + "px",
+          "--avatar-thigh:" + Math.round(metrics.thigh) + "px",
+          "--avatar-leg:" + Math.round(metrics.leg) + "px",
+          "--avatar-torso-height:" + Math.round(torso) + "px",
+          "--avatar-leg-height:" + Math.round(legHeight) + "px",
+          "--avatar-arm-height:" + Math.round(armHeight) + "px",
+          "--avatar-head-height:" + Math.round(head) + "px",
+          "--avatar-total-height:" + Math.round(totalHeight) + "px",
+        ].join(";");
+      }
+
       function garmentSpecs(item = {}) {
         return {
           length: Number(item.garmentLength) || 0,
@@ -9212,7 +9239,31 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         return [...new Set(items.map((item) => item.showroom).filter(Boolean))];
       }
 
-      function fitPreviewLayers(items = []) {
+      function fitLayerStyle(item = {}, index = 0, profile = readFitProfile(), metrics = fitProfileMetrics(profile)) {
+        const category = item.category || "상의";
+        const visual = item.visual || "";
+        const chestScale = fitClamp(metrics.chestRatio, .88, 1.22);
+        const waistScale = fitClamp(metrics.waistRatio, .86, 1.28);
+        const hipScale = fitClamp(metrics.hipRatio, .88, 1.26);
+        const legScale = fitClamp(metrics.legRatio, .88, 1.24);
+        const topWidth = Math.round(100 + (chestScale - 1) * 34);
+        const waistWidth = Math.round(96 + (waistScale - 1) * 28);
+        const hipWidth = Math.round(98 + (hipScale - 1) * 30);
+        const topLength = visual === "hoodie" || visual === "jacket" ? 109 : visual === "shirt" ? 103 : 98;
+        const bottomHeight = Math.round(104 * legScale);
+        const lower = category === "하의" ? Math.round(-98 - (legScale - 1) * 18) : 12;
+        return [
+          "--fit-layer-index:" + index,
+          "--fit-top-width:" + topWidth + "%",
+          "--fit-waist-width:" + waistWidth + "%",
+          "--fit-hip-width:" + hipWidth + "%",
+          "--fit-top-length:" + topLength + "%",
+          "--fit-bottom-height:" + bottomHeight + "px",
+          "--fit-bottom-offset:" + lower + "px",
+        ].join(";");
+      }
+
+      function fitPreviewLayers(items = [], profile = readFitProfile(), metrics = fitProfileMetrics(profile)) {
         if (!items.length) return '<div class="fit-garment empty-fit">상품 선택</div>';
         return items.map((item, index) => {
           const category = qaScenarioStatusEscape(item.category || "상의");
@@ -9220,19 +9271,23 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           const photoClass = item.image ? " has-photo" : "";
           const visualClass = item.visual ? " fit-visual-" + qaScenarioStatusEscape(item.visual) : "";
           const image = item.image ? '<img src="' + item.image + '" alt="' + name + '" />' : '<span>' + category + '</span>';
-          return '<div class="fit-garment fit-layer-' + index + ' fit-' + category + visualClass + photoClass + '" title="' + name + '">' + image + '</div>';
+          return '<div class="fit-garment fit-layer-' + index + ' fit-' + category + visualClass + photoClass + '" style="' + fitLayerStyle(item, index, profile, metrics) + '" title="' + name + '">' + image + '</div>';
         }).join("");
       }
 
       function realFitPreviewStyle(profile, metrics) {
-        const heightScale = Math.min(1.035, Math.max(.97, 1 + (profile.height - 172.5) * .0012));
+        const heightScale = Math.min(1.04, Math.max(.965, 1 + (profile.height - 172.5) * .0012));
         const widthBlend = (metrics.shoulderRatio + metrics.chestRatio + metrics.waistRatio + metrics.hipRatio) / 4;
-        const widthScale = Math.min(1.035, Math.max(.97, 1 + (widthBlend - 1) * .12));
+        const widthScale = Math.min(1.045, Math.max(.96, 1 + (widthBlend - 1) * .14));
         const y = Math.min(8, Math.max(-8, (172.5 - profile.height) * .12));
+        const overlayScale = Math.min(1.12, Math.max(.92, .98 + (widthBlend - 1) * .18 + (profile.height - 172.5) * .001));
+        const overlayY = Math.min(18, Math.max(-18, (172.5 - profile.height) * .22));
         return [
           "--real-fit-height:" + heightScale.toFixed(3),
           "--real-fit-width:" + widthScale.toFixed(3),
           "--real-fit-y:" + Math.round(y) + "px",
+          "--real-garment-scale:" + overlayScale.toFixed(3),
+          "--real-overlay-y:" + Math.round(overlayY) + "px",
         ].join(";");
       }
 
@@ -9492,12 +9547,12 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
 
       function fit3dBuildAvatar(profile, metrics, items = []) {
         const group = new THREE.Group();
-        const heightScale = Math.min(1.18, Math.max(.88, profile.height / 172.5));
+        const heightScale = Math.min(1.12, Math.max(.92, 1 + (profile.height - 172.5) * .0035));
         const shoulderScale = Math.min(1.28, Math.max(.82, metrics.shoulderRatio));
         const chestScale = Math.min(1.24, Math.max(.84, metrics.chestRatio));
         const waistScale = Math.min(1.28, Math.max(.82, metrics.waistRatio));
         const hipScale = Math.min(1.28, Math.max(.84, metrics.hipRatio));
-        const legScale = Math.min(1.22, Math.max(.9, metrics.legRatio));
+        const legScale = Math.min(1.32, Math.max(.9, metrics.legRatio * (1 + (profile.height - 172.5) * .0018)));
         group.scale.set(1, heightScale, 1);
         group.position.y = -.18;
 
@@ -9601,14 +9656,16 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           const legHeight = (isShorts ? .52 : 1.22) * legScale;
           const leg = fit3dRoundedBox(legWidth, legHeight, isWidePants ? .38 : .28, isWidePants ? .075 : .06, 8, pants);
           const legOffset = (isWidePants ? .26 : .19) * hipScale;
-          leg.position.set(side * legOffset, isShorts ? .49 : .15, 0);
+          const legCenterY = isShorts ? .49 : .18 - (legScale - 1) * .08;
+          const footY = legCenterY - legHeight / 2 - .075;
+          leg.position.set(side * legOffset, legCenterY, 0);
           leg.rotation.z = side * (isWidePants ? -.018 : .012);
           group.add(leg);
           const crease = new THREE.Mesh(new THREE.BoxGeometry(isWidePants ? .016 : .012, (isShorts ? .32 : 1.02) * legScale, .012), fit3dMaterial(0x41444b, .88, 0));
-          crease.position.set(side * legOffset, isShorts ? .5 : .17, (isWidePants ? .205 : .148));
+          crease.position.set(side * legOffset, isShorts ? .5 : legCenterY + .02, (isWidePants ? .205 : .148));
           group.add(crease);
           const shoeMesh = fit3dRoundedBox(.32, .1, .42, .035, 8, shoe);
-          shoeMesh.position.set(side * legOffset, -.52, .055);
+          shoeMesh.position.set(side * legOffset, footY, .055);
           shoeMesh.castShadow = true;
           shoeMesh.receiveShadow = true;
           group.add(shoeMesh);
@@ -10567,12 +10624,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         const match = avatarItems.length
           ? Math.round(avatarItems.reduce((sum, candidate) => sum + fitMatchForItem(candidate, profile), 0) / avatarItems.length)
           : (item ? fitMatchForItem(item, profile) : 0);
-        const avatarStyle = [
-          "--avatar-height:" + Math.round(190 + (profile.height - 168) * 1.4) + "px",
-          "--avatar-shoulder:" + Math.round(metrics.shoulder) + "px",
-          "--avatar-waist:" + Math.round(metrics.waist) + "px",
-          "--avatar-leg:" + Math.round(metrics.leg) + "px",
-        ].join(";");
+        const avatarStyle = fitAvatarStyle(profile, metrics);
         const avatarBodyClass = "fit-body-" + profile.bodyType;
         const realFitStyle = realFitPreviewStyle(profile, metrics);
         body.innerHTML = `
@@ -10590,7 +10642,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
               <div class="fit-avatar fit-avatar-fallback ${avatarBodyClass}" style="${avatarStyle}" aria-hidden="true">
                 <div class="fit-head"></div>
                 <div class="fit-arms"></div>
-                <div class="fit-torso">${fitPreviewLayers(avatarItems)}</div>
+                <div class="fit-torso">${fitPreviewLayers(avatarItems, profile, metrics)}</div>
                 <div class="fit-legs"></div>
               </div>
             </div>
@@ -10759,12 +10811,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         const ownerName = qaScenarioStatusEscape(snapshot?.name || currentCustomer.name || "나");
         const recommendation = avatarLookRecommendationState(snapshot || currentAvatarLookSnapshot());
         const savedState = avatarLookSavedState(snapshot || currentAvatarLookSnapshot());
-        const avatarStyle = [
-          "--avatar-height:" + Math.round(190 + (profile.height - 168) * 1.4) + "px",
-          "--avatar-shoulder:" + Math.round(metrics.shoulder) + "px",
-          "--avatar-waist:" + Math.round(metrics.waist) + "px",
-          "--avatar-leg:" + Math.round(metrics.leg) + "px",
-        ].join(";");
+        const avatarStyle = fitAvatarStyle(profile, metrics);
         const avatarBodyClass = "fit-body-" + (profile.bodyType || "regular");
         return `
           <section class="avatar-look-card">
@@ -10772,7 +10819,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
               <div class="fit-avatar ${avatarBodyClass}" style="${avatarStyle}">
                 <div class="fit-head"></div>
                 <div class="fit-arms"></div>
-                <div class="fit-torso">${fitPreviewLayers(items)}</div>
+                <div class="fit-torso">${fitPreviewLayers(items, profile, metrics)}</div>
                 <div class="fit-legs"></div>
               </div>
             </div>
