@@ -117,8 +117,9 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       let selectedPriceRange = "전체";
       let selectedRegion = "dongtan2";
       let addressSuggestionState = { home: [], order: [] };
-      let sortMode = "fastest";
+      let sortMode = "rating";
       let onlyFast = false;
+      let activeFeedTab = "popular";
       let cart = [];
       let vendorProductCount = 0;
       let vendorImageData = "";
@@ -8668,17 +8669,120 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         renderProducts();
       }
 
+      const feedTabConfig = {
+        popular: {
+          title: "지금 인기 있는 상품",
+          subtitle: "찜, 평점, 빠른 도착 기준으로 먼저 보여드려요.",
+          label: "인기",
+          sort: "rating",
+        },
+        new: {
+          title: "오늘 올라온 신상",
+          subtitle: "입점업체가 최근 등록한 상품과 기본 신상을 모았어요.",
+          label: "신상",
+          sort: "stock",
+        },
+        free: {
+          title: "하나만 사도 무료배송",
+          subtitle: "FitNow 베타 기간에는 노출 상품을 무료배송 기준으로 보여드려요.",
+          label: "무료배송",
+          sort: "fastest",
+        },
+        sale: {
+          title: "할인 중인 상품",
+          subtitle: "현재 할인율이 적용된 상품을 높은 할인순으로 정리했어요.",
+          label: "세일",
+          sort: "fastest",
+        },
+        fast: {
+          title: "빠른도착 상품",
+          subtitle: "현재 위치 기준 45분 이내 도착 가능한 상품만 모았어요.",
+          label: "빠른도착",
+          sort: "fastest",
+        },
+      };
+
+      function currentFeedTabConfig() {
+        return feedTabConfig[activeFeedTab] || feedTabConfig.popular;
+      }
+
+      function isNewFeedItem(item, index) {
+        return !!item.vendorAdded || index < 3 || eta(item) <= 36;
+      }
+
+      function feedTabMatches(item, index) {
+        if (activeFeedTab === "new") return isNewFeedItem(item, index);
+        if (activeFeedTab === "sale") return normalizedDiscount(item.discountRate) > 0;
+        if (activeFeedTab === "fast") return eta(item) <= 45;
+        return true;
+      }
+
+      function sortFeedItems(items) {
+        const ranked = items.slice();
+        if (activeFeedTab === "popular") {
+          return ranked.sort((a, b) =>
+            productRatingValue(b) - productRatingValue(a)
+            || productReviewCount(b) - productReviewCount(a)
+            || b.match - a.match
+            || eta(a) - eta(b)
+          );
+        }
+        if (activeFeedTab === "new") {
+          return ranked.sort((a, b) =>
+            Number(!!b.vendorAdded) - Number(!!a.vendorAdded)
+            || b.stock - a.stock
+            || eta(a) - eta(b)
+          );
+        }
+        if (activeFeedTab === "free") {
+          return ranked.sort((a, b) => itemSalePrice(a) - itemSalePrice(b) || eta(a) - eta(b));
+        }
+        if (activeFeedTab === "sale") {
+          return ranked.sort((a, b) =>
+            normalizedDiscount(b.discountRate) - normalizedDiscount(a.discountRate)
+            || itemSalePrice(a) - itemSalePrice(b)
+          );
+        }
+        if (activeFeedTab === "fast") {
+          return ranked.sort((a, b) => eta(a) - eta(b) || b.match - a.match);
+        }
+        return ranked;
+      }
+
+      function renderFeedState() {
+        const config = currentFeedTabConfig();
+        const feedTitle = document.getElementById("feedTitle");
+        const feedSubtitle = document.getElementById("feedSubtitle");
+        if (feedTitle) feedTitle.textContent = config.title;
+        if (feedSubtitle) feedSubtitle.textContent = config.subtitle;
+        document.querySelectorAll("[data-feed-tab]").forEach((button) => {
+          button.classList.toggle("active-control", button.dataset.feedTab === activeFeedTab);
+        });
+        document.querySelectorAll(".sort").forEach((button) => {
+          button.classList.toggle("active-control", button.dataset.sort === sortMode);
+        });
+        const fastToggle = document.getElementById("fastToggle");
+        if (fastToggle) fastToggle.textContent = onlyFast ? "전체 보기" : "45분 이내";
+      }
+
+      function setFeedTab(tab) {
+        activeFeedTab = feedTabConfig[tab] ? tab : "popular";
+        selectedLookKeys = [];
+        onlyFast = activeFeedTab === "fast";
+        sortMode = currentFeedTabConfig().sort;
+        renderProducts();
+      }
+
       function setSort(mode) {
         sortMode = mode;
-        document.querySelectorAll(".sort").forEach((button) => {
-          button.classList.toggle("active-control", button.dataset.sort === mode);
-        });
+        if (activeFeedTab === "fast" && mode !== "fastest") onlyFast = false;
         renderProducts();
       }
 
       function toggleFast() {
         onlyFast = !onlyFast;
-        document.getElementById("fastToggle").textContent = onlyFast ? "전체 보기" : "45분 이내";
+        activeFeedTab = onlyFast ? "fast" : "popular";
+        sortMode = currentFeedTabConfig().sort;
         renderProducts();
       }
 
@@ -8688,11 +8792,11 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         selectedCategory = "전체";
         selectedSizeFilter = "전체";
         selectedPriceRange = "전체";
-        sortMode = "fastest";
+        sortMode = "rating";
         onlyFast = false;
+        activeFeedTab = "popular";
         document.getElementById("search").value = "";
-        document.getElementById("fastToggle").textContent = "45분 이내";
-        setSort("fastest");
+        setSort("rating");
       }
 
       function sizeFilterMatches(item) {
@@ -8704,7 +8808,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       }
 
       function visibleProducts() {
-        return filterVisibleProducts({
+        const items = filterVisibleProducts({
           products,
           query: document.getElementById("search").value,
           selectedLookKeys,
@@ -8719,6 +8823,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           productRatingValue,
           productReviewCount,
         });
+        return sortFeedItems(items.filter((item, index) => feedTabMatches(item, index)));
       }
 
       function personalizedRecommendations() {
@@ -8868,10 +8973,13 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         products.forEach(ensureSizeStock);
         renderRegions();
         setupFilters();
+        renderFeedState();
         renderRecommendations();
         const items = visibleProducts();
         const first = items[0] || products[0];
+        const feedLabel = currentFeedTabConfig().label;
         const activeFilters = [
+          feedLabel && feedLabel !== "인기" ? feedLabel : "",
           selectedShowroom !== "전체" ? selectedShowroom : "",
           selectedCategory !== "전체" ? selectedCategory : "",
           selectedSizeFilter !== "전체" ? selectedSizeFilter : "",
@@ -11847,6 +11955,7 @@ Object.assign(window, {
   clearAdminTestData,
   clearExpiredDeliveryProofPhotos,
   clearAvatarTryOnPhoto,
+  setFeedTab,
   toggleAvatarLookRecommendation,
   toggleAvatarLookSave,
   renameAvatarLook,
@@ -12239,6 +12348,7 @@ exposeHandlers({
   setAdminSettlementView,
   setAdminStatusFilter,
   setCategory,
+  setFeedTab,
   setFit3dQuickView,
   setPriceRange,
   setRegion,

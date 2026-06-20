@@ -631,6 +631,41 @@
       .customer-proof-card .delivery-proof-preview {
         max-width: 260px;
       }
+      .section-head span {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 850;
+        line-height: 1.35;
+      }
+      .feed-tabs {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding: 0 18px 14px;
+        scrollbar-width: none;
+      }
+      .feed-tabs::-webkit-scrollbar {
+        display: none;
+      }
+      .feed-tabs button {
+        flex: 0 0 auto;
+        min-height: 38px;
+        padding: 0 14px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: #fff;
+        color: #2d3338;
+        font-size: 13px;
+        font-weight: 950;
+      }
+      .feed-tabs button.active-control {
+        border-color: #ff4778;
+        background: #ff4778;
+        color: #fff;
+        box-shadow: 0 8px 18px rgba(255, 71, 120, 0.22);
+      }
       .catalog-controls { display: grid; gap: 10px; padding: 0 18px 14px; }
       .search input {
         width: 100%;

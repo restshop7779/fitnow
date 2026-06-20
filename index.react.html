@@ -107,8 +107,20 @@
         </section>
 
         <section class="section-head">
-          <div><p class="eyebrow">SHOP FEED</p><h2>지금 인기 있는 상품</h2></div>
+          <div>
+            <p class="eyebrow">SHOP FEED</p>
+            <h2 id="feedTitle">지금 인기 있는 상품</h2>
+            <span id="feedSubtitle">찜, 평점, 빠른 도착 기준으로 먼저 보여드려요.</span>
+          </div>
           <button class="chip" id="fastToggle" type="button" onclick="toggleFast()">45분 이내</button>
+        </section>
+
+        <section class="feed-tabs" id="feedTabs" aria-label="상품 피드">
+          <button class="active-control" data-feed-tab="popular" type="button" onclick="setFeedTab('popular')">인기</button>
+          <button data-feed-tab="new" type="button" onclick="setFeedTab('new')">신상</button>
+          <button data-feed-tab="free" type="button" onclick="setFeedTab('free')">무료배송</button>
+          <button data-feed-tab="sale" type="button" onclick="setFeedTab('sale')">세일</button>
+          <button data-feed-tab="fast" type="button" onclick="setFeedTab('fast')">빠른도착</button>
         </section>
 
         <section class="catalog-controls">
