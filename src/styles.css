@@ -775,6 +775,33 @@
         color: #fff;
         box-shadow: 0 10px 22px rgba(230, 0, 35, .38);
       }
+      .product-visual-wrap {
+        position: relative;
+      }
+      .product-visual-wrap .visual {
+        margin-bottom: 9px;
+      }
+      .product-badges {
+        position: absolute;
+        left: 8px;
+        bottom: 17px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        padding-right: 48px;
+        z-index: 2;
+      }
+      .product-badges span {
+        min-height: 22px;
+        padding: 4px 7px;
+        border-radius: 999px;
+        background: rgba(23, 23, 23, .82);
+        color: #fff;
+        font-size: 10px;
+        font-weight: 950;
+        line-height: 1.2;
+        backdrop-filter: blur(6px);
+      }
       .visual { height: 188px; border-radius: 8px; margin-bottom: 9px; position: relative; overflow: hidden; background: #f3eef1; }
       .visual.has-photo { background: #111; }
       .visual.has-photo:before { display: none; }
@@ -797,9 +824,47 @@
       .detail-visual { height: 248px; margin-bottom: 14px; }
       .badge { display: inline-flex; align-items: center; gap: 6px; min-height: 25px; margin-bottom: 7px; padding: 0 8px; border-radius: 999px; background: #ffe8ef; color: #d4144f; font-size: 11px; font-weight: 950; }
       .badge i { width: 6px; height: 6px; border-radius: 50%; background: #171c05; }
+      .arrival-line {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 6px;
+        align-items: center;
+        margin-bottom: 6px;
+      }
+      .arrival-line strong {
+        margin: 0;
+        color: #d4144f;
+        font-size: 12px;
+        font-weight: 950;
+        white-space: nowrap;
+      }
+      .arrival-line span {
+        min-width: 0;
+        overflow: hidden;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 850;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
       .product-card h3 { min-height: 38px; margin: 0 0 6px; font-size: 14px; line-height: 1.35; }
       .product-card strong { display: block; margin-bottom: 5px; }
       .product-card small { display: block; min-height: 18px; margin-bottom: 8px; color: var(--muted); font-size: 11px; font-weight: 800; }
+      .social-proof {
+        display: grid;
+        gap: 3px;
+        min-height: 34px;
+        margin-bottom: 8px;
+      }
+      .social-proof span {
+        min-width: 0;
+        overflow: hidden;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 850;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
       .price-stack {
         display: grid;
         gap: 2px;

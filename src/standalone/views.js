@@ -72,7 +72,7 @@ export function lookCardMarkup(look, summary, helpers) {
     <article class="look-card">
       <div class="look-visuals">${summary.items.map((item) => visualMarkupForItem(item)).join("")}</div>
       <div>
-        <div class="badge"><i></i>${summary.fastest || "-"}분 안팎 도착</div>
+        <div class="badge"><i></i>${summary.fastest || "-"}분 내 도착</div>
         <h3>${look.title}</h3>
         <p>${look.store || "입점 매장"} · ${look.note}</p>
       </div>
@@ -86,26 +86,45 @@ export function lookCardMarkup(look, summary, helpers) {
         <button class="secondary" type="button" onclick="filterLookItems('${look.key}')">상품 보기</button>
         <button class="primary" type="button" ${summary.items.length ? "" : "disabled"} onclick="addLookToCart('${look.key}')">세트 담기</button>
       </div>
-      <p>${summary.lowStock ? "재고 임박 상품 " + summary.lowStock + "개 포함" : "즉시 픽업 가능 재고로 구성"}</p>
+      <p>${summary.lowStock ? "재고 임박 상품 " + summary.lowStock + "개 포함" : "즉시 픽업 가능한 재고로 구성"}</p>
     </article>
   `;
 }
 
 export function productGridMarkup(items, helpers) {
-  if (!items.length) return '<p class="empty">조건에 맞는 아이템이 없습니다.</p>';
-  return items.map((item) => `
-    <article class="product-card" role="button" tabindex="0" onclick="openDetail('${item.key}')" onkeydown="if(event.key === 'Enter') openDetail('${item.key}')">
-      <button class="wish-button ${helpers.isWishlisted(item.key) ? "active-control" : ""}" type="button" aria-label="관심상품" onclick="toggleWishlist('${item.key}', event)">${helpers.isWishlisted(item.key) ? "♥" : "♡"}</button>
-      ${visualMarkupForItem(item)}
-      <div class="badge"><i></i>${helpers.eta(item)}분 도착</div>
-      <h3>${item.name}</h3>
-      ${priceMarkup(itemNormalPrice(item), item.discountRate, itemSalePrice(item))}
-      <small>${item.showroom}</small>
-      <small>${helpers.ratingLabelForProduct(item)} · ${helpers.ratingLabelForStore(item.showroom)}</small>
-      <div class="stock-line"><span>${item.stock <= 2 ? item.stock + "개 남음" : "재고 " + item.stock + "개"}</span><span>${item.match}% 매칭</span></div>
-      <button class="add" type="button" onclick="event.stopPropagation(); addToCart('${item.key}', this)">담기</button>
-    </article>
-  `).join("");
+  if (!items.length) return '<p class="empty">조건에 맞는 상품이 없습니다.</p>';
+  return items.map((item) => {
+    const minutes = helpers.eta(item);
+    const discount = normalizedDiscount(item.discountRate);
+    const salePrice = itemSalePrice(item);
+    const normalPrice = itemNormalPrice(item);
+    const deliveryLabel = minutes <= 45 ? "오늘도착" : "예약배송";
+    const stockLabel = item.stock <= 2 ? "품절임박 " + item.stock + "개" : "재고 " + item.stock + "개";
+    const promoBadges = [
+      "무료배송",
+      deliveryLabel,
+      discount ? discount + "% 세일" : "",
+      item.stock <= 2 ? "품절임박" : "",
+    ].filter(Boolean).slice(0, 3);
+    return `
+      <article class="product-card" role="button" tabindex="0" onclick="openDetail('${item.key}')" onkeydown="if(event.key === 'Enter') openDetail('${item.key}')">
+        <button class="wish-button ${helpers.isWishlisted(item.key) ? "active-control" : ""}" type="button" aria-label="찜하기" onclick="toggleWishlist('${item.key}', event)">${helpers.isWishlisted(item.key) ? "♥" : "♡"}</button>
+        <div class="product-visual-wrap">
+          ${visualMarkupForItem(item)}
+          <div class="product-badges">${promoBadges.map((label) => `<span>${label}</span>`).join("")}</div>
+        </div>
+        <div class="arrival-line"><strong>${minutes}분 도착</strong><span>${item.showroom}</span></div>
+        <h3>${item.name}</h3>
+        ${priceMarkup(normalPrice, discount, salePrice)}
+        <div class="social-proof">
+          <span>${helpers.ratingLabelForProduct(item)}</span>
+          <span>${helpers.ratingLabelForStore(item.showroom)}</span>
+        </div>
+        <div class="stock-line"><span>${stockLabel}</span><span>${item.match}% 추천</span></div>
+        <button class="add" type="button" onclick="event.stopPropagation(); addToCart('${item.key}', this)">담기</button>
+      </article>
+    `;
+  }).join("");
 }
 
 export function emptyCartDetailMarkup() {
