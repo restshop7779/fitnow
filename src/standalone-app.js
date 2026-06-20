@@ -10296,6 +10296,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
             <div class="line-item"><span>평소 사이즈</span><strong>상의 ${profile.topSize} · 하의 ${profile.bottomSize}</strong></div>
             <div class="line-item"><span>표준체형 보정</span><strong>어깨 ${Math.round(metrics.shoulder)} · 가슴 ${Math.round(metrics.chest)} · 허리 ${Math.round(metrics.waist)} · 골반 ${Math.round(metrics.hip)}</strong></div>
             <div class="line-item"><span>가상 핏 매칭</span><strong>${match}%</strong></div>
+            <div class="line-item"><span>이용 정책</span><strong>무료 베타 · 횟수 제한 없음</strong></div>
             <div class="line-item"><span>착용 상품</span><strong>${avatarItems.length}개</strong></div>
             <div class="line-item"><span>노출 입점업체</span><strong>${avatarLookStores(avatarItems).join(" · ") || "-"}</strong></div>
             <div class="line-item"><span>예상 느낌</span><strong>${mainItem ? mainItem.fit || "기본 핏" : "-"}</strong></div>
@@ -10426,7 +10427,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
             <h3>착용 아이템과 입점업체</h3>
             ${avatarLookListMarkup(items)}
             <div class="line-item"><span>노출 입점업체</span><strong>${qaScenarioStatusEscape(stores.join(" · ") || "-")}</strong></div>
-            <p class="fit-note">공유 링크와 이미지에는 착용 아이템, 입점업체, 구매 진입 정보가 함께 노출됩니다. 다음 단계에서 무료 이용 횟수와 월정액 결제를 연결할 수 있습니다.</p>
+            <p class="fit-note">공유 링크와 이미지에는 착용 아이템, 입점업체, 구매 진입 정보가 함께 노출됩니다. 마이아바타룩은 현재 무료 베타로 운영하며 이용 횟수를 제한하지 않습니다.</p>
           </section>
           <div class="avatar-share-actions" style="margin-top: 12px;">
             <button class="secondary" type="button" ${items.length ? "" : "disabled"} onclick="copyAvatarLookShareLink()">링크 복사</button>
