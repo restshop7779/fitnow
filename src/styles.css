@@ -3918,6 +3918,38 @@
         line-height: 1.4;
         word-break: keep-all;
       }
+      .avatar-recommend-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 38px;
+        margin-top: 12px;
+        padding: 9px 12px;
+        border: 1px solid rgba(255,255,255,.2);
+        border-radius: 999px;
+        background: rgba(255,255,255,.1);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 950;
+        line-height: 1;
+      }
+      .avatar-recommend-button::before {
+        content: "♡";
+        font-size: 16px;
+        line-height: 1;
+      }
+      .avatar-recommend-button.active {
+        border-color: rgba(216,243,106,.75);
+        background: var(--lime);
+        color: #171c05;
+      }
+      .avatar-recommend-button.active::before {
+        content: "♥";
+      }
+      .avatar-recommend-button strong {
+        min-width: 18px;
+        text-align: right;
+      }
       .fit-layer-1 { inset: 40px 6px 10px; opacity: .95; }
       .fit-layer-2 { inset: 24px auto auto 60%; width: 58px; height: 58px; border-radius: 18px; }
       .fit-layer-3 { inset: auto 12px -110px 12px; height: 28px; border-radius: 999px; }

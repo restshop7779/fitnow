@@ -75,6 +75,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       const TEST_TOOL_META_KEY = "fitnow_test_tool_meta";
       const ADMIN_QA_CHECKLIST_KEY = "fitnow_admin_qa_checklist";
       const FIT_PROFILE_STORAGE_KEY = "fitnow_fit_profile";
+      const AVATAR_LOOK_RECOMMEND_STORAGE_KEY = "fitnow_avatar_look_recommendations";
       const AVATAR_LOOK_SHARE_PARAM = "avatarLook";
       const DELIVERY_PROOF_RETENTION_DAYS = 30;
       const DELIVERY_PROOF_RETENTION_MS = DELIVERY_PROOF_RETENTION_DAYS * 24 * 60 * 60 * 1000;
@@ -9962,6 +9963,67 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         };
       }
 
+      function avatarLookRecommendKey(snapshot = currentAvatarLookSnapshot()) {
+        const profile = snapshot?.profile || {};
+        const stable = {
+          itemKeys: Array.isArray(snapshot?.itemKeys) ? snapshot.itemKeys.slice(0, 4) : [],
+          height: Number(profile.height) || 0,
+          weight: Number(profile.weight) || 0,
+          topSize: profile.topSize || "",
+          bottomSize: profile.bottomSize || "",
+          bodyType: profile.bodyType || "",
+        };
+        const source = JSON.stringify(stable);
+        let hash = 0;
+        for (let index = 0; index < source.length; index += 1) {
+          hash = ((hash << 5) - hash + source.charCodeAt(index)) | 0;
+        }
+        return "look-" + Math.abs(hash).toString(36);
+      }
+
+      function readAvatarLookRecommendationStore() {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(AVATAR_LOOK_RECOMMEND_STORAGE_KEY) || "{}");
+          return parsed && typeof parsed === "object" ? parsed : {};
+        } catch (error) {
+          localStorage.removeItem(AVATAR_LOOK_RECOMMEND_STORAGE_KEY);
+          return {};
+        }
+      }
+
+      function saveAvatarLookRecommendationStore(store) {
+        localStorage.setItem(AVATAR_LOOK_RECOMMEND_STORAGE_KEY, JSON.stringify(store || {}));
+      }
+
+      function avatarLookRecommendationState(snapshot = currentAvatarLookSnapshot()) {
+        const key = avatarLookRecommendKey(snapshot);
+        const store = readAvatarLookRecommendationStore();
+        const entry = store[key] || {};
+        return {
+          key,
+          count: Math.max(0, Number(entry.count) || 0),
+          recommended: !!entry.recommended,
+        };
+      }
+
+      function toggleAvatarLookRecommendation() {
+        const snapshot = currentAvatarLookSnapshot();
+        const state = avatarLookRecommendationState(snapshot);
+        const store = readAvatarLookRecommendationStore();
+        const nextRecommended = !state.recommended;
+        const nextCount = Math.max(0, state.count + (nextRecommended ? 1 : -1));
+        store[state.key] = {
+          count: nextCount,
+          recommended: nextRecommended,
+          updatedAt: new Date().toISOString(),
+        };
+        saveAvatarLookRecommendationStore(store);
+        setSyncStatus(nextRecommended ? "마이아바타룩을 추천했습니다" : "마이아바타룩 추천을 취소했습니다");
+        if (document.getElementById("avatarLookModal")?.classList.contains("open")) {
+          document.getElementById("avatarLookBody").innerHTML = avatarLookCardMarkup(snapshot);
+        }
+      }
+
       function currentAvatarLookSnapshot() {
         if (activeAvatarLookSnapshot) return activeAvatarLookSnapshot;
         const fallbackItem = products.find((product) => product.key === activeFitPreviewKey) || fitPreviewItems()[0];
@@ -10400,6 +10462,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         const stores = avatarLookStores(items);
         const total = items.reduce((sum, item) => sum + itemSalePrice(item), 0);
         const ownerName = qaScenarioStatusEscape(snapshot?.name || currentCustomer.name || "나");
+        const recommendation = avatarLookRecommendationState(snapshot || currentAvatarLookSnapshot());
         const avatarStyle = [
           "--avatar-height:" + Math.round(190 + (profile.height - 168) * 1.4) + "px",
           "--avatar-shoulder:" + Math.round(metrics.shoulder) + "px",
@@ -10421,6 +10484,10 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
               <p class="eyebrow">FITNOW AVATAR LOOK</p>
               <h3>${ownerName}의 지금배송 룩</h3>
               <span>${metrics.label} 체형 · ${items.length}개 아이템 · ${formatKRW(total)}</span>
+              <button class="avatar-recommend-button ${recommendation.recommended ? "active" : ""}" type="button" onclick="toggleAvatarLookRecommendation()" aria-pressed="${recommendation.recommended ? "true" : "false"}">
+                <span>${recommendation.recommended ? "추천됨" : "추천"}</span>
+                <strong>${recommendation.count}</strong>
+              </button>
             </div>
           </section>
           <section class="summary-card fit-result-card">
@@ -11387,6 +11454,7 @@ Object.assign(window, {
   clearAdminTestData,
   clearExpiredDeliveryProofPhotos,
   clearAvatarTryOnPhoto,
+  toggleAvatarLookRecommendation,
   setTestDataRetention,
   selectFitBodySample,
   startAvatarTryOnGeneration,
@@ -11782,6 +11850,7 @@ exposeHandlers({
   setSort,
   setSyncStatus,
   startAvatarTryOnGeneration,
+  toggleAvatarLookRecommendation,
   handleAvatarTryOnPhotoUpload,
   settlementBatchOrders,
   settlementAuditEvents,
