@@ -11819,6 +11819,23 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         `;
       }
 
+      function trackingEtaLabel(order) {
+        if (!order || isOrderCancelled(order)) return "-";
+        const step = order.progressStep || activeStep || 0;
+        if (step >= 4) return "배송 완료";
+        return Math.max(0, (order.fastest || 0) - step * 6) + "분";
+      }
+
+      function trackingPrimaryStatus(order) {
+        if (!order) return "배송 예약이 필요해요";
+        if (isOrderCancelled(order)) return "주문 취소";
+        if ((order.progressStep || 0) >= 4) return "배송 완료";
+        if ((order.progressStep || 0) >= 3) return "배송 중";
+        if ((order.progressStep || 0) >= 2) return "픽업 준비";
+        if ((order.progressStep || 0) >= 1) return "재고 확인";
+        return "예약 접수";
+      }
+
       function renderTracking() {
         const summary = document.getElementById("trackingSummary");
         const title = document.getElementById("trackTitle");
@@ -11858,17 +11875,29 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
             lastOrder.statusLabel = labelFromStep(activeStep);
             lastOrder.paymentLabel = paymentLabelForOrder(lastOrder);
           }
-          title.textContent = isOrderCancelled(lastOrder) ? "주문이 취소되었습니다" : activeStep >= 4 ? "배송이 완료되었습니다" : lastOrder.region + "까지 " + Math.max(0, lastOrder.fastest - activeStep * 6) + "분 남았어요";
+          const etaLabel = trackingEtaLabel(lastOrder);
+          const statusLabel = trackingPrimaryStatus(lastOrder);
+          title.textContent = isOrderCancelled(lastOrder) ? "주문이 취소되었습니다" : activeStep >= 4 ? "배송이 완료되었습니다" : lastOrder.region + "까지 " + etaLabel + " 남았어요";
           summary.innerHTML = `
+            <section class="tracking-status-grid">
+              <div><span>현재 상태</span><strong>${statusLabel}</strong></div>
+              <div><span>예상 도착</span><strong>${etaLabel}</strong></div>
+              <div><span>배송비</span><strong>무료</strong></div>
+            </section>
             <section class="summary-card">
-              <h3>주문 ${lastOrder.id}</h3>
+              <div class="tracking-card-head">
+                <div>
+                  <span>주문번호</span>
+                  <h3>${lastOrder.id}</h3>
+                </div>
+                <strong>${orderDisplayLabel(lastOrder)}</strong>
+              </div>
               <div class="line-item"><span>배송지</span><strong>${lastOrder.address}</strong></div>
               <div class="line-item"><span>수령 방식</span><strong>${lastOrder.receiveType || "문앞 수령"}</strong></div>
               <div class="line-item"><span>요청사항</span><strong>${lastOrder.riderRequest || "없음"}</strong></div>
-              <div class="line-item"><span>상품</span><strong>${lastOrder.items.length}종</strong></div>
+              <div class="line-item"><span>상품</span><strong>${lastOrder.items[0].name}${lastOrder.items.length > 1 ? " 외 " + (lastOrder.items.length - 1) + "개" : ""}</strong></div>
               <div class="line-item"><span>결제</span><strong>${lastOrder.paymentMethod || "카카오페이"} · ${paymentLabelForOrder(lastOrder)} · ${formatKRW(lastOrder.total)}</strong></div>
               <div class="line-item"><span>담당 기사</span><strong>${assignedRiderLabel(lastOrder)}</strong></div>
-              <div class="line-item"><span>현재 상태</span><strong>${orderDisplayLabel(lastOrder)}</strong></div>
               ${(lastOrder.progressStep || 0) >= 4 && !isOrderCancelled(lastOrder) ? '<div class="line-item"><span>반품/환불 가능 기간</span><strong>' + returnRefundWindowLabel(lastOrder) + '</strong></div>' : ""}
               ${customerRefundStatusCard(lastOrder)}
               ${canReviewOrder(lastOrder) ? '<div class="line-item"><span>리뷰 작성</span><strong>' + orderReviewCount(lastOrder) + '/' + lastOrder.items.length + '개</strong></div>' : ""}
@@ -11953,7 +11982,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         }
         document.getElementById("addressInput").value = deliveryInfo.address;
         const fastest = Math.min(...cart.map((item) => eta(item)));
-        document.getElementById("receiptCopy").textContent = "배송비 포함. 총 " + formatKRW(lastOrder.total) + ". 예상 도착 시간은 " + fastest + "분입니다.";
+        document.getElementById("receiptCopy").textContent = "무료배송 예약 접수 - 주문번호 " + lastOrder.id + ". 총 " + formatKRW(lastOrder.total) + ", 예상 도착 " + fastest + "분입니다.";
         clearDeliveryForm();
         let savedToSupabase = false;
         try {
