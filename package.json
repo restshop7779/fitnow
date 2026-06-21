@@ -6,6 +6,7 @@
     "build": "vite build",
     "build:local": "powershell -ExecutionPolicy Bypass -File ./scripts/build-local.ps1",
     "check:deploy": "node ./scripts/check-deploy-smoke.js",
+    "check:e2e": "node ./scripts/check-home-clicks.js",
     "dev:local": "powershell -ExecutionPolicy Bypass -File ./scripts/dev-local.ps1",
     "preview": "vite preview"
   },
@@ -15,5 +16,8 @@
     "react-dom": "latest",
     "three": "^0.184.0",
     "vite": "latest"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.0"
   }
 }

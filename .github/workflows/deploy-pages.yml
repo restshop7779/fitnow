@@ -37,6 +37,12 @@ jobs:
       - name: Check deploy bundle
         run: pnpm check:deploy
 
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Check home clicks
+        run: pnpm check:e2e
+
       - name: Prepare Pages files
         run: |
           touch dist/.nojekyll
