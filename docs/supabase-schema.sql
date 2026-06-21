@@ -115,6 +115,10 @@ create table if not exists public.product_reviews (
   fit text not null default '',
   photo_url text not null default '',
   photo_path text not null default '',
+  is_hidden boolean not null default false,
+  hidden_reason text not null default '',
+  hidden_by text not null default '',
+  hidden_at timestamptz,
   customer_name text not null default '고객',
   created_at timestamptz not null default now(),
   unique (order_code, product_slug, size, user_id)
@@ -123,7 +127,11 @@ create table if not exists public.product_reviews (
 alter table public.product_reviews
   add column if not exists fit text not null default '',
   add column if not exists photo_url text not null default '',
-  add column if not exists photo_path text not null default '';
+  add column if not exists photo_path text not null default '',
+  add column if not exists is_hidden boolean not null default false,
+  add column if not exists hidden_reason text not null default '',
+  add column if not exists hidden_by text not null default '',
+  add column if not exists hidden_at timestamptz;
 
 create table if not exists public.wishlists (
   id uuid primary key default gen_random_uuid(),

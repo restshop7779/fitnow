@@ -163,10 +163,22 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       let lastFitRoomAvatarSnapshot = null;
       let avatarTryOnState = { status: "idle", photoDataUrl: "", photoName: "" };
       let fit3dRuntime = null;
+
+      function normalizeReview(review) {
+        if (!review || !review.orderId || !review.productKey) return null;
+        return {
+          ...review,
+          isHidden: !!review.isHidden,
+          hiddenReason: review.hiddenReason || "",
+          hiddenBy: review.hiddenBy || "",
+          hiddenAt: review.hiddenAt || "",
+        };
+      }
+
       function readReviewStore() {
         try {
           const parsed = JSON.parse(localStorage.getItem(REVIEW_STORAGE_KEY) || "[]");
-          return Array.isArray(parsed) ? parsed : [];
+          return Array.isArray(parsed) ? parsed.map(normalizeReview).filter(Boolean) : [];
         } catch (error) {
           localStorage.removeItem(REVIEW_STORAGE_KEY);
           return [];
@@ -174,7 +186,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       }
 
       function saveReviewStore() {
-        localStorage.setItem(REVIEW_STORAGE_KEY, JSON.stringify(reviews.slice(0, 80)));
+        localStorage.setItem(REVIEW_STORAGE_KEY, JSON.stringify(reviews.map(normalizeReview).filter(Boolean).slice(0, 80)));
       }
 
       function readWishlistStore() {
@@ -264,11 +276,11 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       }
 
       function productReviews(productKey) {
-        return reviews.filter((review) => review.productKey === productKey);
+        return reviews.filter((review) => review.productKey === productKey && !review.isHidden);
       }
 
       function storeReviews(storeName) {
-        return reviews.filter((review) => review.showroom === storeName);
+        return reviews.filter((review) => review.showroom === storeName && !review.isHidden);
       }
 
       function averageRating(items) {
@@ -302,7 +314,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
 
       function orderReviewCount(order) {
         if (!order) return 0;
-        return reviews.filter((review) => review.orderId === order.id).length;
+        return reviews.filter((review) => review.orderId === order.id && !review.isHidden).length;
       }
       function setSyncStatus(message) {
         const node = document.getElementById("syncStatus");
@@ -1679,6 +1691,10 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           photoPath: row.photo_path || "",
           customerName: row.customer_name || "고객",
           customerId: row.user_id || "",
+          isHidden: !!row.is_hidden,
+          hiddenReason: row.hidden_reason || "",
+          hiddenBy: row.hidden_by || "",
+          hiddenAt: row.hidden_at || "",
           createdAt: row.created_at,
         };
       }
@@ -1686,7 +1702,8 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       function mergeReviews(primary, secondary) {
         const merged = [];
         [...primary, ...secondary].forEach((review) => {
-          if (!review || !review.orderId || !review.productKey) return;
+          review = normalizeReview(review);
+          if (!review) return;
           const key = [review.orderId, review.productKey, review.size || "FREE", review.customerId || ""].join("|");
           const existing = merged.find((item) => [item.orderId, item.productKey, item.size || "FREE", item.customerId || ""].join("|") === key);
           if (!existing) {
@@ -6451,6 +6468,120 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         setSyncStatus(item.label + " " + item.count + "건 위치로 이동");
       }
 
+      function reviewModerationKey(review) {
+        return encodeURIComponent([review.orderId, review.productKey, review.size || "FREE", review.customerId || ""].join("|"));
+      }
+
+      function findReviewByModerationKey(key) {
+        const decoded = decodeURIComponent(key || "");
+        return reviews.find((review) => [review.orderId, review.productKey, review.size || "FREE", review.customerId || ""].join("|") === decoded);
+      }
+
+      function renderAdminReviewModeration() {
+        const summary = document.getElementById("adminReviewModerationSummary");
+        const list = document.getElementById("adminReviewModerationList");
+        if (!summary || !list) return;
+        if (!currentAdmin || currentAdmin.role !== "total") {
+          summary.innerHTML = '<div class="line-item"><span>리뷰 숨김/복구</span><strong>총관리자 전용</strong></div>';
+          list.innerHTML = "";
+          return;
+        }
+        const hiddenCount = reviews.filter((review) => review.isHidden).length;
+        const visibleCount = reviews.length - hiddenCount;
+        summary.innerHTML = `
+          <div class="admin-review-summary">
+            <div><span>공개 리뷰</span><strong>${visibleCount}건</strong></div>
+            <div><span>숨김 리뷰</span><strong>${hiddenCount}건</strong></div>
+            <div><span>전체 리뷰</span><strong>${reviews.length}건</strong></div>
+          </div>
+        `;
+        const items = [...reviews]
+          .sort((a, b) => Number(!!b.isHidden) - Number(!!a.isHidden) || new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+          .slice(0, 30);
+        list.innerHTML = items.length ? items.map((review) => {
+          const key = reviewModerationKey(review);
+          const status = review.isHidden ? "숨김" : "공개";
+          const dateLabel = review.createdAt ? new Date(review.createdAt).toLocaleDateString("ko-KR", { month: "short", day: "numeric" }) : "날짜 없음";
+          return `
+            <div class="admin-review-card${review.isHidden ? " hidden" : ""}">
+              <div>
+                <div class="admin-review-card-head">
+                  <strong>${review.productName || review.productKey} · 별점 ${review.rating || 0}</strong>
+                  <span class="admin-status-badge ${review.isHidden ? "cancelled" : "done"}">${status}</span>
+                </div>
+                <p>${review.comment || "리뷰 내용 없음"}</p>
+                <div class="admin-review-meta">
+                  <span>${review.showroom || "입점업체"} · ${review.customerName || "고객"} · ${review.size || "FREE"}</span>
+                  <span>${dateLabel}</span>
+                </div>
+                ${review.fit ? '<div class="admin-review-meta"><span>핏감 ' + review.fit + '</span></div>' : ""}
+                ${review.isHidden ? '<div class="admin-review-hidden-reason">사유: ' + (review.hiddenReason || "사유 없음") + (review.hiddenBy ? " · 처리 " + review.hiddenBy : "") + '</div>' : ""}
+                ${renderReviewPhoto(review)}
+              </div>
+              <div class="admin-review-actions">
+                ${review.isHidden
+                  ? `<button type="button" onclick="restoreReviewVisibility('${key}')">다시 노출</button>`
+                  : `<button type="button" onclick="hideReviewFromAdmin('${key}')">숨김</button>`}
+              </div>
+            </div>
+          `;
+        }).join("") : '<div class="line-item"><span>등록된 리뷰가 없습니다</span><strong>리뷰 대기</strong></div>';
+      }
+
+      async function hideReviewFromAdmin(key) {
+        if (!currentAdmin || currentAdmin.role !== "total") {
+          setSyncStatus("리뷰 숨김은 총관리자만 처리할 수 있습니다");
+          return;
+        }
+        const review = findReviewByModerationKey(key);
+        if (!review) return;
+        const reason = window.prompt("숨김 사유를 입력해 주세요", review.hiddenReason || "운영 정책 위반");
+        if (reason === null) return;
+        review.isHidden = true;
+        review.hiddenReason = reason.trim() || "운영 정책 위반";
+        review.hiddenBy = currentAdmin.name || currentAdmin.role || "총관리자";
+        review.hiddenAt = new Date().toISOString();
+        saveReviewStore();
+        renderProducts();
+        renderVendorReviews();
+        renderVendorRoleSummary();
+        renderOrders();
+        renderTracking();
+        renderAdminReviewModeration();
+        try {
+          await syncReviewToSupabase(review);
+          setSyncStatus("리뷰 숨김 처리 완료 - 공개 화면에서 제외됨");
+        } catch (error) {
+          setSyncStatus("리뷰 숨김은 화면에 반영됨 - Supabase 리뷰 컬럼 확인 필요");
+        }
+      }
+
+      async function restoreReviewVisibility(key) {
+        if (!currentAdmin || currentAdmin.role !== "total") {
+          setSyncStatus("리뷰 복구는 총관리자만 처리할 수 있습니다");
+          return;
+        }
+        const review = findReviewByModerationKey(key);
+        if (!review) return;
+        review.isHidden = false;
+        review.hiddenReason = "";
+        review.hiddenBy = "";
+        review.hiddenAt = "";
+        saveReviewStore();
+        renderProducts();
+        renderVendorReviews();
+        renderVendorRoleSummary();
+        renderOrders();
+        renderTracking();
+        renderAdminReviewModeration();
+        try {
+          await syncReviewToSupabase(review);
+          setSyncStatus("리뷰가 다시 공개됨");
+        } catch (error) {
+          setSyncStatus("리뷰 복구는 화면에 반영됨 - Supabase 리뷰 컬럼 확인 필요");
+        }
+      }
+
       async function renderAdminOrders(ordersOverride) {
         const list = document.getElementById("adminOrderList");
         if (!list) return;
@@ -6498,6 +6629,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         if (heldSettlementList) heldSettlementList.innerHTML = renderHeldSettlements(settlementOrders);
         renderSettlementViewTabs(settlementOrders);
         renderSettlementFlowCheckLogs();
+        renderAdminReviewModeration();
         const openSettlementSection = document.getElementById("adminOpenSettlementSection");
         if (openSettlementSection && currentAdmin && currentAdmin.role === "total" && shouldOpenSettlementSummary(orders)) openSettlementSection.open = true;
         const settlementRateList = document.getElementById("adminSettlementRateList");
@@ -8130,6 +8262,10 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           photo_url: review.photoPublicUrl || "",
           photo_path: review.photoPath || "",
           customer_name: review.customerName || "고객",
+          is_hidden: !!review.isHidden,
+          hidden_reason: review.hiddenReason || "",
+          hidden_by: review.hiddenBy || "",
+          hidden_at: review.hiddenAt || null,
           created_at: review.createdAt || new Date().toISOString(),
         };
         let result = await supabaseClient
@@ -8137,11 +8273,15 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           .upsert(payload, { onConflict: "order_code,product_slug,size,user_id" })
           .select("id")
           .single();
-        if (result.error && /fit|photo_url|photo_path|schema cache|column/i.test(result.error.message || "")) {
+        if (result.error && /fit|photo_url|photo_path|is_hidden|hidden_reason|hidden_by|hidden_at|schema cache|column/i.test(result.error.message || "")) {
           const fallbackPayload = { ...payload };
           delete fallbackPayload.fit;
           delete fallbackPayload.photo_url;
           delete fallbackPayload.photo_path;
+          delete fallbackPayload.is_hidden;
+          delete fallbackPayload.hidden_reason;
+          delete fallbackPayload.hidden_by;
+          delete fallbackPayload.hidden_at;
           result = await supabaseClient
             .from("product_reviews")
             .upsert(fallbackPayload, { onConflict: "order_code,product_slug,size,user_id" })
@@ -11757,6 +11897,10 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           photoPath: activeReviewPhotoData || shouldRemovePhoto ? "" : (existingReview && existingReview.photoPath) || "",
           customerName: currentCustomer.name || order.customerName || "고객",
           customerId: customerId(),
+          isHidden: !!(existingReview && existingReview.isHidden),
+          hiddenReason: (existingReview && existingReview.hiddenReason) || "",
+          hiddenBy: (existingReview && existingReview.hiddenBy) || "",
+          hiddenAt: (existingReview && existingReview.hiddenAt) || "",
           createdAt: new Date().toISOString(),
         };
         if (previousPhotoPath) review.previousPhotoPath = previousPhotoPath;
@@ -12420,6 +12564,8 @@ Object.assign(window, {
   setRiderRequestPreset,
   setReviewRating,
   clearReviewPhoto,
+  hideReviewFromAdmin,
+  restoreReviewVisibility,
   selectFitBodySample,
   previewReviewPhoto,
   submitReviewForm,
@@ -12721,6 +12867,7 @@ exposeHandlers({
   renderCart,
   renderCartDetail,
   renderAddressSuggestions,
+  renderAdminReviewModeration,
   renderDeliveryClaimOrders,
   renderDeliveryForm,
   renderDeliveryLogs,
@@ -12774,6 +12921,7 @@ exposeHandlers({
   restoreSavedAdmin,
   restoreSavedCustomer,
   restoreSavedVendor,
+  restoreReviewVisibility,
   reviewOrder,
   reviewRowToItem,
   riderForRegion,
@@ -12878,6 +13026,7 @@ exposeHandlers({
   syncStoreToSupabase,
   syncWishlistToSupabase,
   syncVendorVisualWithCategory,
+  hideReviewFromAdmin,
   toggleFast,
   toggleStore,
   toggleWishlist,

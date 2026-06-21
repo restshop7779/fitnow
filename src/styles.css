@@ -1676,6 +1676,91 @@
         gap: 8px;
         margin-top: 9px;
       }
+      .admin-review-summary {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .admin-review-summary div,
+      .admin-review-card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+      }
+      .admin-review-summary div {
+        padding: 9px;
+      }
+      .admin-review-summary span,
+      .admin-review-meta,
+      .admin-review-hidden-reason {
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 850;
+      }
+      .admin-review-summary strong {
+        display: block;
+        margin-top: 3px;
+        font-size: 14px;
+        font-weight: 950;
+      }
+      .admin-review-card {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: start;
+        padding: 10px;
+      }
+      .admin-review-card.hidden {
+        background: #fff6f3;
+        border-color: #ffd0c2;
+      }
+      .admin-review-card-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        align-items: center;
+      }
+      .admin-review-card-head strong {
+        min-width: 0;
+        font-size: 12px;
+        font-weight: 950;
+        line-height: 1.35;
+      }
+      .admin-review-card p {
+        margin: 6px 0;
+        color: #222;
+        font-size: 12px;
+        font-weight: 850;
+        line-height: 1.45;
+      }
+      .admin-review-meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        line-height: 1.4;
+      }
+      .admin-review-hidden-reason {
+        margin-top: 6px;
+        padding: 7px 8px;
+        border-radius: 7px;
+        background: #ffe3dc;
+        color: #8d2f1f;
+        line-height: 1.4;
+      }
+      .admin-review-actions {
+        display: grid;
+        gap: 6px;
+      }
+      .admin-review-actions button {
+        min-height: 34px;
+        padding: 0 10px;
+        border-radius: 7px;
+        background: #171717;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 950;
+        white-space: nowrap;
+      }
       .admin-test-notice {
         display: grid;
         grid-template-columns: 1fr auto;
