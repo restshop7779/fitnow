@@ -5,11 +5,18 @@ import {
 } from "./format.js";
 import { groupCartPickups } from "./cart.js";
 
+function cartCheckoutTotals(items) {
+  const normalSubtotal = items.reduce((sum, item) => sum + itemNormalPrice(item) * item.quantity, 0);
+  const subtotal = items.reduce((sum, item) => sum + itemSalePrice(item) * item.quantity, 0);
+  const discountAmount = Math.max(0, normalSubtotal - subtotal);
+  return { normalSubtotal, subtotal, discountAmount, deliveryFee: 0, total: subtotal };
+}
+
 export function emptyOrderSummaryMarkup() {
   return `
     <section class="summary-card">
       <h3>예약할 상품이 없습니다</h3>
-      <div class="line-item"><span>상품을 먼저 담으면</span><strong>배송 흐름을 볼 수 있어요</strong></div>
+      <div class="line-item"><span>상품을 먼저 담으면</span><strong>배송 예약을 진행할 수 있어요</strong></div>
     </section>
   `;
 }
@@ -17,11 +24,17 @@ export function emptyOrderSummaryMarkup() {
 export function orderSummaryMarkup({ cart, lastOrder, eta, paymentLabelForOrder, assignedRiderLabel }) {
   const orderForSummary = lastOrder && lastOrder.items.length ? lastOrder : null;
   const summaryItems = orderForSummary ? orderForSummary.items : cart;
-  const normalSubtotal = summaryItems.reduce((sum, item) => sum + itemNormalPrice(item) * item.quantity, 0);
-  const subtotal = orderForSummary ? orderForSummary.subtotal : cart.reduce((sum, item) => sum + itemSalePrice(item) * item.quantity, 0);
-  const discountAmount = Math.max(0, normalSubtotal - subtotal);
-  const deliveryFee = orderForSummary ? orderForSummary.deliveryFee : subtotal >= 120000 ? 0 : 3500;
-  const total = orderForSummary ? orderForSummary.total : subtotal + deliveryFee;
+  const totals = orderForSummary
+    ? {
+        normalSubtotal: summaryItems.reduce((sum, item) => sum + itemNormalPrice(item) * item.quantity, 0),
+        subtotal: orderForSummary.subtotal,
+        discountAmount: Math.max(0, summaryItems.reduce((sum, item) => sum + itemNormalPrice(item) * item.quantity, 0) - orderForSummary.subtotal),
+        deliveryFee: orderForSummary.deliveryFee || 0,
+        total: orderForSummary.total,
+      }
+    : cartCheckoutTotals(summaryItems);
+  const fastest = summaryItems.length ? Math.min(...summaryItems.map((item) => eta(item))) : 0;
+  const itemCount = summaryItems.reduce((sum, item) => sum + item.quantity, 0);
   const itemRows = summaryItems.map((item) => `
     <div class="line-item">
       <span>${item.name} · ${item.size || "FREE"} x ${item.quantity}</span>
@@ -30,7 +43,7 @@ export function orderSummaryMarkup({ cart, lastOrder, eta, paymentLabelForOrder,
   `).join("");
   const pickupRows = Object.entries(groupCartPickups(summaryItems, eta)).map(([showroom, info]) => `
     <div class="pickup-row">
-      <span>${showroom} - ${info.count}개 픽업</span>
+      <span>${showroom} · ${info.count}개 픽업</span>
       <strong class="pickup-status">${info.minutes}분 준비</strong>
     </div>
   `).join("");
@@ -44,28 +57,33 @@ export function orderSummaryMarkup({ cart, lastOrder, eta, paymentLabelForOrder,
   ` : "";
 
   return `
+    <section class="order-confirm-hero">
+      <div><span>상품</span><strong>${itemCount}개</strong></div>
+      <div><span>배송비</span><strong>무료</strong></div>
+      <div><span>예상 도착</span><strong>${fastest ? fastest + "분" : "확인 중"}</strong></div>
+    </section>
     <section class="summary-card">
-      <h3>선택한 아이템</h3>
+      <h3>선택한 상품</h3>
       ${itemRows}
     </section>
     <section class="summary-card">
-      <h3>쇼룸 픽업 상태</h3>
+      <h3>매장 픽업 상태</h3>
       ${pickupRows}
     </section>
     ${deliveryInfoRows}
     <section class="summary-card">
       <h3>결제 예정 금액</h3>
-      <div class="price-row"><span>정상가 합계</span><strong>${formatKRW(normalSubtotal)}</strong></div>
-      <div class="price-row"><span>할인 금액</span><strong>${discountAmount ? "-" + formatKRW(discountAmount) : "KRW 0"}</strong></div>
-      <div class="price-row"><span>상품 할인가</span><strong>${formatKRW(subtotal)}</strong></div>
-      <div class="price-row"><span>지금배송비</span><strong>${deliveryFee ? formatKRW(deliveryFee) : "무료"}</strong></div>
-      <div class="price-row total-row"><span>총 결제 예정</span><strong>${formatKRW(total)}</strong></div>
+      <div class="price-row"><span>정상가 합계</span><strong>${formatKRW(totals.normalSubtotal)}</strong></div>
+      <div class="price-row"><span>할인 금액</span><strong>${totals.discountAmount ? "-" + formatKRW(totals.discountAmount) : "KRW 0"}</strong></div>
+      <div class="price-row"><span>상품 할인가</span><strong>${formatKRW(totals.subtotal)}</strong></div>
+      <div class="price-row"><span>지금배송비</span><strong>무료</strong></div>
+      <div class="price-row total-row"><span>총 결제 예정</span><strong>${formatKRW(totals.total)}</strong></div>
     </section>
     <section class="summary-card">
       <h3>결제와 배송 배정</h3>
-      <div class="line-item"><span>결제 상태</span><strong>${orderForSummary ? paymentLabelForOrder(orderForSummary) : "결제 대기"}</strong></div>
+      <div class="line-item"><span>결제 상태</span><strong>${orderForSummary ? paymentLabelForOrder(orderForSummary) : "주문 확정 대기"}</strong></div>
       <div class="line-item"><span>결제수단</span><strong>${orderForSummary ? orderForSummary.paymentMethod || "카카오페이" : "선택 대기"}</strong></div>
-      <div class="line-item"><span>배송 배정</span><strong>${orderForSummary ? assignedRiderLabel(orderForSummary) : "주문 후 오픈콜 배정"}</strong></div>
+      <div class="line-item"><span>배송 배정</span><strong>${orderForSummary ? assignedRiderLabel(orderForSummary) : "주문 후 즉시 배정"}</strong></div>
       ${orderForSummary && orderForSummary.paid ? '<button class="primary" type="button" disabled style="width:100%;margin-top:8px;">결제 완료</button>' : '<button class="primary" type="button" onclick="payOrder()" style="width:100%;margin-top:8px;">결제하기</button>'}
     </section>
   `;
@@ -73,43 +91,56 @@ export function orderSummaryMarkup({ cart, lastOrder, eta, paymentLabelForOrder,
 
 export function deliveryFormMarkup({ customerName, phone, address }) {
   return `
-    <section class="summary-card">
-      <h3>배송 정보 확인</h3>
+    <section class="summary-card order-form-card">
+      <div class="order-form-head">
+        <div>
+          <h3>배송 정보 확인</h3>
+          <span>주소와 연락처만 확인하면 바로 예약됩니다.</span>
+        </div>
+        <strong>무료배송</strong>
+      </div>
       <form class="delivery-form" onsubmit="confirmCheckout(event)">
         <div class="form-grid">
-          <label>고객명
-            <input id="orderCustomerName" type="text" value="${customerName || "고객"}" required />
+          <label>받는 분
+            <input id="orderCustomerName" type="text" value="${customerName || "고객"}" autocomplete="name" required />
           </label>
           <label>휴대폰
-            <input id="orderCustomerPhone" type="tel" value="${phone}" placeholder="01012345678" required />
+            <input id="orderCustomerPhone" type="tel" value="${phone}" placeholder="01012345678" autocomplete="tel" inputmode="numeric" required />
           </label>
         </div>
         <label>배송 주소
           <div class="address-search compact">
-            <input id="orderAddress" type="search" value="${address}" placeholder="동탄역, 오산역, 세교 등 주소 검색" oninput="updateOrderAddressSearch()" required />
+            <input id="orderAddress" type="search" value="${address}" placeholder="동탄역, 오산역, 세교 등 주소 검색" oninput="updateOrderAddressSearch()" autocomplete="street-address" required />
             <div class="address-suggestions" id="orderAddressSuggestions"></div>
           </div>
         </label>
-        <label>수령 방식
-          <select id="receiveType">
-            <option>문앞 수령</option>
-            <option>공동현관 앞</option>
-            <option>직접 수령</option>
-            <option>경비실 보관</option>
-          </select>
-        </label>
-        <label>결제수단
-          <select id="paymentMethod">
-            <option>카카오페이</option>
-            <option>네이버페이</option>
-            <option>카드결제</option>
-            <option>현장결제</option>
-          </select>
-        </label>
-        <label>라이더 요청사항
+        <div class="form-grid">
+          <label>수령 방식
+            <select id="receiveType">
+              <option>문앞 수령</option>
+              <option>공동현관 앞</option>
+              <option>직접 수령</option>
+              <option>경비실 보관</option>
+            </select>
+          </label>
+          <label>결제수단
+            <select id="paymentMethod">
+              <option>카카오페이</option>
+              <option>네이버페이</option>
+              <option>카드결제</option>
+              <option>현장결제</option>
+            </select>
+          </label>
+        </div>
+        <label>기사님 요청사항
+          <div class="request-presets">
+            <button type="button" onclick="setRiderRequestPreset('도착 전 연락 주세요')">도착 전 연락</button>
+            <button type="button" onclick="setRiderRequestPreset('문 앞에 조심히 놓아주세요')">문앞 조심히</button>
+            <button type="button" onclick="setRiderRequestPreset('공동현관에서 연락 주세요')">공동현관 연락</button>
+          </div>
           <textarea id="riderRequest" placeholder="예: 도착 전 연락 주세요. 공동현관 비밀번호는 주문 후 안내합니다."></textarea>
         </label>
-        <button class="primary" type="submit">주문 확정</button>
+        <button class="primary" type="submit">무료배송 예약 확정</button>
       </form>
     </section>
   `;
@@ -130,7 +161,7 @@ export function orderListMarkup(orders, helpers) {
       <div class="order-card-head">
         <div>
           <strong>${order.id}</strong>
-          <span>${order.createdLabel} - ${order.region}</span>
+          <span>${order.createdLabel} · ${order.region}</span>
         </div>
         <span class="order-status">${helpers.orderDisplayLabel(order)}</span>
       </div>

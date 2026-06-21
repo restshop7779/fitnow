@@ -11255,6 +11255,13 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         };
       }
 
+      function setRiderRequestPreset(value) {
+        const input = document.getElementById("riderRequest");
+        if (!input) return;
+        input.value = value || "";
+        input.focus();
+      }
+
       function renderDeliveryForm() {
         const wrap = document.getElementById("deliveryFormWrap");
         if (!wrap) return;
@@ -12118,6 +12125,7 @@ Object.assign(window, {
   renderAvatarLookFeed,
   openAvatarLookDetail,
   setTestDataRetention,
+  setRiderRequestPreset,
   selectFitBodySample,
   startAvatarTryOnGeneration,
   handleAvatarTryOnPhotoUpload,
@@ -12505,6 +12513,7 @@ exposeHandlers({
   setFit3dQuickView,
   setPriceRange,
   setRegion,
+  setRiderRequestPreset,
   setFitViewMode,
   setSettlementPartnerFilter,
   setSettlementPeriodFilter,

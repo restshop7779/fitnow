@@ -10,9 +10,10 @@ export function createOrderSnapshotData({
   eta,
 }) {
   const subtotal = cart.reduce((sum, item) => sum + itemSalePrice(item) * item.quantity, 0);
-  const deliveryFee = subtotal >= 120000 ? 0 : 3500;
+  const deliveryFee = 0;
   const fastest = cart.length ? Math.min(...cart.map((item) => eta(item))) : 0;
   const paymentMethod = deliveryInfo.paymentMethod || "카카오페이";
+  const paid = paymentMethod !== "현장결제";
   return {
     id: "FN-" + String(Date.now()).slice(-6),
     region: currentRegion.label,
@@ -30,8 +31,8 @@ export function createOrderSnapshotData({
     customerContact: deliveryInfo.phone || customerContactLabel(),
     progressStep: 0,
     statusCode: "reserved",
-    paid: paymentMethod !== "현장결제",
-    paymentLabel: paymentMethod !== "현장결제" ? paymentMethod + " 결제 완료" : "현장결제 대기",
+    paid,
+    paymentLabel: paid ? paymentMethod + " 결제 완료" : "현장결제 대기",
     deliveryPartnerName: "",
     riderName: "",
   };
