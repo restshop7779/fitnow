@@ -154,6 +154,8 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       let wishlist = [];
       let recentViews = [];
       let reviews = [];
+      let activeReviewOrderId = "";
+      let activeReviewPhotoData = "";
       let activeFitPreviewKey = "";
       let activeFitViewMode = "real";
       let activeAvatarLookSnapshot = null;
@@ -11503,19 +11505,131 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         }
       }
 
-      async function reviewOrder(orderId) {
+      function reviewableOrderItems(order) {
+        return order && Array.isArray(order.items) ? order.items : [];
+      }
+
+      function reviewTargetForOrder(order) {
+        const items = reviewableOrderItems(order);
+        return items.find((item) => !reviews.some((review) => review.orderId === order.id && review.productKey === item.key && review.size === (item.size || "FREE"))) || items[0] || null;
+      }
+
+      function renderReviewForm(order) {
+        const body = document.getElementById("reviewFormBody");
+        if (!body || !order) return;
+        const target = reviewTargetForOrder(order);
+        const items = reviewableOrderItems(order);
+        const existing = target ? reviews.find((review) => review.orderId === order.id && review.productKey === target.key && review.size === (target.size || "FREE")) : null;
+        const rating = existing ? existing.rating : 5;
+        const fit = existing ? existing.fit || "정사이즈" : "정사이즈";
+        const comment = existing ? existing.comment : "";
+        activeReviewPhotoData = existing ? existing.photoDataUrl || "" : "";
+        body.innerHTML = target ? `
+          <section class="review-target-card">
+            <span>주문번호 ${order.id}</span>
+            <strong>${target.name}</strong>
+            <small>${target.showroom} · ${target.size || "FREE"} · ${order.createdLabel}</small>
+          </section>
+          <label>리뷰할 상품
+            <select id="reviewProductKey">
+              ${items.map((item) => '<option value="' + item.key + '|' + (item.size || "FREE") + '" ' + (item.key === target.key && (item.size || "FREE") === (target.size || "FREE") ? "selected" : "") + '>' + item.name + ' · ' + (item.size || "FREE") + '</option>').join("")}
+            </select>
+          </label>
+          <label>별점
+            <input id="reviewRating" type="hidden" value="${rating}" />
+            <div class="review-rating-buttons">
+              ${[1, 2, 3, 4, 5].map((score) => '<button class="' + (score <= rating ? "active" : "") + '" type="button" onclick="setReviewRating(' + score + ')">★</button>').join("")}
+            </div>
+          </label>
+          <label>사이즈감
+            <select id="reviewFit">
+              ${["작게 느껴져요", "정사이즈", "여유 있어요"].map((label) => '<option ' + (label === fit ? "selected" : "") + '>' + label + '</option>').join("")}
+            </select>
+          </label>
+          <label>후기
+            <textarea id="reviewComment" required placeholder="착용감, 배송 속도, 상품 상태를 남겨주세요.">${comment || ""}</textarea>
+          </label>
+          <label>사진 첨부
+            <input id="reviewPhoto" type="file" accept="image/*" onchange="previewReviewPhoto()" />
+          </label>
+          <div class="review-photo-preview" id="reviewPhotoPreview">${activeReviewPhotoData ? '<img src="' + activeReviewPhotoData + '" alt="리뷰 사진 미리보기" />' : '<span>사진을 추가하면 여기에 미리보기 됩니다</span>'}</div>
+        ` : `
+          <section class="summary-card">
+            <h3>리뷰할 상품이 없습니다</h3>
+            <div class="line-item"><span>주문 상품을 확인해 주세요</span><strong>작성 대기</strong></div>
+          </section>
+        `;
+      }
+
+      function setReviewRating(score) {
+        const rating = Math.max(1, Math.min(5, Math.round(Number(score) || 5)));
+        const input = document.getElementById("reviewRating");
+        if (input) input.value = String(rating);
+        document.querySelectorAll(".review-rating-buttons button").forEach((button, index) => {
+          button.classList.toggle("active", index < rating);
+        });
+      }
+
+      function previewReviewPhoto() {
+        const input = document.getElementById("reviewPhoto");
+        const preview = document.getElementById("reviewPhotoPreview");
+        const file = input && input.files && input.files[0];
+        if (!file) {
+          activeReviewPhotoData = "";
+          if (preview) preview.innerHTML = "<span>사진을 추가하면 여기에 미리보기 됩니다</span>";
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => {
+          activeReviewPhotoData = reader.result;
+          if (preview) preview.innerHTML = '<img src="' + activeReviewPhotoData + '" alt="리뷰 사진 미리보기" />';
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function closeReviewModal() {
+        const modal = document.getElementById("reviewModal");
+        if (!modal) return;
+        modal.classList.remove("open");
+        modal.setAttribute("aria-hidden", "true");
+        activeReviewOrderId = "";
+        activeReviewPhotoData = "";
+      }
+
+      function reviewOrder(orderId) {
         const order = orderHistory.find((item) => item.id === orderId) || (lastOrder && lastOrder.id === orderId ? lastOrder : null);
         if (!canReviewOrder(order)) {
           setSyncStatus("배송 완료된 주문만 리뷰를 작성할 수 있습니다");
           return;
         }
-        const target = order.items.find((item) => !reviews.some((review) => review.orderId === order.id && review.productKey === item.key && review.size === (item.size || "FREE"))) || order.items[0];
+        activeReviewOrderId = order.id;
+        renderReviewForm(order);
+        const modal = document.getElementById("reviewModal");
+        if (modal) {
+          modal.classList.add("open");
+          modal.setAttribute("aria-hidden", "false");
+        }
+      }
+
+      async function submitReviewForm(event) {
+        event.preventDefault();
+        const order = orderHistory.find((item) => item.id === activeReviewOrderId) || (lastOrder && lastOrder.id === activeReviewOrderId ? lastOrder : null);
+        if (!canReviewOrder(order)) {
+          setSyncStatus("배송 완료된 주문만 리뷰를 작성할 수 있습니다");
+          closeReviewModal();
+          return;
+        }
+        const productValue = document.getElementById("reviewProductKey") ? document.getElementById("reviewProductKey").value : "";
+        const [productKey, selectedSize] = productValue.split("|");
+        const target = order.items.find((item) => item.key === productKey && (item.size || "FREE") === (selectedSize || "FREE")) || reviewTargetForOrder(order);
         if (!target) return;
-        const ratingInput = window.prompt(target.name + " 별점을 입력해 주세요 (1-5)", "5");
-        if (ratingInput === null) return;
-        const rating = Math.max(1, Math.min(5, Math.round(Number(ratingInput) || 5)));
-        const comment = window.prompt("리뷰 내용을 입력해 주세요", "바로 받아서 코디하기 좋았어요.");
-        if (comment === null) return;
+        const rating = Math.max(1, Math.min(5, Math.round(Number(document.getElementById("reviewRating").value) || 5)));
+        const fit = document.getElementById("reviewFit").value || "정사이즈";
+        const commentInput = document.getElementById("reviewComment").value.trim();
+        if (!commentInput) {
+          setSyncStatus("리뷰 내용을 입력해 주세요");
+          return;
+        }
         const existingIndex = reviews.findIndex((review) => review.orderId === order.id && review.productKey === target.key && review.size === (target.size || "FREE"));
         const review = {
           id: "review-" + Date.now(),
@@ -11525,7 +11639,9 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           showroom: target.showroom,
           size: target.size || "FREE",
           rating,
-          comment: comment.trim() || "만족스러운 지금배송이었어요.",
+          fit,
+          comment: commentInput,
+          photoDataUrl: activeReviewPhotoData,
           customerName: currentCustomer.name || order.customerName || "고객",
           customerId: customerId(),
           createdAt: new Date().toISOString(),
@@ -11548,6 +11664,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         } catch (error) {
           setSyncStatus("리뷰는 화면에 저장됨 - Supabase 리뷰 테이블 확인 필요");
         }
+        closeReviewModal();
       }
 
       async function completeRefund(orderId, source = "admin") {
@@ -12130,6 +12247,7 @@ Object.assign(window, {
   openAdminSettlementFromManagement,
   closeAdmin,
   closeSettlementConfirm,
+  closeReviewModal,
   focusDeliveryWorkShortcut,
   focusAdminTodo,
   highlightAdminTarget,
@@ -12185,7 +12303,10 @@ Object.assign(window, {
   openAvatarLookDetail,
   setTestDataRetention,
   setRiderRequestPreset,
+  setReviewRating,
   selectFitBodySample,
+  previewReviewPhoto,
+  submitReviewForm,
   startAvatarTryOnGeneration,
   handleAvatarTryOnPhotoUpload,
   downloadSettlementCsv,
@@ -12267,6 +12388,7 @@ exposeHandlers({
   closeMyAvatarLook,
   closeMyPage,
   closeOrders,
+  closeReviewModal,
   closeSettlementConfirm,
   closeSettlementPeriod,
   closeTracking,
@@ -12437,6 +12559,7 @@ exposeHandlers({
   persistDeliveryAssignment,
   persistSettlementBatch,
   personalizedRecommendations,
+  previewReviewPhoto,
   previewVendorImage,
   priceMarkup,
   priceRangeMatches,
@@ -12573,6 +12696,7 @@ exposeHandlers({
   setPriceRange,
   setRegion,
   setRiderRequestPreset,
+  setReviewRating,
   setFitViewMode,
   setSettlementPartnerFilter,
   setSettlementPeriodFilter,
@@ -12623,6 +12747,7 @@ exposeHandlers({
   storeByName,
   storeIsVisible,
   storeReviews,
+  submitReviewForm,
   submitVendorLook,
   submitVendorProduct,
   syncAuthSession,

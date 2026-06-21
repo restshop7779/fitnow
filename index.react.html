@@ -725,6 +725,25 @@
       </div>
     </section>
 
+    <section class="modal" id="reviewModal" aria-hidden="true">
+      <div class="receipt">
+        <div class="receipt-head">
+          <div>
+            <p class="eyebrow">REVIEW</p>
+            <h2>리뷰 작성</h2>
+          </div>
+          <button class="close" type="button" onclick="closeReviewModal()">X</button>
+        </div>
+        <form class="review-form" onsubmit="submitReviewForm(event)">
+          <div id="reviewFormBody"></div>
+          <div class="detail-actions">
+            <button class="secondary" type="button" onclick="closeReviewModal()">취소</button>
+            <button class="primary" type="submit">리뷰 저장</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
     <section class="modal" id="customerLoginModal" aria-hidden="true">
       <div class="receipt">
         <div class="receipt-head">
