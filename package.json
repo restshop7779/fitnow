@@ -5,6 +5,7 @@
     "dev:react": "vite --open /index.react.html",
     "build": "vite build",
     "build:local": "powershell -ExecutionPolicy Bypass -File ./scripts/build-local.ps1",
+    "check:deploy": "node ./scripts/check-deploy-smoke.js",
     "dev:local": "powershell -ExecutionPolicy Bypass -File ./scripts/dev-local.ps1",
     "preview": "vite preview"
   },
