@@ -5329,6 +5329,73 @@
         font-size: 11px;
         font-weight: 950;
       }
+      .order-product-line {
+        display: grid;
+        gap: 4px;
+        padding-top: 2px;
+      }
+      .order-product-line strong {
+        color: #171717;
+        font-size: 14px;
+        font-weight: 950;
+        line-height: 1.35;
+      }
+      .order-product-line span {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 850;
+        line-height: 1.4;
+      }
+      .order-info-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 7px;
+      }
+      .order-info-grid div {
+        min-width: 0;
+        min-height: 55px;
+        padding: 8px;
+        border-radius: 8px;
+        background: #fff4f6;
+      }
+      .order-info-grid span {
+        display: block;
+        color: #8b5662;
+        font-size: 10px;
+        font-weight: 850;
+        line-height: 1.25;
+      }
+      .order-info-grid strong {
+        display: block;
+        margin-top: 5px;
+        color: #d4144f;
+        font-size: 12px;
+        font-weight: 950;
+        line-height: 1.2;
+        overflow-wrap: anywhere;
+      }
+      .order-actions {
+        grid-template-columns: 1fr 1fr 1fr;
+        margin-top: 2px;
+      }
+      .order-actions button {
+        min-height: 38px;
+        border-radius: 8px;
+        font-size: 11px;
+        line-height: 1.2;
+      }
+      .order-actions .primary-action {
+        background: #171717;
+        color: #fff;
+      }
+      .order-actions .review-action {
+        background: #effbc2;
+        color: #171c05;
+      }
+      .order-actions button:disabled {
+        opacity: .55;
+        cursor: default;
+      }
       .delivery-form {
         display: grid;
         gap: 10px;

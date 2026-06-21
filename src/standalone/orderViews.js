@@ -165,19 +165,25 @@ export function orderListMarkup(orders, helpers) {
         </div>
         <span class="order-status">${helpers.orderDisplayLabel(order)}</span>
       </div>
-      <div class="line-item"><span>${order.items[0].name}${order.items.length > 1 ? " 외 " + (order.items.length - 1) + "개" : ""}</span><strong>${formatKRW(order.total)}</strong></div>
-      <div class="line-item"><span>${order.address}</span><strong>${order.fastest}분</strong></div>
+      <div class="order-product-line">
+        <strong>${order.items[0].name}${order.items.length > 1 ? " 외 " + (order.items.length - 1) + "개" : ""}</strong>
+        <span>${order.address}</span>
+      </div>
+      <div class="order-info-grid">
+        <div><span>예상 도착</span><strong>${helpers.isOrderCancelled(order) ? "취소됨" : (order.progressStep || 0) >= 4 ? "완료" : order.fastest + "분"}</strong></div>
+        <div><span>결제</span><strong>${helpers.paymentLabelForOrder(order)}</strong></div>
+        <div><span>주문 금액</span><strong>${formatKRW(order.total)}</strong></div>
+      </div>
       <div class="line-item"><span>${order.receiveType || "문앞 수령"}</span><strong>${order.riderRequest ? "요청 있음" : "요청 없음"}</strong></div>
-      <div class="line-item"><span>${order.paymentMethod || "카카오페이"}</span><strong>${helpers.paymentLabelForOrder(order)}</strong></div>
       ${helpers.customerRefundStatusLabel && helpers.customerRefundStatusLabel(order) ? '<div class="line-item"><span>반품/환불 상태</span><strong>' + helpers.customerRefundStatusLabel(order) + '</strong></div>' : ""}
       ${helpers.customerRefundStatusDetail && helpers.customerRefundStatusDetail(order) ? '<div class="line-item"><span>처리 안내</span><strong>' + helpers.customerRefundStatusDetail(order) + '</strong></div>' : ""}
       <div class="line-item"><span>담당 기사</span><strong>${helpers.assignedRiderLabel(order)}</strong></div>
       ${helpers.isOrderCancelled(order) ? '<div class="line-item"><span>취소 분류</span><strong>' + helpers.cancelReasonLabel(order) + '</strong></div>' : ""}
       ${helpers.isOrderCancelled(order) ? '<div class="line-item"><span>취소 사유</span><strong>' + (order.cancelReason || "사유 미입력") + '</strong></div>' : ""}
       ${helpers.canReviewOrder(order) ? '<div class="line-item"><span>리뷰</span><strong>' + helpers.orderReviewCount(order) + '/' + order.items.length + '개 작성</strong></div>' : ""}
-      <div class="mini-actions">
-        <button type="button" onclick="selectOrder('${order.id}')">추적 보기</button>
-        <button type="button" ${helpers.canReviewOrder(order) ? "" : "disabled"} onclick="reviewOrder('${order.id}')">${helpers.canReviewOrder(order) ? "리뷰 작성" : "배송 완료 후 리뷰"}</button>
+      <div class="mini-actions order-actions">
+        <button class="primary-action" type="button" onclick="selectOrder('${order.id}')">추적 보기</button>
+        <button class="review-action" type="button" ${helpers.canReviewOrder(order) ? "" : "disabled"} onclick="reviewOrder('${order.id}')">${helpers.canReviewOrder(order) ? "리뷰 작성" : "배송 완료 후 리뷰"}</button>
         <button class="danger" type="button" ${helpers.canCancelOrder(order) ? "" : "disabled"} onclick="cancelOrder('${order.id}', 'customer')">${helpers.customerCancelActionLabel ? helpers.customerCancelActionLabel(order) : helpers.isOrderCancelled(order) ? "취소됨" : "주문 취소"}</button>
       </div>
     </section>
