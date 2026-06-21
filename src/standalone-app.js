@@ -781,6 +781,45 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         };
       }
 
+      function reviewPhotoSrc(review) {
+        if (!review) return "";
+        return review.photoPublicUrl || review.photoUrl || review.photoDataUrl || "";
+      }
+
+      function reviewPhotoUploadPath(review) {
+        const safeOrderId = String(review && review.orderId ? review.orderId : "order").replace(/[^a-z0-9_-]/gi, "-").slice(0, 80);
+        const safeProduct = String(review && review.productKey ? review.productKey : "product").replace(/[^a-z0-9_-]/gi, "-").slice(0, 80);
+        const stamp = String(review && review.createdAt ? review.createdAt : new Date().toISOString()).replace(/[^0-9]/g, "").slice(0, 14) || Date.now();
+        return safeOrderId + "/" + safeProduct + "-" + stamp + ".jpg";
+      }
+
+      async function uploadReviewPhoto(review) {
+        if (!supabaseClient || !review || !review.photoDataUrl) return review;
+        const path = reviewPhotoUploadPath(review);
+        const blob = dataUrlToBlob(review.photoDataUrl);
+        const uploadResult = await supabaseClient.storage
+          .from("review-photos")
+          .upload(path, blob, { cacheControl: "3600", upsert: true, contentType: "image/jpeg" });
+        if (uploadResult.error) throw uploadResult.error;
+        const publicResult = supabaseClient.storage.from("review-photos").getPublicUrl(path);
+        review.photoPath = path;
+        review.photoPublicUrl = publicResult && publicResult.data ? publicResult.data.publicUrl : "";
+        delete review.photoDataUrl;
+        return review;
+      }
+
+      function renderReviewPhoto(review) {
+        const src = reviewPhotoSrc(review);
+        if (!src) return "";
+        const mediaSrc = safeMediaUrl(src);
+        return `
+          <div class="review-photo-media">
+            <img src="${mediaSrc}" alt="리뷰 사진">
+            ${review.photoPublicUrl ? '<a class="delivery-proof-link" href="' + mediaSrc + '" target="_blank" rel="noopener">사진 원본 보기</a>' : ""}
+          </div>
+        `;
+      }
+
       function startDeliveryProofCapture(orderId, type) {
         if (!currentAdmin) {
           openAdminLogin();
@@ -1429,7 +1468,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         const storageChecks = [];
         try {
           const blob = new Blob(["fitnow storage check"], { type: "text/plain" });
-          for (const bucket of ["product-images", "delivery-proof-photos"]) {
+          for (const bucket of ["product-images", "delivery-proof-photos", "review-photos"]) {
             const upload = await supabaseClient.storage.from(bucket).upload("health-check.txt", blob, { upsert: true });
             storageChecks.push({ name: bucket, ok: !upload.error, error: upload.error ? upload.error.message : "" });
           }
@@ -1439,7 +1478,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         const failed = checks.filter((item) => !item.ok);
         const failedStorage = storageChecks.filter((item) => !item.ok);
         if (!failed.length && !failedStorage.length) {
-          resultNode.textContent = "정상입니다. 테이블 8개와 이미지 저장소 2개가 준비됐습니다.";
+          resultNode.textContent = "정상입니다. 테이블 8개와 이미지 저장소 3개가 준비됐습니다.";
           setSyncStatus("Supabase SQL 확인 완료");
         } else {
           const tableText = failed.length ? "실패 테이블: " + failed.map((item) => item.name).join(", ") + ". " : "";
@@ -1628,6 +1667,9 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           size: row.size || "FREE",
           rating: row.rating,
           comment: row.comment || "",
+          fit: row.fit || "",
+          photoPublicUrl: row.photo_url || "",
+          photoPath: row.photo_path || "",
           customerName: row.customer_name || "고객",
           customerId: row.user_id || "",
           createdAt: row.created_at,
@@ -2226,7 +2268,8 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
             <div>
               <strong>${review.productName} · 별점 ${review.rating}</strong>
               <span>${review.comment}</span>
-              <span>${review.customerName} · ${review.size || "FREE"}</span>
+              <span>${review.customerName} · ${review.size || "FREE"}${review.fit ? " · " + review.fit : ""}</span>
+              ${renderReviewPhoto(review)}
             </div>
             <strong>${new Date(review.createdAt).toLocaleDateString("ko-KR", { month: "short", day: "numeric" })}</strong>
           </div>
@@ -8056,6 +8099,13 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
 
       async function syncReviewToSupabase(review) {
         if (!supabaseClient || !review) return;
+        if (review.photoDataUrl && !review.photoPublicUrl) {
+          try {
+            await uploadReviewPhoto(review);
+          } catch (error) {
+            setSyncStatus("리뷰 사진 저장소 업로드 실패 - 리뷰 내용 먼저 저장");
+          }
+        }
         const product = products.find((item) => item.key === review.productKey);
         const store = storeByName(review.showroom);
         const payload = {
@@ -8069,14 +8119,28 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           size: review.size || "FREE",
           rating: review.rating,
           comment: review.comment,
+          fit: review.fit || "",
+          photo_url: review.photoPublicUrl || "",
+          photo_path: review.photoPath || "",
           customer_name: review.customerName || "고객",
           created_at: review.createdAt || new Date().toISOString(),
         };
-        const result = await supabaseClient
+        let result = await supabaseClient
           .from("product_reviews")
           .upsert(payload, { onConflict: "order_code,product_slug,size,user_id" })
           .select("id")
           .single();
+        if (result.error && /fit|photo_url|photo_path|schema cache|column/i.test(result.error.message || "")) {
+          const fallbackPayload = { ...payload };
+          delete fallbackPayload.fit;
+          delete fallbackPayload.photo_url;
+          delete fallbackPayload.photo_path;
+          result = await supabaseClient
+            .from("product_reviews")
+            .upsert(fallbackPayload, { onConflict: "order_code,product_slug,size,user_id" })
+            .select("id")
+            .single();
+        }
         if (result.error) throw result.error;
         review.id = result.data.id;
       }
@@ -11523,6 +11587,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         const rating = existing ? existing.rating : 5;
         const fit = existing ? existing.fit || "정사이즈" : "정사이즈";
         const comment = existing ? existing.comment : "";
+        const existingPhotoSrc = existing ? reviewPhotoSrc(existing) : "";
         activeReviewPhotoData = existing ? existing.photoDataUrl || "" : "";
         body.innerHTML = target ? `
           <section class="review-target-card">
@@ -11552,7 +11617,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           <label>사진 첨부
             <input id="reviewPhoto" type="file" accept="image/*" onchange="previewReviewPhoto()" />
           </label>
-          <div class="review-photo-preview" id="reviewPhotoPreview">${activeReviewPhotoData ? '<img src="' + activeReviewPhotoData + '" alt="리뷰 사진 미리보기" />' : '<span>사진을 추가하면 여기에 미리보기 됩니다</span>'}</div>
+          <div class="review-photo-preview" id="reviewPhotoPreview">${existingPhotoSrc ? '<img src="' + safeMediaUrl(existingPhotoSrc) + '" alt="리뷰 사진 미리보기" />' : '<span>사진을 추가하면 여기에 미리보기 됩니다</span>'}</div>
         ` : `
           <section class="summary-card">
             <h3>리뷰할 상품이 없습니다</h3>
@@ -11570,7 +11635,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         });
       }
 
-      function previewReviewPhoto() {
+      async function previewReviewPhoto() {
         const input = document.getElementById("reviewPhoto");
         const preview = document.getElementById("reviewPhotoPreview");
         const file = input && input.files && input.files[0];
@@ -11579,12 +11644,15 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           if (preview) preview.innerHTML = "<span>사진을 추가하면 여기에 미리보기 됩니다</span>";
           return;
         }
-        const reader = new FileReader();
-        reader.onload = () => {
-          activeReviewPhotoData = reader.result;
+        try {
+          const photo = await compressDeliveryProofPhoto(file, "review");
+          activeReviewPhotoData = photo.dataUrl;
           if (preview) preview.innerHTML = '<img src="' + activeReviewPhotoData + '" alt="리뷰 사진 미리보기" />';
-        };
-        reader.readAsDataURL(file);
+        } catch (error) {
+          activeReviewPhotoData = "";
+          if (preview) preview.innerHTML = "<span>사진을 불러오지 못했습니다. 다른 사진을 선택해 주세요.</span>";
+          setSyncStatus("리뷰 사진을 불러오지 못했습니다");
+        }
       }
 
       function closeReviewModal() {
@@ -11631,6 +11699,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           return;
         }
         const existingIndex = reviews.findIndex((review) => review.orderId === order.id && review.productKey === target.key && review.size === (target.size || "FREE"));
+        const existingReview = existingIndex >= 0 ? reviews[existingIndex] : null;
         const review = {
           id: "review-" + Date.now(),
           orderId: order.id,
@@ -11642,6 +11711,8 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           fit,
           comment: commentInput,
           photoDataUrl: activeReviewPhotoData,
+          photoPublicUrl: activeReviewPhotoData ? "" : (existingReview && existingReview.photoPublicUrl) || "",
+          photoPath: activeReviewPhotoData ? "" : (existingReview && existingReview.photoPath) || "",
           customerName: currentCustomer.name || order.customerName || "고객",
           customerId: customerId(),
           createdAt: new Date().toISOString(),

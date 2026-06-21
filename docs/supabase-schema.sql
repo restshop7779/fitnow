@@ -112,10 +112,18 @@ create table if not exists public.product_reviews (
   size text not null default 'FREE',
   rating integer not null check (rating between 1 and 5),
   comment text not null default '',
+  fit text not null default '',
+  photo_url text not null default '',
+  photo_path text not null default '',
   customer_name text not null default '고객',
   created_at timestamptz not null default now(),
   unique (order_code, product_slug, size, user_id)
 );
+
+alter table public.product_reviews
+  add column if not exists fit text not null default '',
+  add column if not exists photo_url text not null default '',
+  add column if not exists photo_path text not null default '';
 
 create table if not exists public.wishlists (
   id uuid primary key default gen_random_uuid(),
@@ -265,6 +273,10 @@ insert into storage.buckets (id, name, public)
 values ('delivery-proof-photos', 'delivery-proof-photos', true)
 on conflict (id) do update set public = true;
 
+insert into storage.buckets (id, name, public)
+values ('review-photos', 'review-photos', true)
+on conflict (id) do update set public = true;
+
 drop policy if exists "Public product image read" on storage.objects;
 drop policy if exists "Product image upload" on storage.objects;
 drop policy if exists "Product image update" on storage.objects;
@@ -272,6 +284,10 @@ drop policy if exists "Public delivery proof photo read" on storage.objects;
 drop policy if exists "Delivery proof photo upload" on storage.objects;
 drop policy if exists "Delivery proof photo update" on storage.objects;
 drop policy if exists "Delivery proof photo delete" on storage.objects;
+drop policy if exists "Public review photo read" on storage.objects;
+drop policy if exists "Review photo upload" on storage.objects;
+drop policy if exists "Review photo update" on storage.objects;
+drop policy if exists "Review photo delete" on storage.objects;
 
 create policy "Public product image read"
 on storage.objects for select
@@ -303,8 +319,26 @@ create policy "Delivery proof photo delete"
 on storage.objects for delete
 using (bucket_id = 'delivery-proof-photos');
 
+create policy "Public review photo read"
+on storage.objects for select
+using (bucket_id = 'review-photos');
+
+create policy "Review photo upload"
+on storage.objects for insert
+with check (bucket_id = 'review-photos');
+
+create policy "Review photo update"
+on storage.objects for update
+using (bucket_id = 'review-photos')
+with check (bucket_id = 'review-photos');
+
+create policy "Review photo delete"
+on storage.objects for delete
+using (bucket_id = 'review-photos');
+
 select
   'fitnow_schema_ready' as check_name,
   (select count(*) from information_schema.tables where table_schema = 'public' and table_name in ('showrooms', 'products', 'orders', 'order_items', 'look_sets', 'look_set_items', 'product_reviews', 'wishlists')) as public_table_count,
   (select count(*) from storage.buckets where id = 'product-images') as product_image_bucket_count,
-  (select count(*) from storage.buckets where id = 'delivery-proof-photos') as delivery_proof_photo_bucket_count;
+  (select count(*) from storage.buckets where id = 'delivery-proof-photos') as delivery_proof_photo_bucket_count,
+  (select count(*) from storage.buckets where id = 'review-photos') as review_photo_bucket_count;

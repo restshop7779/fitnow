@@ -5490,6 +5490,21 @@
         object-fit: cover;
         display: block;
       }
+      .review-photo-media {
+        display: grid;
+        justify-items: start;
+        gap: 4px;
+        margin-top: 8px;
+      }
+      .review-photo-media img {
+        width: 100%;
+        max-width: 150px;
+        aspect-ratio: 4 / 3;
+        object-fit: cover;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #f8f5ef;
+      }
       .delivery-form {
         display: grid;
         gap: 10px;
