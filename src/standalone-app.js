@@ -156,6 +156,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       let reviews = [];
       let activeReviewOrderId = "";
       let activeReviewPhotoData = "";
+      let activeReviewPhotoRemoved = false;
       let activeFitPreviewKey = "";
       let activeFitViewMode = "real";
       let activeAvatarLookSnapshot = null;
@@ -806,6 +807,12 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         review.photoPublicUrl = publicResult && publicResult.data ? publicResult.data.publicUrl : "";
         delete review.photoDataUrl;
         return review;
+      }
+
+      async function deleteReviewPhoto(path) {
+        if (!supabaseClient || !path) return;
+        const result = await supabaseClient.storage.from("review-photos").remove([path]);
+        if (result.error) throw result.error;
       }
 
       function renderReviewPhoto(review) {
@@ -8143,6 +8150,14 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         }
         if (result.error) throw result.error;
         review.id = result.data.id;
+        if (review.previousPhotoPath && review.previousPhotoPath !== review.photoPath) {
+          try {
+            await deleteReviewPhoto(review.previousPhotoPath);
+          } catch (error) {
+            setSyncStatus("이전 리뷰 사진 삭제 실패 - Storage 권한 확인 필요");
+          }
+          delete review.previousPhotoPath;
+        }
       }
 
       async function syncWishlistToSupabase(key) {
@@ -11589,6 +11604,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         const comment = existing ? existing.comment : "";
         const existingPhotoSrc = existing ? reviewPhotoSrc(existing) : "";
         activeReviewPhotoData = existing ? existing.photoDataUrl || "" : "";
+        activeReviewPhotoRemoved = false;
         body.innerHTML = target ? `
           <section class="review-target-card">
             <span>주문번호 ${order.id}</span>
@@ -11618,6 +11634,10 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
             <input id="reviewPhoto" type="file" accept="image/*" onchange="previewReviewPhoto()" />
           </label>
           <div class="review-photo-preview" id="reviewPhotoPreview">${existingPhotoSrc ? '<img src="' + safeMediaUrl(existingPhotoSrc) + '" alt="리뷰 사진 미리보기" />' : '<span>사진을 추가하면 여기에 미리보기 됩니다</span>'}</div>
+          <div class="review-photo-controls">
+            <button class="secondary" id="reviewPhotoClearButton" type="button" ${existingPhotoSrc ? "" : "disabled"} onclick="clearReviewPhoto()">사진 삭제</button>
+            <span id="reviewPhotoHelp">${existingPhotoSrc ? "기존 사진을 삭제하거나 새 사진으로 교체할 수 있습니다." : "선택한 사진은 리뷰 저장 시 함께 반영됩니다."}</span>
+          </div>
         ` : `
           <section class="summary-card">
             <h3>리뷰할 상품이 없습니다</h3>
@@ -11647,12 +11667,31 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         try {
           const photo = await compressDeliveryProofPhoto(file, "review");
           activeReviewPhotoData = photo.dataUrl;
+          activeReviewPhotoRemoved = false;
           if (preview) preview.innerHTML = '<img src="' + activeReviewPhotoData + '" alt="리뷰 사진 미리보기" />';
+          const clearButton = document.getElementById("reviewPhotoClearButton");
+          const help = document.getElementById("reviewPhotoHelp");
+          if (clearButton) clearButton.disabled = false;
+          if (help) help.textContent = "선택한 사진을 삭제하거나 다른 사진으로 교체할 수 있습니다.";
         } catch (error) {
           activeReviewPhotoData = "";
           if (preview) preview.innerHTML = "<span>사진을 불러오지 못했습니다. 다른 사진을 선택해 주세요.</span>";
           setSyncStatus("리뷰 사진을 불러오지 못했습니다");
         }
+      }
+
+      function clearReviewPhoto() {
+        activeReviewPhotoData = "";
+        activeReviewPhotoRemoved = true;
+        const input = document.getElementById("reviewPhoto");
+        const preview = document.getElementById("reviewPhotoPreview");
+        const clearButton = document.getElementById("reviewPhotoClearButton");
+        const help = document.getElementById("reviewPhotoHelp");
+        if (input) input.value = "";
+        if (preview) preview.innerHTML = "<span>저장하면 리뷰 사진이 삭제됩니다</span>";
+        if (clearButton) clearButton.disabled = true;
+        if (help) help.textContent = "리뷰 저장을 누르면 사진 없이 저장됩니다.";
+        setSyncStatus("리뷰 사진 삭제가 선택됨 - 저장을 눌러 반영해 주세요");
       }
 
       function closeReviewModal() {
@@ -11662,6 +11701,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         modal.setAttribute("aria-hidden", "true");
         activeReviewOrderId = "";
         activeReviewPhotoData = "";
+        activeReviewPhotoRemoved = false;
       }
 
       function reviewOrder(orderId) {
@@ -11700,6 +11740,8 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         }
         const existingIndex = reviews.findIndex((review) => review.orderId === order.id && review.productKey === target.key && review.size === (target.size || "FREE"));
         const existingReview = existingIndex >= 0 ? reviews[existingIndex] : null;
+        const shouldRemovePhoto = activeReviewPhotoRemoved && !activeReviewPhotoData;
+        const previousPhotoPath = existingReview && existingReview.photoPath && (activeReviewPhotoData || shouldRemovePhoto) ? existingReview.photoPath : "";
         const review = {
           id: "review-" + Date.now(),
           orderId: order.id,
@@ -11711,12 +11753,13 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           fit,
           comment: commentInput,
           photoDataUrl: activeReviewPhotoData,
-          photoPublicUrl: activeReviewPhotoData ? "" : (existingReview && existingReview.photoPublicUrl) || "",
-          photoPath: activeReviewPhotoData ? "" : (existingReview && existingReview.photoPath) || "",
+          photoPublicUrl: activeReviewPhotoData || shouldRemovePhoto ? "" : (existingReview && existingReview.photoPublicUrl) || "",
+          photoPath: activeReviewPhotoData || shouldRemovePhoto ? "" : (existingReview && existingReview.photoPath) || "",
           customerName: currentCustomer.name || order.customerName || "고객",
           customerId: customerId(),
           createdAt: new Date().toISOString(),
         };
+        if (previousPhotoPath) review.previousPhotoPath = previousPhotoPath;
         if (existingIndex >= 0) reviews.splice(existingIndex, 1, review);
         else reviews.unshift(review);
         saveReviewStore();
@@ -11730,6 +11773,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         if (document.getElementById("vendorModal").classList.contains("open")) renderVendorOrders();
         try {
           await syncReviewToSupabase(review);
+          delete review.previousPhotoPath;
           saveReviewStore();
           setSyncStatus("리뷰가 Supabase에 저장됨 - " + target.name + " 별점 " + rating);
         } catch (error) {
@@ -12375,6 +12419,7 @@ Object.assign(window, {
   setTestDataRetention,
   setRiderRequestPreset,
   setReviewRating,
+  clearReviewPhoto,
   selectFitBodySample,
   previewReviewPhoto,
   submitReviewForm,
@@ -12631,6 +12676,7 @@ exposeHandlers({
   persistSettlementBatch,
   personalizedRecommendations,
   previewReviewPhoto,
+  clearReviewPhoto,
   previewVendorImage,
   priceMarkup,
   priceRangeMatches,

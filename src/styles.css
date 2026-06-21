@@ -5490,6 +5490,25 @@
         object-fit: cover;
         display: block;
       }
+      .review-photo-controls {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 8px;
+        align-items: center;
+      }
+      .review-photo-controls button {
+        min-height: 34px;
+        padding: 0 11px;
+        border-radius: 8px;
+        font-size: 11px;
+        line-height: 1.2;
+      }
+      .review-photo-controls span {
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 850;
+        line-height: 1.35;
+      }
       .review-photo-media {
         display: grid;
         justify-items: start;
