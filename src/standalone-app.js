@@ -8332,14 +8332,26 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         const orderCount = orderHistory.length;
         const totalSpend = orderHistory.reduce((sum, order) => sum + (order.total || 0), 0);
         const latestOrder = orderHistory[0];
+        const activeOrders = orderHistory.filter((order) => !isOrderCancelled(order) && (order.progressStep || 0) < steps.length - 1);
+        const completedOrders = orderHistory.filter((order) => !isOrderCancelled(order) && (order.progressStep || 0) >= steps.length - 1);
+        const reviewableOrders = orderHistory.filter((order) => canReviewOrder(order));
+        const returnableOrders = orderHistory.filter((order) => canRequestReturnRefund(order));
+        const refundOrders = orderHistory.filter((order) => isOrderCancelled(order) && order.cancelReasonCode === "return_refund");
         const wishedItems = wishlistItems();
         const viewedItems = recentViewItems();
         const guestCustomer = customerId() === "guest-preview";
+        const latestOrderActions = latestOrder ? `
+          <div class="my-order-actions">
+            <button class="primary" type="button" onclick="openTrackingFromMy()">배송 추적</button>
+            <button type="button" ${canReviewOrder(latestOrder) ? "" : "disabled"} onclick="reviewOrder('${latestOrder.id}')">${canReviewOrder(latestOrder) ? "리뷰 작성" : "리뷰 대기"}</button>
+            <button class="danger" type="button" ${canCustomerCancelOrReturn(latestOrder) ? "" : "disabled"} onclick="cancelOrder('${latestOrder.id}', 'customer')">${customerCancelActionLabel(latestOrder)}</button>
+          </div>
+        ` : "";
         const loginPromptMarkup = guestCustomer ? `
-          <section class="summary-card" style="margin-top: 12px;">
+          <section class="summary-card my-login-card">
             <h3>고객 로그인</h3>
             <div class="line-item"><span>카카오 연동 계정 또는 휴대폰 로그인으로</span><strong>주문 추적 연결</strong></div>
-            <button class="primary" type="button" onclick="openCustomerLogin()" style="width:100%;margin-top:8px;">고객 로그인</button>
+            <button class="primary" type="button" onclick="openCustomerLogin()">고객 로그인</button>
           </section>
         ` : "";
         const wishlistMarkup = wishedItems.length ? wishedItems.map((item) => `
@@ -8376,28 +8388,46 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
               <span>${currentCustomer.provider ? providerLabel(currentCustomer.provider) + " 연동 계정" : "오산, 동탄 지금배송 고객 계정"}</span>
           </section>
           ${loginPromptMarkup}
-          <section class="summary-card" style="margin-top: 12px;">
-            <h3>이용 요약</h3>
-            <div class="line-item"><span>최근 주문</span><strong>${orderCount}건</strong></div>
-            <div class="line-item"><span>주문 금액</span><strong>${formatKRW(totalSpend)}</strong></div>
-            <div class="line-item"><span>고객 ID</span><strong>${customerId().replace("auth-", "소셜-").slice(0, 18)}</strong></div>
+          <section class="my-dashboard">
+            <div><span>진행중</span><strong>${activeOrders.length}건</strong></div>
+            <div><span>완료</span><strong>${completedOrders.length}건</strong></div>
+            <div><span>리뷰 가능</span><strong>${reviewableOrders.length}건</strong></div>
+            <div><span>반품 가능</span><strong>${returnableOrders.length}건</strong></div>
           </section>
-          <section class="summary-card" style="margin-top: 12px;">
+          <section class="summary-card my-quick-card">
+            <h3>내 쇼핑 바로가기</h3>
+            <div class="my-quick-actions">
+              <button type="button" onclick="openOrdersFromMy()"><strong>주문내역</strong><span>${orderCount}건 · ${formatKRW(totalSpend)}</span></button>
+              <button type="button" onclick="openTrackingFromMy()"><strong>배송추적</strong><span>${latestOrder ? orderDisplayLabel(latestOrder) : "예약 대기"}</span></button>
+              <button type="button" ${reviewableOrders.length ? "" : "disabled"} onclick="${reviewableOrders.length ? "reviewOrder('" + reviewableOrders[0].id + "')" : "setSyncStatus('배송 완료 후 리뷰를 작성할 수 있습니다')"}"><strong>리뷰작성</strong><span>${reviewableOrders.length ? reviewableOrders.length + "건 대기" : "대기 없음"}</span></button>
+              <button type="button" ${returnableOrders.length || refundOrders.length ? "" : "disabled"} onclick="${returnableOrders.length ? "cancelOrder('" + returnableOrders[0].id + "', 'customer')" : "openOrdersFromMy()"}"><strong>반품/환불</strong><span>${refundOrders.length ? refundOrders.length + "건 처리중" : returnableOrders.length ? returnableOrders.length + "건 가능" : "가능 주문 없음"}</span></button>
+            </div>
+          </section>
+          <section class="summary-card my-latest-order">
             <h3>최근 배송</h3>
-            <div class="line-item"><span>${latestOrder ? latestOrder.id : "주문 대기"}</span><strong>${latestOrder ? orderDisplayLabel(latestOrder) : "아직 없음"}</strong></div>
+            <div class="my-latest-head">
+              <div>
+                <strong>${latestOrder ? latestOrder.id : "주문 대기"}</strong>
+                <span>${latestOrder ? latestOrder.items[0].name + (latestOrder.items.length > 1 ? " 외 " + (latestOrder.items.length - 1) + "개" : "") : "상품을 담고 무료배송 예약을 시작해 주세요"}</span>
+              </div>
+              <em>${latestOrder ? orderDisplayLabel(latestOrder) : "아직 없음"}</em>
+            </div>
+            <div class="line-item"><span>예상 도착</span><strong>${latestOrder ? trackingEtaLabel(latestOrder) : "예약 전"}</strong></div>
             <div class="line-item"><span>결제 상태</span><strong>${latestOrder ? paymentLabelForOrder(latestOrder) : "결제 대기"}</strong></div>
             ${latestOrder ? customerRefundStatusCard(latestOrder, true) : ""}
             <div class="line-item"><span>담당 기사</span><strong>${latestOrder ? assignedRiderLabel(latestOrder) : "배정 대기"}</strong></div>
+            ${latestOrder && (latestOrder.progressStep || 0) >= 4 && !isOrderCancelled(latestOrder) ? '<div class="line-item"><span>반품/환불 가능 기간</span><strong>' + returnRefundWindowLabel(latestOrder) + '</strong></div>' : ""}
+            ${latestOrderActions}
           </section>
-          <section class="summary-card" style="margin-top: 12px;">
+          <section class="summary-card my-section-card">
             <h3>관심상품</h3>
             <div class="vendor-preview-list">${wishlistMarkup}</div>
           </section>
-          <section class="summary-card" style="margin-top: 12px;">
+          <section class="summary-card my-section-card">
             <h3>최근 본 상품</h3>
             <div class="vendor-preview-list">${recentViewMarkup}</div>
           </section>
-          <section class="summary-card" style="margin-top: 12px;">
+          <section class="summary-card my-section-card">
             <h3>내 쇼핑 관리</h3>
             <div class="vendor-preview-list">
               <div class="vendor-product-row">

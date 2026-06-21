@@ -293,6 +293,115 @@
         font-size: 12px;
         font-weight: 850;
       }
+      .my-login-card,
+      .my-dashboard,
+      .my-quick-card,
+      .my-latest-order,
+      .my-section-card {
+        margin-top: 12px;
+      }
+      .my-login-card button {
+        width: 100%;
+        margin-top: 8px;
+      }
+      .my-dashboard {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .my-dashboard div {
+        min-height: 58px;
+        padding: 9px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+      }
+      .my-dashboard span,
+      .my-quick-actions span,
+      .my-latest-head span {
+        display: block;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 850;
+        line-height: 1.35;
+      }
+      .my-dashboard strong {
+        display: block;
+        margin-top: 5px;
+        color: #171717;
+        font-size: 17px;
+        font-weight: 950;
+      }
+      .my-quick-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .my-quick-actions button {
+        min-height: 64px;
+        padding: 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fffaf0;
+        text-align: left;
+      }
+      .my-quick-actions button strong {
+        display: block;
+        color: #171717;
+        font-size: 13px;
+        font-weight: 950;
+      }
+      .my-quick-actions button:disabled {
+        opacity: .55;
+        cursor: default;
+      }
+      .my-latest-head {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        align-items: start;
+        margin-bottom: 10px;
+      }
+      .my-latest-head strong {
+        display: block;
+        color: #171717;
+        font-size: 15px;
+        font-weight: 950;
+      }
+      .my-latest-head em {
+        padding: 7px 9px;
+        border-radius: 999px;
+        background: #effbc2;
+        color: #171717;
+        font-size: 11px;
+        font-style: normal;
+        font-weight: 950;
+        white-space: nowrap;
+      }
+      .my-order-actions {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 7px;
+        margin-top: 10px;
+      }
+      .my-order-actions button {
+        min-height: 38px;
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: 950;
+      }
+      .my-order-actions .danger {
+        background: #ffe3dc;
+        color: #9b321f;
+      }
+      @media (max-width: 420px) {
+        .my-dashboard {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .my-order-actions {
+          grid-template-columns: 1fr;
+        }
+      }
       .social-login-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
