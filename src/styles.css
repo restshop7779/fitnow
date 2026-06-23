@@ -966,25 +966,21 @@
         margin-bottom: 9px;
       }
       .product-badges {
-        position: absolute;
-        left: 8px;
-        bottom: 17px;
         display: flex;
         flex-wrap: wrap;
-        gap: 4px;
-        padding-right: 48px;
-        z-index: 2;
+        gap: 5px;
+        margin: 0 0 8px;
       }
       .product-badges span {
         min-height: 22px;
-        padding: 4px 7px;
+        padding: 5px 7px;
         border-radius: 999px;
-        background: rgba(23, 23, 23, .82);
-        color: #fff;
+        border: 1px solid rgba(23, 23, 23, .08);
+        background: #fff4f6;
+        color: #d4144f;
         font-size: 10px;
         font-weight: 950;
         line-height: 1.2;
-        backdrop-filter: blur(6px);
       }
       .visual { height: 188px; border-radius: 8px; margin-bottom: 9px; position: relative; overflow: hidden; background: #f3eef1; }
       .visual.has-photo { background: #111; }
