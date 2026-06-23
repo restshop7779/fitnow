@@ -30,7 +30,10 @@ function waitForServer(child) {
 }
 
 async function expectModal(page, selector, label) {
-  await page.waitForSelector(selector + ".open", { timeout: 5000 });
+  await page.waitForFunction((modalSelector) => {
+    const modal = document.querySelector(modalSelector);
+    return !!modal && modal.classList.contains("open") && modal.getAttribute("aria-hidden") === "false";
+  }, selector, { timeout: 10000 });
   const ariaHidden = await page.locator(selector).getAttribute("aria-hidden");
   if (ariaHidden !== "false") fail(label + " modal did not become visible");
 }
@@ -47,12 +50,27 @@ async function clickAndCheck(page, clickSelector, modalSelector, label, options 
   await expectModal(page, modalSelector, label);
 }
 
+async function waitForStableProductCards(page) {
+  let lastSignature = "";
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const signature = await page.locator("#productGrid .product-card").evaluateAll((cards) =>
+      cards.map((card) => card.getAttribute("onclick") || "").join("|")
+    );
+    if (signature && signature === lastSignature) return;
+    lastSignature = signature;
+    await page.waitForTimeout(150);
+  }
+  if (!lastSignature) fail("product detail click target count was 0");
+}
+
 async function clickFirstProductAndCheck(page) {
-  const productCards = page.locator("#productGrid .product-card");
-  const count = await productCards.count();
+  await waitForStableProductCards(page);
+  const count = await page.locator("#productGrid .product-card").count();
   if (!count) fail("product detail click target count was 0");
-  await productCards.first().scrollIntoViewIfNeeded();
-  await productCards.first().press("Enter");
+  const firstCard = page.locator("#productGrid .product-card").first();
+  await firstCard.waitFor({ state: "visible", timeout: 10000 });
+  await firstCard.scrollIntoViewIfNeeded();
+  await firstCard.click({ position: { x: 24, y: 24 } });
   await expectModal(page, "#detailModal", "product detail");
 }
 
