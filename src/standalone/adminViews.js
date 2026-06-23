@@ -169,6 +169,31 @@ export function adminHomeBoardMarkup(data, options = {}) {
   `;
 }
 
+export function deliveryWarningsMarkup(items = [], options = {}) {
+  const assignedRiderLabel = options.assignedRiderLabel || (() => "기사 미배정");
+  if (!items.length) return '<div class="line-item"><span>주의 주문이 없습니다</span><strong>정상</strong></div>';
+  return items.map(({ order, warning }) => {
+    const storeNames = order.items.map((item) => item.showroom).filter((store, idx, stores) => stores.indexOf(store) === idx).join(", ");
+    const timeText = warning.overdue > 0
+      ? "기준 " + warning.limit + "분 초과 +" + warning.overdue + "분"
+      : "기준 " + warning.limit + "분 · 남은 " + warning.remaining + "분";
+    return `
+      <div class="vendor-product-row admin-order-row">
+        <div>
+          <strong>${order.id} · ${warning.title} <span class="admin-status-badge ${warning.cls}">${warning.severity} ${warning.minutes}분</span></strong>
+          <span>${warning.detail}</span>
+          <span>필요 조치: ${warning.action} · ${timeText}</span>
+          <span>${storeNames || "업체 미확인"} → ${order.address}</span>
+          <span>${order.deliveryPartnerName || "오픈콜 대기"} · ${assignedRiderLabel(order)}</span>
+        </div>
+        <div class="mini-actions order-detail-action">
+          <button type="button" onclick="openAdminOrderDetail('${order.id}')">상세보기</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
 export function adminOrderAssignmentActionsMarkup(state, options = {}) {
   const {
     order,
