@@ -137,6 +137,8 @@ import {
   settlementPayout,
 } from "./standalone/riders.js";
 import {
+  adminOrderAssignmentActionsMarkup,
+  adminOrderPrimaryActionMarkup,
   adminModeBannerMarkup,
   adminReleaseReadinessMarkup,
   deliveryWorkShortcutsMarkup,
@@ -6208,60 +6210,42 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         const topClaimSelectId = "topClaimRider-" + order.id;
         const topDongtanSelectId = "topDongtanRider-" + order.id;
         const topOsanSelectId = "topOsanRider-" + order.id;
-        const assignmentActions = currentAdmin.role === "total" ? `
-            <div class="order-detail-block">
-              <strong>지금배송 배정 운영</strong>
-              <span>현재 배정: ${order.deliveryPartnerName || "오픈콜 대기"} · ${assignedRiderLabel(order)}</span>
-              <span>총관리자는 배송사 사정에 따라 회수하거나 다른 센터로 변경할 수 있습니다.</span>
-            </div>
-            <div class="mini-actions">
-              <select id="${dongtanDetailSelectId}">${riderOptionsForPartner("지금배송 동탄센터", order.riderName)}</select>
-              <button type="button" ${!cancelled && readyForDelivery ? "" : "disabled"} onclick="adminAssignDeliveryFromDetail('${order.id}', '지금배송 동탄센터', selectedValue('${dongtanDetailSelectId}'))">동탄센터 배정</button>
-              <select id="${osanDetailSelectId}">${riderOptionsForPartner("지금배송 오산센터", order.riderName)}</select>
-              <button type="button" ${!cancelled && readyForDelivery ? "" : "disabled"} onclick="adminAssignDeliveryFromDetail('${order.id}', '지금배송 오산센터', selectedValue('${osanDetailSelectId}'))">오산센터 배정</button>
-              ${currentPartner && order.deliveryPartnerName ? `<select id="${currentRiderSelectId}">${riderOptionsForPartner(currentPartner.name, order.riderName)}</select><button type="button" ${!cancelled ? "" : "disabled"} onclick="adminChangeRiderFromDetail('${order.id}', selectedValue('${currentRiderSelectId}'))">담당 기사 변경</button>` : ""}
-              <button type="button" ${!cancelled && isDeliveryOrderClaimed(order) ? "" : "disabled"} onclick="adminReleaseDeliveryFromDetail('${order.id}')">다시 오픈콜</button>
-              <button class="danger" type="button" ${!cancelled && isDeliveryOrderClaimed(order) ? "" : "disabled"} onclick="adminReleaseDeliveryFromDetail('${order.id}')">배정 회수</button>
-            </div>
-        ` : "";
-        const primaryActionMarkup = (() => {
-          if (cancelled) return '<div class="rider-primary-actions"><button type="button" disabled>취소된 주문</button></div>';
-          if (!readyForDelivery) return '<div class="rider-primary-actions"><button type="button" disabled>업체 픽업 준비 대기</button></div>';
-          if (!isDeliveryOrderClaimed(order)) {
-            if (currentAdmin.role === "total") {
-              return `
-                <div class="rider-primary-actions">
-                  <select id="${topDongtanSelectId}">${riderOptionsForPartner("지금배송 동탄센터")}</select>
-                  <button type="button" onclick="adminAssignDeliveryFromDetail('${order.id}', '지금배송 동탄센터', selectedValue('${topDongtanSelectId}'))">동탄센터 배정</button>
-                  <select id="${topOsanSelectId}">${riderOptionsForPartner("지금배송 오산센터")}</select>
-                  <button type="button" onclick="adminAssignDeliveryFromDetail('${order.id}', '지금배송 오산센터', selectedValue('${topOsanSelectId}'))">오산센터 배정</button>
-                </div>
-              `;
-            }
-            if (currentAdmin.role === "delivery" && canCurrentDeliveryClaimOrder(order)) {
-              return `
-                <div class="rider-primary-actions">
-                  <select id="${topClaimSelectId}">${riderOptionsForPartner(currentAdmin.name)}</select>
-                  <button type="button" onclick="claimDeliveryOrderFromDetail('${order.id}', selectedValue('${topClaimSelectId}'))">내가 배정받기</button>
-                </div>
-              `;
-            }
-            return '<div class="rider-primary-actions"><button type="button" disabled>배송사 배정 필요</button></div>';
-          }
-          if (!pickupAuthed) {
-            return '<div class="rider-primary-actions"><button type="button" ' + (proofActionReady ? "" : "disabled") + ' onclick="startDeliveryProofCapture(\'' + order.id + '\', \'pickup\')">사진 찍고 픽업 인증</button></div>';
-          }
-          if (step < 3) {
-            return '<div class="rider-primary-actions"><button type="button" ' + (deliveryActionReady ? "" : "disabled") + ' onclick="adminAdvanceOrderFromDetail(\'' + order.id + '\', 3)">배송 시작 처리</button></div>';
-          }
-          if (!arrivalAuthed) {
-            return '<div class="rider-primary-actions"><button type="button" ' + (proofActionReady ? "" : "disabled") + ' onclick="startDeliveryProofCapture(\'' + order.id + '\', \'arrival\')">사진 찍고 도착 인증</button></div>';
-          }
-          if (step < 4) {
-            return '<div class="rider-primary-actions"><button type="button" ' + (deliveryCompleteReady ? "" : "disabled") + ' onclick="adminAdvanceOrderFromDetail(\'' + order.id + '\', 4)">배송완료 처리</button></div>';
-          }
-          return '<div class="rider-primary-actions"><button type="button" disabled>배송완료됨</button></div>';
-        })();
+        const actionSelectIds = {
+          currentRider: currentRiderSelectId,
+          dongtanDetail: dongtanDetailSelectId,
+          osanDetail: osanDetailSelectId,
+          topClaim: topClaimSelectId,
+          topDongtan: topDongtanSelectId,
+          topOsan: topOsanSelectId,
+        };
+        const actionViewOptions = {
+          assignedRiderLabel,
+          isDeliveryOrderClaimed,
+          riderOptionsForPartner,
+        };
+        const assignmentActions = adminOrderAssignmentActionsMarkup({
+          order,
+          adminRole: currentAdmin.role,
+          currentPartner,
+          cancelled,
+          readyForDelivery,
+          selectIds: actionSelectIds,
+        }, actionViewOptions);
+        const primaryActionMarkup = adminOrderPrimaryActionMarkup({
+          order,
+          adminRole: currentAdmin.role,
+          adminName: currentAdmin.name,
+          cancelled,
+          readyForDelivery,
+          pickupAuthed,
+          arrivalAuthed,
+          proofActionReady,
+          deliveryActionReady,
+          deliveryCompleteReady,
+          canClaimDeliveryOrder: currentAdmin.role === "delivery" && canCurrentDeliveryClaimOrder(order),
+          step,
+          selectIds: actionSelectIds,
+        }, actionViewOptions);
         const groupedItems = (order.items || []).reduce((groups, item) => {
           const store = item.showroom || "업체 미확인";
           groups[store] = groups[store] || [];

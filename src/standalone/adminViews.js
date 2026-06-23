@@ -110,6 +110,93 @@ export function deliveryWorkShortcutsMarkup(items, adminName) {
   `;
 }
 
+export function adminOrderAssignmentActionsMarkup(state, options = {}) {
+  const {
+    order,
+    adminRole,
+    currentPartner,
+    cancelled,
+    readyForDelivery,
+    selectIds = {},
+  } = state;
+  const assignedRiderLabel = options.assignedRiderLabel || (() => "기사 미배정");
+  const isDeliveryOrderClaimed = options.isDeliveryOrderClaimed || (() => false);
+  const riderOptionsForPartner = options.riderOptionsForPartner || (() => "");
+  if (adminRole !== "total") return "";
+  return `
+    <div class="order-detail-block">
+      <strong>지금배송 배정 운영</strong>
+      <span>현재 배정: ${order.deliveryPartnerName || "오픈콜 대기"} · ${assignedRiderLabel(order)}</span>
+      <span>총관리자는 배송사 사정에 따라 회수하거나 다른 센터로 변경할 수 있습니다.</span>
+    </div>
+    <div class="mini-actions">
+      <select id="${selectIds.dongtanDetail}">${riderOptionsForPartner("지금배송 동탄센터", order.riderName)}</select>
+      <button type="button" ${!cancelled && readyForDelivery ? "" : "disabled"} onclick="adminAssignDeliveryFromDetail('${order.id}', '지금배송 동탄센터', selectedValue('${selectIds.dongtanDetail}'))">동탄센터 배정</button>
+      <select id="${selectIds.osanDetail}">${riderOptionsForPartner("지금배송 오산센터", order.riderName)}</select>
+      <button type="button" ${!cancelled && readyForDelivery ? "" : "disabled"} onclick="adminAssignDeliveryFromDetail('${order.id}', '지금배송 오산센터', selectedValue('${selectIds.osanDetail}'))">오산센터 배정</button>
+      ${currentPartner && order.deliveryPartnerName ? `<select id="${selectIds.currentRider}">${riderOptionsForPartner(currentPartner.name, order.riderName)}</select><button type="button" ${!cancelled ? "" : "disabled"} onclick="adminChangeRiderFromDetail('${order.id}', selectedValue('${selectIds.currentRider}'))">담당 기사 변경</button>` : ""}
+      <button type="button" ${!cancelled && isDeliveryOrderClaimed(order) ? "" : "disabled"} onclick="adminReleaseDeliveryFromDetail('${order.id}')">다시 오픈콜</button>
+      <button class="danger" type="button" ${!cancelled && isDeliveryOrderClaimed(order) ? "" : "disabled"} onclick="adminReleaseDeliveryFromDetail('${order.id}')">배정 회수</button>
+    </div>
+  `;
+}
+
+export function adminOrderPrimaryActionMarkup(state, options = {}) {
+  const {
+    order,
+    adminRole,
+    adminName,
+    cancelled,
+    readyForDelivery,
+    pickupAuthed,
+    arrivalAuthed,
+    proofActionReady,
+    deliveryActionReady,
+    deliveryCompleteReady,
+    canClaimDeliveryOrder,
+    step,
+    selectIds = {},
+  } = state;
+  const isDeliveryOrderClaimed = options.isDeliveryOrderClaimed || (() => false);
+  const riderOptionsForPartner = options.riderOptionsForPartner || (() => "");
+  if (cancelled) return '<div class="rider-primary-actions"><button type="button" disabled>취소된 주문</button></div>';
+  if (!readyForDelivery) return '<div class="rider-primary-actions"><button type="button" disabled>업체 픽업 준비 대기</button></div>';
+  if (!isDeliveryOrderClaimed(order)) {
+    if (adminRole === "total") {
+      return `
+        <div class="rider-primary-actions">
+          <select id="${selectIds.topDongtan}">${riderOptionsForPartner("지금배송 동탄센터")}</select>
+          <button type="button" onclick="adminAssignDeliveryFromDetail('${order.id}', '지금배송 동탄센터', selectedValue('${selectIds.topDongtan}'))">동탄센터 배정</button>
+          <select id="${selectIds.topOsan}">${riderOptionsForPartner("지금배송 오산센터")}</select>
+          <button type="button" onclick="adminAssignDeliveryFromDetail('${order.id}', '지금배송 오산센터', selectedValue('${selectIds.topOsan}'))">오산센터 배정</button>
+        </div>
+      `;
+    }
+    if (adminRole === "delivery" && canClaimDeliveryOrder) {
+      return `
+        <div class="rider-primary-actions">
+          <select id="${selectIds.topClaim}">${riderOptionsForPartner(adminName)}</select>
+          <button type="button" onclick="claimDeliveryOrderFromDetail('${order.id}', selectedValue('${selectIds.topClaim}'))">내가 배정받기</button>
+        </div>
+      `;
+    }
+    return '<div class="rider-primary-actions"><button type="button" disabled>배송사 배정 필요</button></div>';
+  }
+  if (!pickupAuthed) {
+    return '<div class="rider-primary-actions"><button type="button" ' + (proofActionReady ? "" : "disabled") + ' onclick="startDeliveryProofCapture(\'' + order.id + '\', \'pickup\')">사진 찍고 픽업 인증</button></div>';
+  }
+  if (step < 3) {
+    return '<div class="rider-primary-actions"><button type="button" ' + (deliveryActionReady ? "" : "disabled") + ' onclick="adminAdvanceOrderFromDetail(\'' + order.id + '\', 3)">배송 시작 처리</button></div>';
+  }
+  if (!arrivalAuthed) {
+    return '<div class="rider-primary-actions"><button type="button" ' + (proofActionReady ? "" : "disabled") + ' onclick="startDeliveryProofCapture(\'' + order.id + '\', \'arrival\')">사진 찍고 도착 인증</button></div>';
+  }
+  if (step < 4) {
+    return '<div class="rider-primary-actions"><button type="button" ' + (deliveryCompleteReady ? "" : "disabled") + ' onclick="adminAdvanceOrderFromDetail(\'' + order.id + '\', 4)">배송완료 처리</button></div>';
+  }
+  return '<div class="rider-primary-actions"><button type="button" disabled>배송완료됨</button></div>';
+}
+
 export function settlementDetailMarkup({ partnerName, riderName, mode, rows, totalFee, totalPayout }, options = {}) {
   const formatKRW = options.formatKRW || ((value) => String(value || 0));
   const renderSettlementAuditTrail = options.renderSettlementAuditTrail || (() => "");
