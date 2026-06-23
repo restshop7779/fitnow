@@ -89,3 +89,54 @@ export function renderReviewPhoto(review) {
     </div>
   `;
 }
+
+export function reviewFormMarkup({ order, target, items, existing }) {
+  if (!target) {
+    return `
+      <section class="summary-card">
+        <h3>리뷰할 상품이 없습니다</h3>
+        <div class="line-item"><span>주문 상품을 확인해 주세요</span><strong>작성 대기</strong></div>
+      </section>
+    `;
+  }
+
+  const rating = existing ? existing.rating : 5;
+  const fit = existing ? existing.fit || "정사이즈" : "정사이즈";
+  const comment = existing ? existing.comment : "";
+  const existingPhotoSrc = existing ? reviewPhotoSrc(existing) : "";
+
+  return `
+    <section class="review-target-card">
+      <span>주문번호 ${order.id}</span>
+      <strong>${target.name}</strong>
+      <small>${target.showroom} · ${target.size || "FREE"} · ${order.createdLabel}</small>
+    </section>
+    <label>리뷰할 상품
+      <select id="reviewProductKey">
+        ${items.map((item) => '<option value="' + item.key + '|' + (item.size || "FREE") + '" ' + (item.key === target.key && (item.size || "FREE") === (target.size || "FREE") ? "selected" : "") + '>' + item.name + ' · ' + (item.size || "FREE") + '</option>').join("")}
+      </select>
+    </label>
+    <label>별점
+      <input id="reviewRating" type="hidden" value="${rating}" />
+      <div class="review-rating-buttons">
+        ${[1, 2, 3, 4, 5].map((score) => '<button class="' + (score <= rating ? "active" : "") + '" type="button" onclick="setReviewRating(' + score + ')">★</button>').join("")}
+      </div>
+    </label>
+    <label>사이즈감
+      <select id="reviewFit">
+        ${["작게 느껴져요", "정사이즈", "여유 있어요"].map((label) => '<option ' + (label === fit ? "selected" : "") + '>' + label + '</option>').join("")}
+      </select>
+    </label>
+    <label>후기
+      <textarea id="reviewComment" required placeholder="착용감, 배송 속도, 상품 상태를 남겨주세요.">${comment || ""}</textarea>
+    </label>
+    <label>사진 첨부
+      <input id="reviewPhoto" type="file" accept="image/*" onchange="previewReviewPhoto()" />
+    </label>
+    <div class="review-photo-preview" id="reviewPhotoPreview">${existingPhotoSrc ? '<img src="' + safeMediaUrl(existingPhotoSrc) + '" alt="리뷰 사진 미리보기" />' : '<span>사진을 추가하면 여기에 미리보기 됩니다</span>'}</div>
+    <div class="review-photo-controls">
+      <button class="secondary" id="reviewPhotoClearButton" type="button" ${existingPhotoSrc ? "" : "disabled"} onclick="clearReviewPhoto()">사진 삭제</button>
+      <span id="reviewPhotoHelp">${existingPhotoSrc ? "기존 사진을 삭제하거나 새 사진으로 교체할 수 있습니다." : "선택한 사진은 리뷰 저장 시 함께 반영됩니다."}</span>
+    </div>
+  `;
+}
