@@ -103,6 +103,10 @@ import {
   renderReviewPhoto,
   reviewFormMarkup,
   saveReviewStore as writeReviewStore,
+  applyReviewRating,
+  showReviewPhotoPlaceholder,
+  showReviewPhotoPreview,
+  showReviewPhotoRemoved,
   uploadReviewPhoto,
 } from "./standalone/reviews.js";
 import * as THREE from "three";
@@ -11483,35 +11487,25 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       }
 
       function setReviewRating(score) {
-        const rating = Math.max(1, Math.min(5, Math.round(Number(score) || 5)));
-        const input = document.getElementById("reviewRating");
-        if (input) input.value = String(rating);
-        document.querySelectorAll(".review-rating-buttons button").forEach((button, index) => {
-          button.classList.toggle("active", index < rating);
-        });
+        applyReviewRating(score);
       }
 
       async function previewReviewPhoto() {
         const input = document.getElementById("reviewPhoto");
-        const preview = document.getElementById("reviewPhotoPreview");
         const file = input && input.files && input.files[0];
         if (!file) {
           activeReviewPhotoData = "";
-          if (preview) preview.innerHTML = "<span>사진을 추가하면 여기에 미리보기 됩니다</span>";
+          showReviewPhotoPlaceholder("사진을 추가하면 여기에 미리보기 됩니다");
           return;
         }
         try {
           const photo = await compressDeliveryProofPhoto(file, "review");
           activeReviewPhotoData = photo.dataUrl;
           activeReviewPhotoRemoved = false;
-          if (preview) preview.innerHTML = '<img src="' + activeReviewPhotoData + '" alt="리뷰 사진 미리보기" />';
-          const clearButton = document.getElementById("reviewPhotoClearButton");
-          const help = document.getElementById("reviewPhotoHelp");
-          if (clearButton) clearButton.disabled = false;
-          if (help) help.textContent = "선택한 사진을 삭제하거나 다른 사진으로 교체할 수 있습니다.";
+          showReviewPhotoPreview(activeReviewPhotoData);
         } catch (error) {
           activeReviewPhotoData = "";
-          if (preview) preview.innerHTML = "<span>사진을 불러오지 못했습니다. 다른 사진을 선택해 주세요.</span>";
+          showReviewPhotoPlaceholder("사진을 불러오지 못했습니다. 다른 사진을 선택해 주세요.");
           setSyncStatus("리뷰 사진을 불러오지 못했습니다");
         }
       }
@@ -11519,14 +11513,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       function clearReviewPhoto() {
         activeReviewPhotoData = "";
         activeReviewPhotoRemoved = true;
-        const input = document.getElementById("reviewPhoto");
-        const preview = document.getElementById("reviewPhotoPreview");
-        const clearButton = document.getElementById("reviewPhotoClearButton");
-        const help = document.getElementById("reviewPhotoHelp");
-        if (input) input.value = "";
-        if (preview) preview.innerHTML = "<span>저장하면 리뷰 사진이 삭제됩니다</span>";
-        if (clearButton) clearButton.disabled = true;
-        if (help) help.textContent = "리뷰 저장을 누르면 사진 없이 저장됩니다.";
+        showReviewPhotoRemoved();
         setSyncStatus("리뷰 사진 삭제가 선택됨 - 저장을 눌러 반영해 주세요");
       }
 

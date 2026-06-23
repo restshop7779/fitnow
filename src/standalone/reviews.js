@@ -140,3 +140,37 @@ export function reviewFormMarkup({ order, target, items, existing }) {
     </div>
   `;
 }
+
+export function applyReviewRating(score, documentRef = document) {
+  const rating = Math.max(1, Math.min(5, Math.round(Number(score) || 5)));
+  const input = documentRef.getElementById("reviewRating");
+  if (input) input.value = String(rating);
+  documentRef.querySelectorAll(".review-rating-buttons button").forEach((button, index) => {
+    button.classList.toggle("active", index < rating);
+  });
+  return rating;
+}
+
+export function showReviewPhotoPlaceholder(message, documentRef = document) {
+  const preview = documentRef.getElementById("reviewPhotoPreview");
+  if (preview) preview.innerHTML = "<span>" + message + "</span>";
+}
+
+export function showReviewPhotoPreview(dataUrl, documentRef = document) {
+  const preview = documentRef.getElementById("reviewPhotoPreview");
+  if (preview) preview.innerHTML = '<img src="' + dataUrl + '" alt="리뷰 사진 미리보기" />';
+  const clearButton = documentRef.getElementById("reviewPhotoClearButton");
+  const help = documentRef.getElementById("reviewPhotoHelp");
+  if (clearButton) clearButton.disabled = false;
+  if (help) help.textContent = "선택한 사진을 삭제하거나 다른 사진으로 교체할 수 있습니다.";
+}
+
+export function showReviewPhotoRemoved(documentRef = document) {
+  const input = documentRef.getElementById("reviewPhoto");
+  const clearButton = documentRef.getElementById("reviewPhotoClearButton");
+  const help = documentRef.getElementById("reviewPhotoHelp");
+  if (input) input.value = "";
+  showReviewPhotoPlaceholder("저장하면 리뷰 사진이 삭제됩니다", documentRef);
+  if (clearButton) clearButton.disabled = true;
+  if (help) help.textContent = "리뷰 저장을 누르면 사진 없이 저장됩니다.";
+}
