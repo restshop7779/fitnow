@@ -146,6 +146,7 @@ import {
   adminReviewModerationSummaryMarkup,
   adminHomeBoardMarkup,
   adminTodoBoardMarkup,
+  deliveryClaimOrdersMarkup,
   adminModeBannerMarkup,
   adminReleaseReadinessMarkup,
   deliveryRiderGroupsMarkup,
@@ -2423,39 +2424,14 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       }
 
       function renderDeliveryClaimOrders(orders) {
-        if (!orders.length) return '<div class="line-item"><span>현재 배정 대기 주문이 없습니다</span><strong>대기</strong></div>';
-        return orders.map((order) => {
-          const storeNames = order.items.map((item) => item.showroom).filter((store, idx, stores) => stores.indexOf(store) === idx).join(", ");
-          const pickupText = storeNames || "픽업지 확인 필요";
-          const nextState = deliveryNextActionState(order);
-          const canClaim = canCurrentDeliveryClaimOrder(order);
-          const totalAdminActions = currentAdmin && currentAdmin.role === "total";
-          const deliverySelectId = "claimRider-" + order.id;
-          const dongtanSelectId = "claimDongtanRider-" + order.id;
-          const osanSelectId = "claimOsanRider-" + order.id;
-          return `
-            <div class="vendor-product-row admin-order-row">
-              <div>
-                <strong>${order.id} · 오픈콜 <span class="admin-status-badge ${nextState.cls}">${nextState.label}</span></strong>
-                <span>픽업지: ${pickupText}</span>
-                <span>도착지: ${order.address}</span>
-                <span>다음 작업: ${nextState.detail}</span>
-                <span>상품 ${order.items.reduce((sum, item) => sum + (item.quantity || 0), 0)}개 · 배송비 ${order.deliveryFee ? formatKRW(order.deliveryFee) : "무료"}</span>
-              </div>
-              <div class="mini-actions order-detail-action">
-                ${totalAdminActions ? `
-                  <select id="${dongtanSelectId}">${riderOptionsForPartner("지금배송 동탄센터")}</select>
-                  <button type="button" onclick="adminAssignDelivery('${order.id}', '지금배송 동탄센터', selectedValue('${dongtanSelectId}'))">동탄센터 배정</button>
-                  <select id="${osanSelectId}">${riderOptionsForPartner("지금배송 오산센터")}</select>
-                  <button type="button" onclick="adminAssignDelivery('${order.id}', '지금배송 오산센터', selectedValue('${osanSelectId}'))">오산센터 배정</button>
-                ` : `
-                  ${canClaim ? `<select id="${deliverySelectId}">${riderOptionsForPartner(currentAdmin.name)}</select>` : ""}
-                  <button type="button" ${canClaim ? "" : "disabled"} onclick="claimDeliveryOrder('${order.id}', selectedValue('${deliverySelectId}'))">${canClaim ? "내가 배정받기" : "배송사 로그인 필요"}</button>
-                `}
-              </div>
-            </div>
-          `;
-        }).join("");
+        return deliveryClaimOrdersMarkup(orders, {
+          canCurrentDeliveryClaimOrder,
+          currentAdminName: currentAdmin ? currentAdmin.name : "",
+          deliveryNextActionState,
+          formatKRW,
+          riderOptionsForPartner,
+          totalAdminActions: currentAdmin && currentAdmin.role === "total",
+        });
       }
 
       function minutesSince(value) {
