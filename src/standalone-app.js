@@ -88,6 +88,11 @@ import {
   settlementStatusLabel,
 } from "./standalone/settlementStatus.js";
 import {
+  deliverySettlementRows as buildDeliverySettlementRows,
+  heldSettlementRows as buildHeldSettlementRows,
+  paidSettlementRows as buildPaidSettlementRows,
+} from "./standalone/settlementRows.js";
+import {
   deliveryFormMarkup,
   emptyOrderSummaryMarkup,
   emptyOrdersMarkup,
@@ -4405,6 +4410,10 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         return rows.sort((a, b) => a.partnerName.localeCompare(b.partnerName) || a.riderName.localeCompare(b.riderName));
       }
 
+      function settlementRowOptions() {
+        return { assignedRiderLabel, matchesSettlementPeriod, settlementPayout };
+      }
+
       function openSettlementStatement() {
         if (!currentAdmin) {
           openAdminLogin();
@@ -4479,25 +4488,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       }
 
       function deliverySettlementRows(orders) {
-        const rows = [];
-        orders.map(applyStoredSettlementStatus)
-          .filter((order) => !isOrderCancelled(order) && (order.progressStep || 0) >= 4 && hasDeliveryProof(order, "arrival") && order.settlementStatus !== "paid" && order.settlementStatus !== "held" && matchesSettlementPeriod(order, "open"))
-          .forEach((order) => {
-            const partnerName = order.deliveryPartnerName || "미배정";
-            const riderName = assignedRiderLabel(order);
-            let row = rows.find((item) => item.partnerName === partnerName && item.riderName === riderName);
-            if (!row) {
-              row = { partnerName, riderName, count: 0, pendingCount: 0, confirmedCount: 0, feeTotal: 0, payout: 0, orderIds: [] };
-              rows.push(row);
-            }
-            row.count += 1;
-            row.orderIds.push(order.id);
-            if (order.settlementStatus === "confirmed") row.confirmedCount += 1;
-            else row.pendingCount += 1;
-            row.feeTotal += order.deliveryFee || 0;
-            row.payout += settlementPayout(order.deliveryFee || 0, partnerName, riderName);
-          });
-        return rows.sort((a, b) => b.payout - a.payout || a.partnerName.localeCompare(b.partnerName));
+        return buildDeliverySettlementRows(orders, settlementRowOptions());
       }
 
       function renderDeliverySettlement(orders) {
@@ -4539,23 +4530,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       }
 
       function paidSettlementRows(orders) {
-        const rows = [];
-        orders.map(applyStoredSettlementStatus)
-          .filter((order) => !isOrderCancelled(order) && order.settlementStatus === "paid" && matchesSettlementPeriod(order, "paid"))
-          .forEach((order) => {
-            const partnerName = order.deliveryPartnerName || "미배정";
-            const riderName = assignedRiderLabel(order);
-            const paidDate = order.settlementPaidAt ? new Date(order.settlementPaidAt).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "지급일 미기록";
-            let row = rows.find((item) => item.partnerName === partnerName && item.riderName === riderName && item.paidDate === paidDate);
-            if (!row) {
-              row = { partnerName, riderName, paidDate, count: 0, feeTotal: 0, payout: 0 };
-              rows.push(row);
-            }
-            row.count += 1;
-            row.feeTotal += order.deliveryFee || 0;
-            row.payout += settlementPayout(order.deliveryFee || 0, partnerName, riderName);
-          });
-        return rows.sort((a, b) => b.paidDate.localeCompare(a.paidDate));
+        return buildPaidSettlementRows(orders, settlementRowOptions());
       }
 
       function renderPaidSettlements(orders) {
@@ -4585,24 +4560,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       }
 
       function heldSettlementRows(orders) {
-        const rows = [];
-        orders.map(applyStoredSettlementStatus)
-          .filter((order) => !isOrderCancelled(order) && order.settlementStatus === "held" && matchesSettlementPeriod(order, "held"))
-          .forEach((order) => {
-            const partnerName = order.deliveryPartnerName || "미배정";
-            const riderName = assignedRiderLabel(order);
-            const reason = order.settlementHoldReason || "사유 미입력";
-            const heldDate = order.settlementHeldAt ? new Date(order.settlementHeldAt).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "보류일 미기록";
-            let row = rows.find((item) => item.partnerName === partnerName && item.riderName === riderName && item.reason === reason);
-            if (!row) {
-              row = { partnerName, riderName, reason, heldDate, count: 0, feeTotal: 0, payout: 0 };
-              rows.push(row);
-            }
-            row.count += 1;
-            row.feeTotal += order.deliveryFee || 0;
-            row.payout += settlementPayout(order.deliveryFee || 0, partnerName, riderName);
-          });
-        return rows.sort((a, b) => b.heldDate.localeCompare(a.heldDate) || b.payout - a.payout);
+        return buildHeldSettlementRows(orders, settlementRowOptions());
       }
 
       function renderHeldSettlements(orders) {
