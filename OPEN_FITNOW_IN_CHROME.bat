@@ -1,2 +1,3 @@
 @echo off
-start "" "C:\Program Files\Google\Chrome\Application\chrome.exe" --new-window "%~dp0dist\index.react.html"
+cd /d "%~dp0"
+call "%~dp002_PREVIEW_BUILD_AND_OPEN.bat"
