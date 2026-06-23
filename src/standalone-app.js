@@ -144,6 +144,7 @@ import {
   adminOrderPrimaryActionMarkup,
   adminReviewModerationListMarkup,
   adminReviewModerationSummaryMarkup,
+  adminTodoBoardMarkup,
   adminModeBannerMarkup,
   adminReleaseReadinessMarkup,
   deliveryWorkShortcutsMarkup,
@@ -5501,25 +5502,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
 
       function renderAdminTodoBoard(orders = []) {
         const items = adminTodoItems(orders);
-        const total = items.reduce((sum, item) => sum + item.count, 0);
-        return `
-          <div class="admin-todo-board">
-            <div class="admin-todo-head">
-              <strong>오늘 처리할 운영 TODO</strong>
-              <span>${total ? total + "건 확인 필요" : "긴급 처리 항목 없음"}</span>
-            </div>
-            <div class="admin-todo-grid">
-              ${items.map((item) => `
-                <button type="button" class="admin-todo-card ${item.cls}" data-admin-todo="${item.key}" aria-label="${item.label} ${item.count}건 ${item.count ? item.action : "완료"}" ${item.count ? "" : "disabled"}>
-                  <span>${item.label}</span>
-                  <strong>${item.count}건</strong>
-                  <em>${item.detail}</em>
-                  <small>${item.count ? item.action : "완료"}</small>
-                </button>
-              `).join("")}
-            </div>
-          </div>
-        `;
+        return adminTodoBoardMarkup(items);
       }
 
       function renderAdminHomeBoard(orders = [], totalMode = true) {
