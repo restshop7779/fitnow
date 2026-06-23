@@ -142,6 +142,8 @@ import {
   adminOrderGroupedListMarkup,
   adminOrderListRowData,
   adminOrderPrimaryActionMarkup,
+  adminReviewModerationListMarkup,
+  adminReviewModerationSummaryMarkup,
   adminModeBannerMarkup,
   adminReleaseReadinessMarkup,
   deliveryWorkShortcutsMarkup,
@@ -5255,46 +5257,11 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           list.innerHTML = "";
           return;
         }
-        const hiddenCount = reviews.filter((review) => review.isHidden).length;
-        const visibleCount = reviews.length - hiddenCount;
-        summary.innerHTML = `
-          <div class="admin-review-summary">
-            <div><span>공개 리뷰</span><strong>${visibleCount}건</strong></div>
-            <div><span>숨김 리뷰</span><strong>${hiddenCount}건</strong></div>
-            <div><span>전체 리뷰</span><strong>${reviews.length}건</strong></div>
-          </div>
-        `;
-        const items = [...reviews]
-          .sort((a, b) => Number(!!b.isHidden) - Number(!!a.isHidden) || new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
-          .slice(0, 30);
-        list.innerHTML = items.length ? items.map((review) => {
-          const key = reviewModerationKey(review);
-          const status = review.isHidden ? "숨김" : "공개";
-          const dateLabel = review.createdAt ? new Date(review.createdAt).toLocaleDateString("ko-KR", { month: "short", day: "numeric" }) : "날짜 없음";
-          return `
-            <div class="admin-review-card${review.isHidden ? " hidden" : ""}">
-              <div>
-                <div class="admin-review-card-head">
-                  <strong>${review.productName || review.productKey} · 별점 ${review.rating || 0}</strong>
-                  <span class="admin-status-badge ${review.isHidden ? "cancelled" : "done"}">${status}</span>
-                </div>
-                <p>${review.comment || "리뷰 내용 없음"}</p>
-                <div class="admin-review-meta">
-                  <span>${review.showroom || "입점업체"} · ${review.customerName || "고객"} · ${review.size || "FREE"}</span>
-                  <span>${dateLabel}</span>
-                </div>
-                ${review.fit ? '<div class="admin-review-meta"><span>핏감 ' + review.fit + '</span></div>' : ""}
-                ${review.isHidden ? '<div class="admin-review-hidden-reason">사유: ' + (review.hiddenReason || "사유 없음") + (review.hiddenBy ? " · 처리 " + review.hiddenBy : "") + '</div>' : ""}
-                ${renderReviewPhoto(review)}
-              </div>
-              <div class="admin-review-actions">
-                ${review.isHidden
-                  ? `<button type="button" onclick="restoreReviewVisibility('${key}')">다시 노출</button>`
-                  : `<button type="button" onclick="hideReviewFromAdmin('${key}')">숨김</button>`}
-              </div>
-            </div>
-          `;
-        }).join("") : '<div class="line-item"><span>등록된 리뷰가 없습니다</span><strong>리뷰 대기</strong></div>';
+        summary.innerHTML = adminReviewModerationSummaryMarkup(reviews);
+        list.innerHTML = adminReviewModerationListMarkup(reviews, {
+          renderReviewPhoto,
+          reviewModerationKey,
+        });
       }
 
       async function hideReviewFromAdmin(key) {
