@@ -93,6 +93,15 @@ import {
   paidSettlementRows as buildPaidSettlementRows,
 } from "./standalone/settlementRows.js";
 import {
+  csvCell,
+  settlementClosableOrders as buildSettlementClosableOrders,
+  settlementCsvText,
+  settlementExportModeLabel,
+  settlementExportOrders as buildSettlementExportOrders,
+  settlementStatementRows as buildSettlementStatementRows,
+  settlementStatementTotals,
+} from "./standalone/settlementExports.js";
+import {
   deliveryFormMarkup,
   emptyOrderSummaryMarkup,
   emptyOrdersMarkup,
@@ -3710,33 +3719,26 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         return "전체";
       }
 
-      function settlementExportModeLabel(mode) {
-        if (mode === "closed") return "마감완료";
-        if (mode === "open") return "정산예정";
-        if (mode === "paid") return "지급완료";
-        if (mode === "held") return "보류";
-        return "전체";
-      }
-
-      function csvCell(value) {
-        const text = String(value ?? "").replace(/\r?\n/g, " ");
-        return /[",\n]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
-      }
-
       function settlementExportOrders(mode = "all") {
         const sourceOrders = ordersForSettlementPartnerFilter(adminRenderedOrders.length ? adminRenderedOrders : ordersForCurrentAdmin(orderHistory));
-        return sourceOrders.map(applyStoredSettlementStatus).filter((order) => {
-          if (isOrderCancelled(order) || (order.progressStep || 0) < 4 || !hasDeliveryProof(order, "arrival")) return false;
-          if (mode === "open") return order.settlementStatus !== "paid" && order.settlementStatus !== "held" && matchesSettlementPeriod(order, "open");
-          if (mode === "paid") return order.settlementStatus === "paid" && matchesSettlementPeriod(order, "paid");
-          if (mode === "held") return order.settlementStatus === "held" && matchesSettlementPeriod(order, "held");
-          if (mode === "closed") return !!order.settlementClosedAt && matchesSettlementPeriod(order, "paid");
-          return matchesSettlementPeriod(order, order.settlementStatus === "paid" ? "paid" : order.settlementStatus === "held" ? "held" : "open");
-        });
+        return buildSettlementExportOrders(sourceOrders, mode, { matchesSettlementPeriod });
       }
 
       function settlementClosableOrders() {
-        return settlementExportOrders("paid").filter((order) => !order.settlementClosedAt);
+        const sourceOrders = ordersForSettlementPartnerFilter(adminRenderedOrders.length ? adminRenderedOrders : ordersForCurrentAdmin(orderHistory));
+        return buildSettlementClosableOrders(sourceOrders, { matchesSettlementPeriod });
+      }
+
+      function settlementExportOptions() {
+        return {
+          assignedRiderLabel,
+          currentCustomerName: currentCustomer.name || "",
+          orderDisplayLabel,
+          riderSettlementRate,
+          settlementPayout,
+          settlementPeriodLabel,
+          settlementTimeLabel,
+        };
       }
 
       function downloadSettlementCsv(mode = "all") {
@@ -3749,47 +3751,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           setSyncStatus(settlementExportModeLabel(mode) + " 다운로드할 정산 데이터가 없습니다");
           return;
         }
-        const headers = ["구분", "주문번호", "배송사", "기사", "주문상태", "정산상태", "기간필터", "도착인증일", "정산확정일", "정산확정자", "지급완료일", "보류일", "보류사유", "마감일", "마감자", "마감명", "배송비", "정산율", "지급액", "픽업지/매장", "도착지", "고객", "상품"];
-        const rows = orders.map((order) => {
-          const partnerName = order.deliveryPartnerName || "미배정";
-          const riderName = assignedRiderLabel(order);
-          const rate = riderSettlementRate(partnerName, riderName);
-          const payout = settlementPayout(order.deliveryFee || 0, partnerName, riderName);
-          const stores = order.items.map((item) => item.showroom).filter((store, index, list) => store && list.indexOf(store) === index).join(" / ");
-          const productsText = order.items.map((item) => item.name + " " + (item.size || "One size") + " x" + (item.quantity || 1)).join(" / ");
-          return [
-            settlementExportModeLabel(mode),
-            order.id,
-            partnerName,
-            riderName,
-            orderDisplayLabel(order),
-            settlementStatusLabel(order),
-            settlementPeriodLabel(),
-            settlementTimeLabel(order.arrivalConfirmedAt),
-            settlementTimeLabel(order.settlementConfirmedAt),
-            order.settlementConfirmedBy || "",
-            settlementTimeLabel(order.settlementPaidAt),
-            settlementTimeLabel(order.settlementHeldAt),
-            order.settlementHoldReason || "",
-            settlementTimeLabel(order.settlementClosedAt),
-            order.settlementClosedBy || "",
-            order.settlementCloseLabel || "",
-            order.deliveryFee || 0,
-            rate + "%",
-            payout,
-            stores,
-            order.address || order.region || "",
-            order.customerName || currentCustomer.name || "",
-            productsText,
-          ];
-        });
-        const totals = rows.reduce((sum, row) => {
-          sum.fee += Number(row[15]) || 0;
-          sum.payout += Number(row[17]) || 0;
-          return sum;
-        }, { fee: 0, payout: 0 });
-        const footer = ["합계", orders.length + "건", "", "", "", "", settlementPeriodLabel(), "", "", "", "", "", "", "", "", "", totals.fee, "", totals.payout, "", "", "", ""];
-        const csv = [headers, ...rows, footer].map((row) => row.map(csvCell).join(",")).join("\r\n");
+        const csv = settlementCsvText(orders, mode, settlementExportOptions());
         const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
         const link = document.createElement("a");
         const today = new Date().toISOString().slice(0, 10);
@@ -4389,25 +4351,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       }
 
       function settlementStatementRows() {
-        const rows = [];
-        settlementExportOrders("all").forEach((order) => {
-          const partnerName = order.deliveryPartnerName || "미배정";
-          const riderName = assignedRiderLabel(order);
-          let row = rows.find((item) => item.partnerName === partnerName && item.riderName === riderName);
-          if (!row) {
-            row = { partnerName, riderName, count: 0, open: 0, confirmed: 0, paid: 0, held: 0, closed: 0, feeTotal: 0, payout: 0 };
-            rows.push(row);
-          }
-          row.count += 1;
-          if (order.settlementStatus === "paid") row.paid += 1;
-          else if (order.settlementStatus === "held") row.held += 1;
-          else if (order.settlementStatus === "confirmed") row.confirmed += 1;
-          else row.open += 1;
-          if (order.settlementClosedAt) row.closed += 1;
-          row.feeTotal += order.deliveryFee || 0;
-          row.payout += settlementPayout(order.deliveryFee || 0, partnerName, riderName);
-        });
-        return rows.sort((a, b) => a.partnerName.localeCompare(b.partnerName) || a.riderName.localeCompare(b.riderName));
+        return buildSettlementStatementRows(settlementExportOrders("all"), { assignedRiderLabel, settlementPayout });
       }
 
       function settlementRowOptions() {
@@ -4423,17 +4367,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         const body = document.getElementById("adminOrderDetailBody");
         if (!body) return;
         const rows = settlementStatementRows();
-        const totals = rows.reduce((sum, row) => {
-          sum.count += row.count;
-          sum.open += row.open;
-          sum.confirmed += row.confirmed;
-          sum.paid += row.paid;
-          sum.held += row.held;
-          sum.closed += row.closed;
-          sum.feeTotal += row.feeTotal;
-          sum.payout += row.payout;
-          return sum;
-        }, { count: 0, open: 0, confirmed: 0, paid: 0, held: 0, closed: 0, feeTotal: 0, payout: 0 });
+        const totals = settlementStatementTotals(rows);
         const scope = settlementPartnerLabel();
         const issuedAt = new Date().toLocaleString("ko-KR", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
         if (title) title.textContent = "지금배송 정산서";
