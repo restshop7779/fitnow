@@ -194,6 +194,89 @@ export function deliveryWarningsMarkup(items = [], options = {}) {
   }).join("");
 }
 
+export function deliveryRiderGroupsMarkup(orders = [], emptyText, badge, actionLabel, actionStep, options = {}) {
+  const assignedRiderLabel = options.assignedRiderLabel || (() => "기사 미배정");
+  const canCurrentAdminManageOrder = options.canCurrentAdminManageOrder || (() => false);
+  const deliveryAreaLabel = options.deliveryAreaLabel || (() => "오산/동탄");
+  const deliveryNextActionState = options.deliveryNextActionState || (() => ({ label: "확인 필요", detail: "주문 상태를 확인해 주세요.", cls: "waiting" }));
+  const formatKRW = options.formatKRW || ((value) => String(value || 0));
+  const hasDeliveryProof = options.hasDeliveryProof || (() => false);
+  const riderLoadBadge = options.riderLoadBadge || (() => ({ label: "대기", cls: "ready" }));
+  if (!orders.length) return '<div class="line-item"><span>' + emptyText + '</span><strong>대기</strong></div>';
+  const grouped = orders.reduce((groups, order) => {
+    const rider = assignedRiderLabel(order);
+    groups[rider] = groups[rider] || [];
+    groups[rider].push(order);
+    return groups;
+  }, {});
+  return Object.entries(grouped).map(([rider, riderOrders], index) => {
+    const riderAreas = riderOrders.map(deliveryAreaLabel).filter((area, idx, areas) => areas.indexOf(area) === idx).join(" / ");
+    const riderFeeTotal = riderOrders.reduce((sum, order) => sum + (order.deliveryFee || 0), 0);
+    const loadBadge = riderLoadBadge(riderOrders, badge);
+    return `
+      <details class="admin-store-group" ${index === 0 ? "open" : ""}>
+        <summary>${rider} <span class="admin-status-badge admin-store-risk ${loadBadge.cls}">${loadBadge.label}</span> <span>${badge.label} ${riderOrders.length}건 · ${riderAreas}</span></summary>
+        <div class="rider-summary-grid">
+          <div>
+            <span>${badge.label}</span>
+            <strong>${riderOrders.length}건</strong>
+          </div>
+          <div>
+            <span>담당 지역</span>
+            <strong>${riderAreas}</strong>
+          </div>
+          <div>
+            <span>총 배송비</span>
+            <strong>${formatKRW(riderFeeTotal)}</strong>
+          </div>
+          <div>
+            <span>현재 상태</span>
+            <strong>${loadBadge.label}</strong>
+          </div>
+        </div>
+        <div class="admin-store-orders">
+          ${riderOrders.map((order) => {
+            const storeNames = order.items.map((item) => item.showroom).filter((store, idx, stores) => stores.indexOf(store) === idx).join(", ");
+            const nextState = deliveryNextActionState(order);
+            const canRunAction = actionLabel && (
+              (actionStep === 3 && nextState.label === "배송중 처리 가능") ||
+              (actionStep === 4 && nextState.label === "배송완료 가능")
+            );
+            let actionMarkup = "";
+            if (actionLabel) {
+              let buttonLabel = canRunAction ? actionLabel : nextState.label;
+              let buttonAction = `adminAdvanceOrder('${order.id}', ${actionStep})`;
+              let buttonEnabled = canRunAction;
+              if (actionStep === 3 && nextState.label === "픽업 인증 필요") {
+                buttonLabel = "픽업 인증";
+                buttonAction = `startDeliveryProofCapture('${order.id}', 'pickup')`;
+                buttonEnabled = canCurrentAdminManageOrder(order);
+              } else if (actionStep === 4 && nextState.label === "도착 인증 필요") {
+                buttonLabel = "도착 인증";
+                buttonAction = `startDeliveryProofCapture('${order.id}', 'arrival')`;
+                buttonEnabled = canCurrentAdminManageOrder(order);
+              }
+              actionMarkup = `<div class="mini-actions order-detail-action"><button type="button" ${buttonEnabled ? "" : "disabled"} onclick="${buttonAction}">${buttonLabel}</button></div>`;
+            }
+            return `
+              <div class="vendor-product-row admin-order-row">
+                <div>
+                  <strong>${order.id} · ${badge.label} <span class="admin-status-badge ${nextState.cls}">${nextState.label}</span></strong>
+                  <span>${storeNames || "업체 미확인"} · ${order.deliveryPartnerName || "지금배송 배정"}</span>
+                  <span>${order.address}</span>
+                  <span>다음 작업: ${nextState.detail}</span>
+                  <span>픽업 ${hasDeliveryProof(order, "pickup") ? "인증완료" : "미인증"} · 도착 ${hasDeliveryProof(order, "arrival") ? "인증완료" : "미인증"}</span>
+                </div>
+                ${actionMarkup}
+              </div>
+            `;
+          }).join("")}
+        </div>
+      </details>
+    `;
+  }).join("");
+}
+
 export function adminOrderAssignmentActionsMarkup(state, options = {}) {
   const {
     order,
