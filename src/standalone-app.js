@@ -138,6 +138,7 @@ import {
 } from "./standalone/riders.js";
 import {
   adminOrderAssignmentActionsMarkup,
+  adminOrderDetailMarkup,
   adminOrderPrimaryActionMarkup,
   adminModeBannerMarkup,
   adminReleaseReadinessMarkup,
@@ -6246,133 +6247,44 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           step,
           selectIds: actionSelectIds,
         }, actionViewOptions);
-        const groupedItems = (order.items || []).reduce((groups, item) => {
-          const store = item.showroom || "업체 미확인";
-          groups[store] = groups[store] || [];
-          groups[store].push(item);
-          return groups;
-        }, {});
         if (title) title.textContent = order.id;
-        body.innerHTML = `
-          <div class="order-detail-grid">
-            <div class="rider-task-panel">
-              <div class="rider-task-head">
-                <span class="admin-status-badge ${nextState.cls}">${nextState.label}</span>
-                <strong>${order.id}</strong>
-                <p>${nextState.detail}</p>
-              </div>
-              <div class="rider-task-grid">
-                <div>
-                  <span>픽업지</span>
-                  <strong>${pickupSummary}</strong>
-                </div>
-                <div>
-                  <span>도착지</span>
-                  <strong>${order.address || "도착지 확인 필요"}</strong>
-                </div>
-                <div>
-                  <span>상품</span>
-                  <strong>${itemCount}개 · ${itemSummary}</strong>
-                </div>
-                <div>
-                  <span>고객 요청</span>
-                  <strong>${order.receiveType || "문앞 수령"} · ${order.riderRequest || "요청 없음"}</strong>
-                </div>
-                <div>
-                  <span>담당</span>
-                  <strong>${order.deliveryPartnerName || "오픈콜 대기"} · ${assignedRiderLabel(order)}</strong>
-                </div>
-                <div>
-                  <span>인증</span>
-                  <strong>픽업 ${pickupAuthed ? "완료" : "필요"} · 도착 ${arrivalAuthed ? "완료" : "필요"}</strong>
-                </div>
-                <div>
-                  <span>정산 상태</span>
-                  <strong>${settlementSummary.status} · 배송비 ${formatKRW(order.deliveryFee || 0)}</strong>
-                </div>
-                <div>
-                  <span>기사 정산</span>
-                  <strong>${settlementSummary.ready ? formatKRW(settlementSummary.payout) : "예정 " + formatKRW(settlementSummary.payout)} · ${settlementSummary.rate}%</strong>
-                </div>
-              </div>
-              ${primaryActionMarkup}
-            </div>
-            <div class="order-detail-block">
-              <strong>${orderDisplayLabel(order)} · ${formatKRW(order.total || order.subtotal || 0)}</strong>
-              <span>운영 상태: ${cancelled ? "취소 완료" : readyForDelivery ? "배송 처리 가능" : "업체 픽업 준비 대기"}</span>
-              <span>다음 작업: ${nextState.label} · ${nextState.detail}</span>
-              <span>배송 담당: ${assignedRiderLabel(order)}</span>
-            </div>
-            <div class="order-detail-block">
-              <strong>업체별 상품 구성</strong>
-              ${Object.entries(groupedItems).map(([store, items]) => '<span>' + store + ' · ' + items.map((item) => item.name + ' ' + (item.size || 'One size') + ' x ' + (item.quantity || 0)).join(', ') + '</span>').join("")}
-            </div>
-            <div class="order-detail-block">
-              <strong>수령 · 결제 정보</strong>
-              <span>${order.address}</span>
-              <span>${order.receiveType || "문앞 수령"} · 요청: ${order.riderRequest || "없음"}</span>
-              <span>${order.paymentMethod || "카카오페이"} · ${paymentLabelForOrder(order)}</span>
-            </div>
-            <div class="order-detail-block">
-              <strong>픽업 · 도착 인증</strong>
-              <span>픽업 인증: ${deliveryProofLabel(order, "pickup")}</span>
-              <span>도착 인증: ${deliveryProofLabel(order, "arrival")}</span>
-              ${renderDeliveryProofPhoto(deliveryProofPhoto(order, "pickup"), "픽업 인증 사진")}
-              ${renderDeliveryProofPhoto(deliveryProofPhoto(order, "arrival"), "도착 인증 사진")}
-            </div>
-            <div class="order-detail-block">
-              <strong>정산 처리 이력</strong>
-              <span>확정, 지급, 보류, 마감 기록을 시간순으로 확인합니다.</span>
-              ${renderSettlementAuditTrail(order)}
-            </div>
-            <div class="mini-actions">
-              <button type="button" ${proofActionReady && !pickupAuthed ? "" : "disabled"} onclick="startDeliveryProofCapture('${order.id}', 'pickup')">${pickupAuthed ? "픽업 인증됨" : "사진 픽업 인증"}</button>
-              <button type="button" ${proofActionReady && step >= 3 && !arrivalAuthed ? "" : "disabled"} onclick="startDeliveryProofCapture('${order.id}', 'arrival')">${arrivalAuthed ? "도착 인증됨" : step < 3 ? "배송중 이후 가능" : "사진 도착 인증"}</button>
-            </div>
-            ${cancelled ? `
-              <div class="order-detail-block">
-                <strong>취소 · 환불</strong>
-                <span>취소 분류: ${cancelReasonLabel(order)}</span>
-                <span>취소 사유: ${order.cancelReason || "사유 미입력"}</span>
-                <span>환불 상태: ${paymentLabelForOrder(order)}</span>
-                ${order.cancelReasonCode === "return_refund" && isOpenRefundStatus(order) ? '<span>처리 기한: ' + returnRefundProcessInfo(order).label + '</span>' : ""}
-                ${order.refundHandledBy ? '<span>처리자: ' + order.refundHandledBy + '</span>' : ""}
-                ${order.refundMemo ? '<span>처리 메모: ' + order.refundMemo + '</span>' : ""}
-              </div>
-            ` : ""}
-            <div class="vendor-detail-actions admin-detail-actions">
-              <div class="vendor-detail-action-group">
-                <strong>배송 처리</strong>
-                ${cancelled ? '<span>취소된 주문이라 배송 중, 배송 완료, 주문 취소 처리는 닫혔습니다.</span>' : `
-                  <div class="mini-actions vendor-detail-action-buttons">
-                    <button type="button" ${deliveryActionReady ? "" : "disabled"} onclick="adminAdvanceOrderFromDetail('${order.id}', 3)">${!readyForDelivery ? "픽업 대기" : !isDeliveryOrderClaimed(order) ? "배정 대기" : !pickupAuthed ? "픽업 인증 필요" : step >= 3 ? "배송 중 처리됨" : "배송 중"}</button>
-                    <button type="button" ${deliveryCompleteReady ? "" : "disabled"} onclick="adminAdvanceOrderFromDetail('${order.id}', 4)">${step < 3 ? "배송 대기" : !arrivalAuthed ? "도착 인증 필요" : step >= 4 ? "배송 완료됨" : "배송 완료"}</button>
-                    <button class="danger" type="button" ${currentAdmin.role === "total" && canCancelOrder(order) ? "" : "disabled"} onclick="cancelAdminOrderFromDetail('${order.id}')">${currentAdmin.role === "total" ? "주문 취소" : "총관리자 전용"}</button>
-                  </div>
-                `}
-              </div>
-              ${order.cancelReasonCode === "return_refund" ? `
-                <div class="vendor-detail-action-group refund-action-group">
-                  <strong>반품/환불 처리</strong>
-                  <span>${customerRefundStatusLabel(order) || paymentLabelForOrder(order)} · ${isOpenRefundStatus(order) ? returnRefundProcessInfo(order).label : "처리 완료"}</span>
-                  <div class="refund-action-buttons">
-                    <button class="refund-approve" type="button" ${currentAdmin.role === "total" && canReviewReturnRefund(order) ? "" : "disabled"} onclick="approveReturnRefundFromDetail('${order.id}')">승인</button>
-                    <button class="refund-reject" type="button" ${currentAdmin.role === "total" && canReviewReturnRefund(order) ? "" : "disabled"} onclick="rejectReturnRefundFromDetail('${order.id}')">거절</button>
-                    <button class="refund-complete" type="button" ${currentAdmin.role === "total" && canCompleteRefund(order) ? "" : "disabled"} onclick="completeRefundFromDetail('${order.id}')">${currentAdmin.role === "total" && canCompleteRefund(order) ? "환불 완료" : currentAdmin.role === "total" ? paymentLabelForOrder(order) : "총관리자 전용"}</button>
-                  </div>
-                </div>
-              ` : ""}
-            </div>
-            ${assignmentActions}
-            <div class="order-detail-block">
-              <strong>배송 운영 로그</strong>
-              <span>배정, 회수, 배송 상태 변경 이력이 시간순으로 기록됩니다.</span>
-            </div>
-            <div class="admin-store-orders">
-              ${renderDeliveryLogs(order)}
-            </div>
-          </div>
-        `;
+        body.innerHTML = adminOrderDetailMarkup({
+          order,
+          step,
+          cancelled,
+          readyForDelivery,
+          pickupAuthed,
+          arrivalAuthed,
+          deliveryActionReady,
+          deliveryCompleteReady,
+          proofActionReady,
+          nextState,
+          pickupSummary,
+          itemSummary,
+          itemCount,
+          settlementSummary,
+          primaryActionMarkup,
+          assignmentActions,
+          adminRole: currentAdmin.role,
+        }, {
+          assignedRiderLabel,
+          canCancelOrder,
+          canCompleteRefund,
+          canReviewReturnRefund,
+          cancelReasonLabel,
+          customerRefundStatusLabel,
+          deliveryProofLabel,
+          deliveryProofPhoto,
+          formatKRW,
+          isDeliveryOrderClaimed,
+          isOpenRefundStatus,
+          orderDisplayLabel,
+          paymentLabelForOrder,
+          renderDeliveryLogs,
+          renderDeliveryProofPhoto,
+          renderSettlementAuditTrail,
+          returnRefundProcessInfo,
+        });
         document.getElementById("adminOrderDetailModal").classList.add("open");
         document.getElementById("adminOrderDetailModal").setAttribute("aria-hidden", "false");
       }
