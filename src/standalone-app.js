@@ -142,6 +142,7 @@ import {
   deliveryWorkShortcutsMarkup,
   riderNicknameManagerMarkup,
   riderWorkBoardMarkup,
+  settlementDetailMarkup,
 } from "./standalone/adminViews.js";
 import {
   deliveryFormMarkup,
@@ -4208,49 +4209,18 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         if (!body) return;
         const totalFee = rows.reduce((sum, order) => sum + (order.deliveryFee || 0), 0);
         const totalPayout = rows.reduce((sum, order) => sum + settlementPayout(order.deliveryFee || 0, partnerName, riderName), 0);
-        body.innerHTML = `
-          <div class="order-detail-grid">
-            <div class="order-detail-block">
-              <strong>${partnerName} · ${riderName}</strong>
-              <span>${mode === "paid" ? "지급 완료 내역" : mode === "held" ? "보류 내역" : "주문별 정산 예정/지급 대기 내역"} · ${rows.length}건</span>
-              <span>총 배송비 ${formatKRW(totalFee)} · 지급액 ${formatKRW(totalPayout)}</span>
-            </div>
-            <div class="admin-store-orders">
-              ${rows.length ? rows.map((order) => {
-                const rate = riderSettlementRate(partnerName, riderName);
-                const payout = settlementPayout(order.deliveryFee || 0, partnerName, riderName);
-                const statusLabel = order.settlementStatus === "paid" ? "지급완료" : order.settlementStatus === "held" ? "보류" : order.settlementStatus === "confirmed" ? "지급대기" : "확정대기";
-                const statusClass = order.settlementStatus === "paid" ? "done" : order.settlementStatus === "held" ? "waiting" : order.settlementStatus === "confirmed" ? "moving" : "ready";
-                const confirmer = order.settlementConfirmedBy || (order.settlementConfirmedAt ? "총관리자" : "미확정");
-                const confirmDisabled = currentAdmin && currentAdmin.role === "total" && !order.settlementStatus ? "" : "disabled";
-                const auditEvents = settlementAuditEvents(order);
-                const latestAudit = auditEvents[0];
-                return `
-                  <div class="vendor-product-row admin-order-row">
-                    <div>
-                      <strong>${order.id} <span class="admin-status-badge ${statusClass}">${statusLabel}</span></strong>
-                      <div class="settlement-detail-progress">
-                        <div><span>현재 상태</span><strong>${statusLabel}</strong></div>
-                        <div><span>최근 처리</span><strong>${latestAudit ? latestAudit.label : "처리 대기"}</strong></div>
-                        <div><span>최근 시각</span><strong>${latestAudit ? settlementTimeLabel(latestAudit.at) : "미처리"}</strong></div>
-                      </div>
-                      <span>배송비 ${formatKRW(order.deliveryFee || 0)} · 정산율 ${rate}% · 지급액 ${formatKRW(payout)}</span>
-                      <span>정산확정 ${settlementTimeLabel(order.settlementConfirmedAt)} · 확정자 ${confirmer}</span>
-                      <span>지급완료 ${settlementTimeLabel(order.settlementPaidAt)}</span>
-                      ${order.settlementClosedAt ? `<span>정산마감 ${settlementTimeLabel(order.settlementClosedAt)} · ${order.settlementCloseLabel || "마감명 없음"}</span>` : ""}
-                      ${order.settlementStatus === "held" ? `<span>보류 사유: ${order.settlementHoldReason || "사유 미입력"} · 보류일 ${settlementTimeLabel(order.settlementHeldAt)}</span>` : ""}
-                      ${renderSettlementAuditTrail(order, { compact: true })}
-                    </div>
-                    <div class="mini-actions order-detail-action">
-                      ${mode === "open" ? `<button class="${order.settlementStatus ? "settlement-waiting" : "settlement-confirm"}" type="button" ${confirmDisabled} onclick="confirmSettlementOrder('${order.id}', true)">${order.settlementStatus === "confirmed" ? "확정됨" : "정산 확정"}</button>` : ""}
-                      <button type="button" onclick="openAdminOrderDetail('${order.id}')">주문 상세</button>
-                    </div>
-                  </div>
-                `;
-              }).join("") : '<div class="line-item"><span>표시할 정산 주문이 없습니다</span><strong>비어있음</strong></div>'}
-            </div>
-          </div>
-        `;
+        body.innerHTML = settlementDetailMarkup(
+          { partnerName, riderName, mode, rows, totalFee, totalPayout },
+          {
+            canConfirmOpenOrder: (order) => !!(currentAdmin && currentAdmin.role === "total" && !order.settlementStatus),
+            formatKRW,
+            renderSettlementAuditTrail,
+            riderSettlementRate,
+            settlementAuditEvents,
+            settlementPayout,
+            settlementTimeLabel,
+          }
+        );
         document.getElementById("adminOrderDetailModal").classList.add("open");
         document.getElementById("adminOrderDetailModal").setAttribute("aria-hidden", "false");
       }
