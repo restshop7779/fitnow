@@ -1,14 +1,29 @@
 ﻿import {
   ADMIN_STORAGE_KEY,
+  ADMIN_QA_CHECKLIST_KEY,
+  AVATAR_LOOK_RECOMMEND_STORAGE_KEY,
+  AVATAR_LOOK_SAVED_STORAGE_KEY,
+  AVATAR_LOOK_SHARE_PARAM,
   CUSTOMER_STORAGE_KEY,
+  DELIVERY_PROOF_RETENTION_DAYS,
+  DELIVERY_PROOF_RETENTION_MS,
+  FIT_PROFILE_STORAGE_KEY,
   ORDER_STATUS_STORAGE_KEY,
   RECENT_VIEW_STORAGE_KEY,
   REVIEW_STORAGE_KEY,
+  RETURN_REFUND_PROCESS_HOURS,
+  RETURN_REFUND_PROCESS_MS,
+  RETURN_REFUND_WINDOW_DAYS,
+  RETURN_REFUND_WINDOW_MS,
   RIDER_NICKNAME_STORAGE_KEY,
+  SETTLEMENT_FLOW_CHECK_LOG_KEY,
   SETTLEMENT_RATE_STORAGE_KEY,
   SETTLEMENT_STATUS_STORAGE_KEY,
   SUPABASE_ANON_KEY,
   SUPABASE_URL,
+  TEST_DATA_RETENTION_KEY,
+  TEST_DATA_RETENTION_OPTIONS,
+  TEST_TOOL_META_KEY,
   VENDOR_STORAGE_KEY,
   WISHLIST_STORAGE_KEY,
   adminAccount,
@@ -69,26 +84,6 @@ import {
 } from "./standalone/orderViews.js";
 import * as THREE from "three";
 import realFitModelImage from "../assets/fitnow-real-fit-model.png";
-
-      const SETTLEMENT_FLOW_CHECK_LOG_KEY = "fitnow_settlement_flow_check_logs";
-      const TEST_DATA_RETENTION_KEY = "fitnow_test_data_retention";
-      const TEST_TOOL_META_KEY = "fitnow_test_tool_meta";
-      const ADMIN_QA_CHECKLIST_KEY = "fitnow_admin_qa_checklist";
-      const FIT_PROFILE_STORAGE_KEY = "fitnow_fit_profile";
-      const AVATAR_LOOK_RECOMMEND_STORAGE_KEY = "fitnow_avatar_look_recommendations";
-      const AVATAR_LOOK_SAVED_STORAGE_KEY = "fitnow_avatar_look_saved";
-      const AVATAR_LOOK_SHARE_PARAM = "avatarLook";
-      const DELIVERY_PROOF_RETENTION_DAYS = 30;
-      const DELIVERY_PROOF_RETENTION_MS = DELIVERY_PROOF_RETENTION_DAYS * 24 * 60 * 60 * 1000;
-      const RETURN_REFUND_WINDOW_DAYS = 14;
-      const RETURN_REFUND_WINDOW_MS = RETURN_REFUND_WINDOW_DAYS * 24 * 60 * 60 * 1000;
-      const RETURN_REFUND_PROCESS_HOURS = 24;
-      const RETURN_REFUND_PROCESS_MS = RETURN_REFUND_PROCESS_HOURS * 60 * 60 * 1000;
-      const TEST_DATA_RETENTION_OPTIONS = {
-        "1h": { label: "1시간", ms: 60 * 60 * 1000 },
-        "24h": { label: "24시간", ms: 24 * 60 * 60 * 1000 },
-        "7d": { label: "7일", ms: 7 * 24 * 60 * 60 * 1000 },
-      };
 
       function isAdminAccessEnabled() {
         const params = new URLSearchParams(window.location.search || "");

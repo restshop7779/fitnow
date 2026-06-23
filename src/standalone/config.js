@@ -59,4 +59,23 @@ export const RECENT_VIEW_STORAGE_KEY = "fitnow-recent-views";
 export const RIDER_NICKNAME_STORAGE_KEY = "fitnow-rider-nicknames";
 export const SETTLEMENT_RATE_STORAGE_KEY = "fitnow-settlement-rates";
 export const SETTLEMENT_STATUS_STORAGE_KEY = "fitnow-settlement-status";
+export const SETTLEMENT_FLOW_CHECK_LOG_KEY = "fitnow_settlement_flow_check_logs";
+export const TEST_DATA_RETENTION_KEY = "fitnow_test_data_retention";
+export const TEST_TOOL_META_KEY = "fitnow_test_tool_meta";
+export const ADMIN_QA_CHECKLIST_KEY = "fitnow_admin_qa_checklist";
+export const FIT_PROFILE_STORAGE_KEY = "fitnow_fit_profile";
+export const AVATAR_LOOK_RECOMMEND_STORAGE_KEY = "fitnow_avatar_look_recommendations";
+export const AVATAR_LOOK_SAVED_STORAGE_KEY = "fitnow_avatar_look_saved";
+export const AVATAR_LOOK_SHARE_PARAM = "avatarLook";
+export const DELIVERY_PROOF_RETENTION_DAYS = 30;
+export const DELIVERY_PROOF_RETENTION_MS = DELIVERY_PROOF_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+export const RETURN_REFUND_WINDOW_DAYS = 14;
+export const RETURN_REFUND_WINDOW_MS = RETURN_REFUND_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+export const RETURN_REFUND_PROCESS_HOURS = 24;
+export const RETURN_REFUND_PROCESS_MS = RETURN_REFUND_PROCESS_HOURS * 60 * 60 * 1000;
+export const TEST_DATA_RETENTION_OPTIONS = {
+  "1h": { label: "1시간", ms: 60 * 60 * 1000 },
+  "24h": { label: "24시간", ms: 24 * 60 * 60 * 1000 },
+  "7d": { label: "7일", ms: 7 * 24 * 60 * 60 * 1000 },
+};
 
