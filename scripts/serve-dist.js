@@ -23,7 +23,10 @@ function sendFile(response, filePath) {
       response.end("Not found");
       return;
     }
-    response.writeHead(200, { "Content-Type": mime[path.extname(filePath)] || "application/octet-stream" });
+    response.writeHead(200, {
+      "Content-Type": mime[path.extname(filePath)] || "application/octet-stream",
+      "Cache-Control": "no-store, max-age=0",
+    });
     response.end(content);
   });
 }

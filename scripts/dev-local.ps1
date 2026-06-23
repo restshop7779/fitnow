@@ -2,7 +2,7 @@ $ErrorActionPreference = "Stop"
 
 $Root = Split-Path -Parent $PSScriptRoot
 $Node = "C:\Users\PC\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe"
-$Vite = Join-Path $Root "node_modules\.pnpm\vite@8.0.14\node_modules\vite\bin\vite.js"
+$Vite = Join-Path $Root "node_modules\vite\bin\vite.js"
 
 if (-not (Test-Path $Node)) {
   throw "Bundled Node.js was not found: $Node"
