@@ -47,6 +47,15 @@ async function clickAndCheck(page, clickSelector, modalSelector, label, options 
   await expectModal(page, modalSelector, label);
 }
 
+async function clickFirstProductAndCheck(page) {
+  const productCards = page.locator("#productGrid .product-card");
+  const count = await productCards.count();
+  if (!count) fail("product detail click target count was 0");
+  await productCards.first().scrollIntoViewIfNeeded();
+  await productCards.first().click({ position: { x: 72, y: 232 } });
+  await expectModal(page, "#detailModal", "product detail");
+}
+
 async function main() {
   const server = spawn(process.execPath, [path.join(root, "scripts", "serve-dist.js")], {
     cwd: root,
@@ -83,7 +92,7 @@ async function main() {
       if (hidden !== "true") fail("my modal did not close");
     });
 
-    await clickAndCheck(page, "#productGrid .product-card", "#detailModal", "product detail", { first: true, position: { x: 20, y: 20 } });
+    await clickFirstProductAndCheck(page);
     await page.locator('#detailModal button[onclick="closeDetail()"]').click();
     await page.waitForSelector("#detailModal.open", { state: "detached", timeout: 5000 }).catch(async () => {
       const hidden = await page.locator("#detailModal").getAttribute("aria-hidden");

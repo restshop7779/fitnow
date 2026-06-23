@@ -1,83 +1,80 @@
 # FitNow 개발 메모
 
-## 현재 방향
+## 현재 구조
 
-FitNow는 음식 배달이 아니라 패션 아이템을 즉시 배송하는 모바일 앱 콘셉트입니다. 배달앱처럼 익숙한 주문 흐름을 유지하면서, 쇼룸 재고, 스타일 추천, 배송 추적, 예약 완료 영수증까지 패션 서비스에 맞게 구성했습니다.
+FitNow는 Vite 기반 단일 페이지 앱입니다. 현재 실제 화면은 `index.react.html`에서 시작하고, 핵심 로직은 `src/standalone-app.js`에 많이 모여 있습니다.
 
-## 현재 앱 상태
+주요 파일:
 
-- 정적 구버전 미리보기는 `index.html`에 남아 있습니다.
-- 실제 확장 중인 앱은 React/Vite 버전이며 `index.react.html`과 `src/` 아래에 구현되어 있습니다.
-- 빌드 결과는 `dist/index.react.html`에 생성됩니다.
-- 상품/쇼룸 기본 데이터는 `src/data.js`에 있습니다.
-- 주요 UI는 `src/components/` 아래에 있습니다.
-- Supabase REST 연결은 `src/lib/supabaseClient.js`에서 담당합니다.
-- 상품/쇼룸 조회는 `src/services/catalogService.js`, 주문 저장/조회는 `src/services/orderService.js`에 있습니다.
-- 로컬 저장 유틸은 `src/utils/storage.js`에 있습니다.
+| 경로 | 역할 |
+| --- | --- |
+| `index.react.html` | 앱 진입 HTML |
+| `src/standalone-app.js` | 현재 메인 앱 로직 |
+| `src/styles.css` | 현재 메인 스타일 |
+| `src/standalone/config.js` | 저장소 키, Supabase 환경값 등 공통 설정 |
+| `src/services/*` | React 소스 쪽 Supabase 서비스 |
+| `scripts/build-local.ps1` | 로컬 확인용 빌드 |
+| `scripts/serve-dist.js` | `dist` 폴더를 서빙하는 확인용 서버 |
+| `scripts/check-deploy-smoke.js` | 배포 산출물 기본 점검 |
+| `scripts/check-home-clicks.js` | 홈 주요 클릭 E2E 점검 |
 
-## 최근 구현
+## 실행 기준
 
-- 상품명, 쇼룸명, 소재 기반 검색을 추가했습니다.
-- 쇼룸 필터, 45분 안 도착 필터, 빠른 도착/매치율/재고순 정렬을 추가했습니다.
-- 상품 카드와 상품 상세에 쇼룸명, 남은 수량, 예상 도착 시간을 표시합니다.
-- 장바구니 수량 증가/감소, 항목 삭제, 배송지 선택, 요청사항 입력을 지원합니다.
-- 게스트 장바구니를 이메일 로그인 계정으로 자동 병합합니다.
-- 주문 목록, 주문 상세, 실시간 추적 화면을 분리했습니다.
-- 주문 완료 후 예약 완료 시트와 영수증 카드를 표시합니다.
-- Supabase 샘플 데이터 입력용 `docs/supabase-seed.sql`을 추가했습니다.
+- 개발 중에는 `01_DEV_SERVER_HOT_RELOAD.bat` 또는 `npm run dev:local`을 사용합니다.
+- 고객/친구에게 보여주기 전에는 `02_PREVIEW_BUILD_AND_OPEN.bat`를 사용합니다.
+- `dist`는 빌드 결과물이므로 원본 수정은 `src`, `scripts`, 문서 파일에서 진행합니다.
 
-## Supabase 프로젝트
+## 현재 주요 기능
 
-Dashboard:
+- 쇼핑 홈, 카테고리, 검색, 필터, 상품 상세
+- 찜, 장바구니, 주문, 고객 추적 화면
+- 카카오/네이버 로그인 테스트 흐름과 게스트 흐름
+- 입점업체 주문 관리, 반품/환불 처리
+- 총관리자 주문/정산/QA 도구
+- 배송 완료 사진 인증 및 Supabase Storage 연동
+- 리뷰 사진 등록, 교체, 삭제, 관리자 숨김 처리
+- 홈 주요 버튼 E2E 및 배포 스모크 체크
+
+## Supabase
+
+Supabase 프로젝트:
 
 ```text
 https://supabase.com/dashboard/project/tncxltvgqnwbezcyewcs
 ```
 
-앱 URL:
+환경 변수는 `.env`에 둡니다. `.env`는 Git에 올리지 않습니다.
 
-```text
-https://tncxltvgqnwbezcyewcs.supabase.co
+```env
+VITE_SUPABASE_URL=https://tncxltvgqnwbezcyewcs.supabase.co
+VITE_SUPABASE_ANON_KEY=...
 ```
 
-현재 `.env`에는 URL만 입력되어 있습니다. `VITE_SUPABASE_ANON_KEY`에는 Supabase Dashboard의 `Project Settings` → `API`에서 `anon public` key를 복사해 넣어야 합니다.
+스키마와 샘플 데이터:
 
-연결 순서:
+- `docs/supabase-schema.sql`
+- `docs/supabase-seed.sql`
 
-1. `.env`에 anon key를 넣습니다.
-2. Supabase SQL Editor에서 `docs/supabase-schema.sql`을 실행합니다.
-3. Supabase SQL Editor에서 `docs/supabase-seed.sql`을 실행합니다.
-4. 앱을 다시 빌드하거나 개발 서버를 재시작합니다.
-5. 앱 상단 상태가 `실시간 쇼룸 재고`로 바뀌면 DB 연결이 된 상태입니다.
+## 작업 전후 체크
 
-자세한 순서는 `SUPABASE_SETUP.md`에 정리했습니다.
-
-## 실행 명령
-
-개발 서버:
+작업 전:
 
 ```powershell
-& "C:\Program Files\nodejs\npm.cmd" run dev:local
+git status --short
 ```
 
-정적 빌드:
+작업 후:
 
 ```powershell
 & "C:\Program Files\nodejs\npm.cmd" run build:local
+& "C:\Program Files\nodejs\npm.cmd" run check:deploy
+& "C:\Program Files\nodejs\npm.cmd" run check:e2e
 ```
 
-## 도구 상태
+푸시 후에는 GitHub Actions의 `Deploy GitHub Pages`가 성공했는지 확인합니다.
 
-- Node.js: `C:\Program Files\nodejs\node.exe`
-- npm: `C:\Program Files\nodejs\npm.cmd`
-- Git: `C:\Program Files\Git\cmd\git.exe`
-- 현재 `node_modules`는 기존 pnpm 설치본을 사용합니다.
-- Codex 환경에서 npm registry 접근이 막힐 수 있어 `build:local`을 우선 사용합니다.
+## 주의할 점
 
-## 다음 작업 후보
-
-1. Supabase anon key 입력 후 실제 DB 연결 확인
-2. 실제 Supabase Auth 사용자 정보 보강
-3. 주문 상태 변경 시뮬레이션
-4. 쇼룸/상품 운영자 입력 화면
-5. 결제 PG 연결 준비
+- `standalone-preview.html`은 과거 작업 이력상 남아 있는 큰 단일 HTML입니다. 현재는 `index.react.html`과 `src` 기준으로 작업합니다.
+- `dist` 폴더는 확인용 빌드 결과라 변경된 것처럼 보여도 보통 커밋하지 않습니다.
+- 문서와 실행 파일은 UTF-8 기준으로 유지합니다.
