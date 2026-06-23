@@ -155,6 +155,7 @@ import {
   riderNicknameManagerMarkup,
   riderWorkBoardMarkup,
   settlementDetailMarkup,
+  settlementRateManagerMarkup,
 } from "./standalone/adminViews.js";
 import {
   deliveryFormMarkup,
@@ -4590,27 +4591,12 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         const visiblePartners = currentAdmin && currentAdmin.role === "delivery"
           ? deliveryPartners.filter((partner) => partner.name === currentAdmin.name)
           : deliveryPartners;
-        return visiblePartners.map((partner) => {
-          const nicknames = riderNicknamesForPartner(partner);
-          const partnerRate = defaultPartnerRate(partner.name);
-          return `
-            <details class="admin-store-group" open>
-              <summary>${partner.name} <span>기본 ${partnerRate}%</span></summary>
-              <div class="vendor-form" style="margin-top: 9px;">
-                <label>배송사 기본 정산율
-                  <input type="number" min="0" max="100" value="${partnerRate}" ${currentAdmin && currentAdmin.role === "total" ? "" : "disabled"} onchange="updatePartnerSettlementRate('${partner.name}', this.value)" />
-                </label>
-              </div>
-              <div class="vendor-form size-stock-grid" style="margin-top: 9px;">
-                ${nicknames.map((name) => `
-                  <label>${name}
-                    <input type="number" min="0" max="100" value="${riderSettlementRate(partner.name, name)}" onchange="updateRiderSettlementRate('${partner.name}', '${name}', this.value)" />
-                  </label>
-                `).join("")}
-              </div>
-            </details>
-          `;
-        }).join("");
+        return settlementRateManagerMarkup(visiblePartners, {
+          canEditPartnerRate: currentAdmin && currentAdmin.role === "total",
+          defaultPartnerRate,
+          riderNicknamesForPartner,
+          riderSettlementRate,
+        });
       }
 
       function settlementBatchOrders(partnerName, riderName, targetStatus) {

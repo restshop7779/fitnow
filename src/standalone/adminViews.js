@@ -708,6 +708,34 @@ export function adminReviewModerationListMarkup(reviews = [], options = {}) {
   }).join("");
 }
 
+export function settlementRateManagerMarkup(visiblePartners = [], options = {}) {
+  const canEditPartnerRate = !!options.canEditPartnerRate;
+  const defaultPartnerRate = options.defaultPartnerRate || (() => 0);
+  const riderNicknamesForPartner = options.riderNicknamesForPartner || (() => []);
+  const riderSettlementRate = options.riderSettlementRate || (() => 0);
+  return visiblePartners.map((partner) => {
+    const nicknames = riderNicknamesForPartner(partner);
+    const partnerRate = defaultPartnerRate(partner.name);
+    return `
+      <details class="admin-store-group" open>
+        <summary>${partner.name} <span>기본 ${partnerRate}%</span></summary>
+        <div class="vendor-form" style="margin-top: 9px;">
+          <label>배송사 기본 정산율
+            <input type="number" min="0" max="100" value="${partnerRate}" ${canEditPartnerRate ? "" : "disabled"} onchange="updatePartnerSettlementRate('${partner.name}', this.value)" />
+          </label>
+        </div>
+        <div class="vendor-form size-stock-grid" style="margin-top: 9px;">
+          ${nicknames.map((name) => `
+            <label>${name}
+              <input type="number" min="0" max="100" value="${riderSettlementRate(partner.name, name)}" onchange="updateRiderSettlementRate('${partner.name}', '${name}', this.value)" />
+            </label>
+          `).join("")}
+        </div>
+      </details>
+    `;
+  }).join("");
+}
+
 export function settlementDetailMarkup({ partnerName, riderName, mode, rows, totalFee, totalPayout }, options = {}) {
   const formatKRW = options.formatKRW || ((value) => String(value || 0));
   const renderSettlementAuditTrail = options.renderSettlementAuditTrail || (() => "");
