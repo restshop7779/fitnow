@@ -83,7 +83,6 @@ import {
 } from "./standalone/orderViews.js";
 import {
   compressDeliveryProofPhoto,
-  dataUrlToBlob,
   deliveryProofCompletedAt,
   deliveryProofLabel,
   deliveryProofPhoto,
@@ -98,6 +97,12 @@ import {
   stripDeliveryProofPhotos,
   uploadDeliveryProofPhoto,
 } from "./standalone/deliveryProof.js";
+import {
+  deleteReviewPhoto,
+  renderReviewPhoto,
+  reviewPhotoSrc,
+  uploadReviewPhoto,
+} from "./standalone/reviews.js";
 import * as THREE from "three";
 import realFitModelImage from "../assets/fitnow-real-fit-model.png";
 
@@ -605,51 +610,6 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
             </div>
           </div>
         `).join("");
-      }
-
-      function reviewPhotoSrc(review) {
-        if (!review) return "";
-        return review.photoPublicUrl || review.photoUrl || review.photoDataUrl || "";
-      }
-
-      function reviewPhotoUploadPath(review) {
-        const safeOrderId = String(review && review.orderId ? review.orderId : "order").replace(/[^a-z0-9_-]/gi, "-").slice(0, 80);
-        const safeProduct = String(review && review.productKey ? review.productKey : "product").replace(/[^a-z0-9_-]/gi, "-").slice(0, 80);
-        const stamp = String(review && review.createdAt ? review.createdAt : new Date().toISOString()).replace(/[^0-9]/g, "").slice(0, 14) || Date.now();
-        return safeOrderId + "/" + safeProduct + "-" + stamp + ".jpg";
-      }
-
-      async function uploadReviewPhoto(review) {
-        if (!supabaseClient || !review || !review.photoDataUrl) return review;
-        const path = reviewPhotoUploadPath(review);
-        const blob = dataUrlToBlob(review.photoDataUrl);
-        const uploadResult = await supabaseClient.storage
-          .from("review-photos")
-          .upload(path, blob, { cacheControl: "3600", upsert: true, contentType: "image/jpeg" });
-        if (uploadResult.error) throw uploadResult.error;
-        const publicResult = supabaseClient.storage.from("review-photos").getPublicUrl(path);
-        review.photoPath = path;
-        review.photoPublicUrl = publicResult && publicResult.data ? publicResult.data.publicUrl : "";
-        delete review.photoDataUrl;
-        return review;
-      }
-
-      async function deleteReviewPhoto(path) {
-        if (!supabaseClient || !path) return;
-        const result = await supabaseClient.storage.from("review-photos").remove([path]);
-        if (result.error) throw result.error;
-      }
-
-      function renderReviewPhoto(review) {
-        const src = reviewPhotoSrc(review);
-        if (!src) return "";
-        const mediaSrc = safeMediaUrl(src);
-        return `
-          <div class="review-photo-media">
-            <img src="${mediaSrc}" alt="리뷰 사진">
-            ${review.photoPublicUrl ? '<a class="delivery-proof-link" href="' + mediaSrc + '" target="_blank" rel="noopener">사진 원본 보기</a>' : ""}
-          </div>
-        `;
       }
 
       function startDeliveryProofCapture(orderId, type) {
@@ -8053,7 +8013,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         if (!supabaseClient || !review) return;
         if (review.photoDataUrl && !review.photoPublicUrl) {
           try {
-            await uploadReviewPhoto(review);
+            await uploadReviewPhoto(supabaseClient, review);
           } catch (error) {
             setSyncStatus("리뷰 사진 저장소 업로드 실패 - 리뷰 내용 먼저 저장");
           }
@@ -8105,7 +8065,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         review.id = result.data.id;
         if (review.previousPhotoPath && review.previousPhotoPath !== review.photoPath) {
           try {
-            await deleteReviewPhoto(review.previousPhotoPath);
+            await deleteReviewPhoto(supabaseClient, review.previousPhotoPath);
           } catch (error) {
             setSyncStatus("이전 리뷰 사진 삭제 실패 - Storage 권한 확인 필요");
           }
