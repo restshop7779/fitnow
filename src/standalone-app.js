@@ -144,6 +144,7 @@ import {
   adminOrderPrimaryActionMarkup,
   adminReviewModerationListMarkup,
   adminReviewModerationSummaryMarkup,
+  adminHomeBoardMarkup,
   adminTodoBoardMarkup,
   adminModeBannerMarkup,
   adminReleaseReadinessMarkup,
@@ -5535,37 +5536,22 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         if (!alerts.length) alerts.push({ text: "현재 총관리자 알림이 없습니다. 앱 운영 상태가 안정적이에요.", good: true });
         const diagnostic = adminDiagnosticState(orders);
         const retentionLabel = testDataRetentionOption().label;
-        const diagnosticNotice = diagnostic.hasTestState ? `
-          <div class="admin-test-notice">
-            <div>
-              <span>운영 확인 전 정리 필요</span>
-              <strong>테스트 데이터가 운영 TODO에 섞일 수 있습니다.</strong>
-              <p>테스트 주문 ${diagnostic.orders}건 · 테스트 상태 ${diagnostic.statuses}건 · 점검 로그 ${diagnostic.logs}건 · ${retentionLabel} 초과 자동 정리</p>
-            </div>
-            <button type="button" onclick="clearAdminTestData()">테스트 데이터 정리</button>
-          </div>
-        ` : "";
-        body.innerHTML = `
-          ${diagnosticNotice}
-          ${renderAdminTodoBoard(orders)}
-          <div class="vendor-home-grid">
-            <div class="vendor-home-tile"><span>오늘 총주문</span><strong>${orders.filter(isTodayOrder).length}건</strong></div>
-            <div class="vendor-home-tile"><span>결제완료</span><strong>${paidOrders.length}건</strong></div>
-            <div class="vendor-home-tile"><span>배송중</span><strong>${deliveringOrders.length}건</strong></div>
-            <div class="vendor-home-tile"><span>환불대기</span><strong>${refundPendingOrders.length}건</strong></div>
-            <div class="vendor-home-tile"><span>오늘 총매출</span><strong>${formatKRW(todaySales)}</strong></div>
-            <div class="vendor-home-tile"><span>입점업체</span><strong>${stats.length}곳</strong></div>
-          </div>
-          <div class="vendor-alert-list">
-            ${alerts.map((alert) => '<div class="vendor-alert-row ' + (alert.good ? 'good' : '') + '">' + alert.text + '</div>').join("")}
-          </div>
-          <div class="admin-tool-actions">
-            <button class="admin-tool-action primary" type="button" onclick="openAdminFinalQaScenario()">QA 시나리오</button>
-            <button class="admin-tool-action" type="button" data-admin-cleanup-check="true">DB 삭제권한 점검</button>
-          </div>
-          <div class="admin-utility-status" data-return-refund-visibility-status aria-live="polite">반품/환불 표시 점검 결과가 여기에 표시됩니다.</div>
-          <div class="admin-utility-status" data-admin-cleanup-status aria-live="polite">DB 삭제권한 점검 결과가 여기에 표시됩니다.</div>
-        `;
+        body.innerHTML = adminHomeBoardMarkup({
+          alerts,
+          diagnostic,
+          retentionLabel,
+          stats,
+          totals: {
+            deliveringOrders: deliveringOrders.length,
+            paidOrders: paidOrders.length,
+            refundPendingOrders: refundPendingOrders.length,
+            todayOrders: orders.filter(isTodayOrder).length,
+            todaySales,
+          },
+        }, {
+          formatKRW,
+          todoBoardMarkup: renderAdminTodoBoard(orders),
+        });
         bindAdminTodoButtons(body);
         bindAdminUtilityButtons(body);
       }

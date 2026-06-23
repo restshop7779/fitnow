@@ -132,6 +132,43 @@ export function adminTodoBoardMarkup(items = []) {
   `;
 }
 
+export function adminHomeBoardMarkup(data, options = {}) {
+  const formatKRW = options.formatKRW || ((value) => String(value || 0));
+  const todoBoardMarkup = options.todoBoardMarkup || "";
+  const { alerts, diagnostic, retentionLabel, stats, totals } = data;
+  const diagnosticNotice = diagnostic.hasTestState ? `
+    <div class="admin-test-notice">
+      <div>
+        <span>운영 확인 전 정리 필요</span>
+        <strong>테스트 데이터가 운영 TODO에 섞일 수 있습니다.</strong>
+        <p>테스트 주문 ${diagnostic.orders}건 · 테스트 상태 ${diagnostic.statuses}건 · 점검 로그 ${diagnostic.logs}건 · ${retentionLabel} 초과 자동 정리</p>
+      </div>
+      <button type="button" onclick="clearAdminTestData()">테스트 데이터 정리</button>
+    </div>
+  ` : "";
+  return `
+    ${diagnosticNotice}
+    ${todoBoardMarkup}
+    <div class="vendor-home-grid">
+      <div class="vendor-home-tile"><span>오늘 총주문</span><strong>${totals.todayOrders}건</strong></div>
+      <div class="vendor-home-tile"><span>결제완료</span><strong>${totals.paidOrders}건</strong></div>
+      <div class="vendor-home-tile"><span>배송중</span><strong>${totals.deliveringOrders}건</strong></div>
+      <div class="vendor-home-tile"><span>환불대기</span><strong>${totals.refundPendingOrders}건</strong></div>
+      <div class="vendor-home-tile"><span>오늘 총매출</span><strong>${formatKRW(totals.todaySales)}</strong></div>
+      <div class="vendor-home-tile"><span>입점업체</span><strong>${stats.length}곳</strong></div>
+    </div>
+    <div class="vendor-alert-list">
+      ${alerts.map((alert) => '<div class="vendor-alert-row ' + (alert.good ? 'good' : '') + '">' + alert.text + '</div>').join("")}
+    </div>
+    <div class="admin-tool-actions">
+      <button class="admin-tool-action primary" type="button" onclick="openAdminFinalQaScenario()">QA 시나리오</button>
+      <button class="admin-tool-action" type="button" data-admin-cleanup-check="true">DB 삭제권한 점검</button>
+    </div>
+    <div class="admin-utility-status" data-return-refund-visibility-status aria-live="polite">반품/환불 표시 점검 결과가 여기에 표시됩니다.</div>
+    <div class="admin-utility-status" data-admin-cleanup-status aria-live="polite">DB 삭제권한 점검 결과가 여기에 표시됩니다.</div>
+  `;
+}
+
 export function adminOrderAssignmentActionsMarkup(state, options = {}) {
   const {
     order,
