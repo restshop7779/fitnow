@@ -52,7 +52,7 @@ async function clickFirstProductAndCheck(page) {
   const count = await productCards.count();
   if (!count) fail("product detail click target count was 0");
   await productCards.first().scrollIntoViewIfNeeded();
-  await productCards.first().click({ position: { x: 72, y: 232 } });
+  await productCards.first().press("Enter");
   await expectModal(page, "#detailModal", "product detail");
 }
 
