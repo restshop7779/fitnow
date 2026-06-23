@@ -362,6 +362,95 @@ export function adminOrderDetailMarkup(state, options = {}) {
   `;
 }
 
+export function adminOrderListRowData(order, options = {}) {
+  const assignedRiderLabel = options.assignedRiderLabel || (() => "기사 미배정");
+  const cancelReasonLabel = options.cancelReasonLabel || (() => "미확인");
+  const formatKRW = options.formatKRW || ((value) => String(value || 0));
+  const isOpenRefundStatus = options.isOpenRefundStatus || (() => false);
+  const isOrderCancelled = options.isOrderCancelled || (() => false);
+  const orderDisplayLabel = options.orderDisplayLabel || (() => "주문");
+  const returnRefundProcessInfo = options.returnRefundProcessInfo || (() => ({ label: "처리 기한 확인 필요", overdue: false }));
+  const adminOrderBadge = options.adminOrderBadge || (() => ({ cls: "ready", label: "확인" }));
+  const step = order.progressStep || 0;
+  const cancelled = isOrderCancelled(order);
+  const readyForDelivery = !cancelled && step >= 2;
+  const storeNames = order.items.map((item) => item.showroom).filter((store, index, stores) => stores.indexOf(store) === index).join(", ");
+  const orderTotal = order.total || order.subtotal || 0;
+  const actionStatus = cancelled ? "취소 완료" : readyForDelivery ? "배송 처리 가능" : "업체 픽업 준비 대기";
+  const primaryStore = storeNames.split(", ")[0] || "업체 미확인";
+  const badge = adminOrderBadge(order);
+  return {
+    store: primaryStore,
+    cancelled,
+    readyForDelivery,
+    refundPending: isOpenRefundStatus(order),
+    refundOverdue: order.cancelReasonCode === "return_refund" && isOpenRefundStatus(order) && returnRefundProcessInfo(order).overdue,
+    completed: !cancelled && step >= 4,
+    total: orderTotal,
+    markup: `
+      <div class="vendor-product-row admin-order-row">
+        <div>
+          <strong>${order.id} · ${orderDisplayLabel(order)} <span class="admin-status-badge ${badge.cls}">${badge.label}</span></strong>
+          <span>${storeNames || "업체 미확인"} · ${formatKRW(orderTotal)}</span>
+          <span>${order.address} · ${assignedRiderLabel(order)}</span>
+          <span>${order.paymentMethod || "카카오페이"} · ${actionStatus}</span>
+          ${cancelled ? '<span>취소 분류: ' + cancelReasonLabel(order) + '</span>' : ""}
+          ${order.cancelReasonCode === "return_refund" && isOpenRefundStatus(order) ? '<span>처리 기한: ' + returnRefundProcessInfo(order).label + '</span>' : ""}
+        </div>
+        <div class="mini-actions order-detail-action">
+          <button type="button" onclick="openAdminOrderDetail('${order.id}')">상세보기</button>
+        </div>
+      </div>
+    `,
+  };
+}
+
+export function adminOrderGroupedListMarkup(orderRows, options = {}) {
+  const adminOrderSearchQuery = options.adminOrderSearchQuery || "";
+  const adminStoreRiskBadge = options.adminStoreRiskBadge || (() => ({ cls: "ready", label: "정상" }));
+  const adminStoreRiskMetrics = options.adminStoreRiskMetrics || (() => ({
+    pickupWaiting: 0,
+    refundWaiting: 0,
+    refundOverdue: 0,
+    cancelRate: 0,
+    stoppedItems: 0,
+    payout: 0,
+  }));
+  const formatKRW = options.formatKRW || ((value) => String(value || 0));
+  const grouped = orderRows.reduce((groups, row) => {
+    groups[row.store] = groups[row.store] || [];
+    groups[row.store].push(row);
+    return groups;
+  }, {});
+  return orderRows.length ? Object.entries(grouped).map(([store, rows], index) => {
+    const readyCount = rows.filter((row) => row.readyForDelivery).length;
+    const cancelledCount = rows.filter((row) => row.cancelled).length;
+    const total = rows.reduce((sum, row) => sum + row.total, 0);
+    const risk = adminStoreRiskBadge(store, rows);
+    const metrics = adminStoreRiskMetrics(store, rows);
+    const reportStatus = metrics.refundWaiting || metrics.pickupWaiting || metrics.cancelRate >= 30 || metrics.stoppedItems
+      ? "확인 필요"
+      : "현재 운영 상태 정상";
+    return `
+      <details class="admin-store-group" ${index === 0 ? "open" : ""}>
+        <summary>${store} <span class="admin-status-badge admin-store-risk ${risk.cls}">${risk.label}</span> <span>${rows.length}건 · 배송가능 ${readyCount}건 · 취소 ${cancelledCount}건 · ${formatKRW(total)}</span></summary>
+        <div class="admin-store-report">
+          <div><span>리스크 요약</span><strong>${reportStatus}</strong></div>
+          <div><span>픽업대기</span><strong>${metrics.pickupWaiting}건</strong></div>
+          <div><span>환불대기</span><strong>${metrics.refundWaiting}건</strong></div>
+          <div><span>처리지연</span><strong>${metrics.refundOverdue}건</strong></div>
+          <div><span>취소율</span><strong>${metrics.cancelRate}%</strong></div>
+          <div><span>품절/숨김</span><strong>${metrics.stoppedItems}개</strong></div>
+          <div><span>정산 예정</span><strong>${formatKRW(metrics.payout)}</strong></div>
+        </div>
+        <div class="admin-store-orders">
+          ${rows.map((row) => row.markup).join("")}
+        </div>
+      </details>
+    `;
+  }).join("") : '<div class="line-item"><span>' + (adminOrderSearchQuery ? "검색 결과가 없습니다" : "이 조건에 맞는 주문이 없습니다") + '</span><strong>' + (adminOrderSearchQuery ? "검색어 확인" : "필터 변경") + '</strong></div>';
+}
+
 export function settlementDetailMarkup({ partnerName, riderName, mode, rows, totalFee, totalPayout }, options = {}) {
   const formatKRW = options.formatKRW || ((value) => String(value || 0));
   const renderSettlementAuditTrail = options.renderSettlementAuditTrail || (() => "");
