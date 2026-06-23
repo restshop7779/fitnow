@@ -1,5 +1,50 @@
 import { dataUrlToBlob, safeMediaUrl } from "./deliveryProof.js";
 
+export function normalizeReview(review) {
+  if (!review || !review.orderId || !review.productKey) return null;
+  return {
+    ...review,
+    isHidden: !!review.isHidden,
+    hiddenReason: review.hiddenReason || "",
+    hiddenBy: review.hiddenBy || "",
+    hiddenAt: review.hiddenAt || "",
+  };
+}
+
+export function readReviewStore(storageKey) {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(storageKey) || "[]");
+    return Array.isArray(parsed) ? parsed.map(normalizeReview).filter(Boolean) : [];
+  } catch (error) {
+    localStorage.removeItem(storageKey);
+    return [];
+  }
+}
+
+export function saveReviewStore(storageKey, reviews) {
+  localStorage.setItem(storageKey, JSON.stringify((reviews || []).map(normalizeReview).filter(Boolean).slice(0, 80)));
+}
+
+export function mergeReviews(primary, secondary) {
+  const merged = [];
+  [...primary, ...secondary].forEach((review) => {
+    review = normalizeReview(review);
+    if (!review) return;
+    const key = [review.orderId, review.productKey, review.size || "FREE", review.customerId || ""].join("|");
+    const existing = merged.find((item) => [item.orderId, item.productKey, item.size || "FREE", item.customerId || ""].join("|") === key);
+    if (!existing) {
+      merged.push(review);
+      return;
+    }
+    if (new Date(review.createdAt || 0).getTime() >= new Date(existing.createdAt || 0).getTime()) {
+      Object.assign(existing, review);
+    }
+  });
+  return merged
+    .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+    .slice(0, 80);
+}
+
 export function reviewPhotoSrc(review) {
   if (!review) return "";
   return review.photoPublicUrl || review.photoUrl || review.photoDataUrl || "";

@@ -99,8 +99,11 @@ import {
 } from "./standalone/deliveryProof.js";
 import {
   deleteReviewPhoto,
+  mergeReviews,
+  readReviewStore as readStoredReviews,
   renderReviewPhoto,
   reviewPhotoSrc,
+  saveReviewStore as writeReviewStore,
   uploadReviewPhoto,
 } from "./standalone/reviews.js";
 import * as THREE from "three";
@@ -180,29 +183,12 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       let avatarTryOnState = { status: "idle", photoDataUrl: "", photoName: "" };
       let fit3dRuntime = null;
 
-      function normalizeReview(review) {
-        if (!review || !review.orderId || !review.productKey) return null;
-        return {
-          ...review,
-          isHidden: !!review.isHidden,
-          hiddenReason: review.hiddenReason || "",
-          hiddenBy: review.hiddenBy || "",
-          hiddenAt: review.hiddenAt || "",
-        };
+      function saveReviewStore() {
+        writeReviewStore(REVIEW_STORAGE_KEY, reviews);
       }
 
       function readReviewStore() {
-        try {
-          const parsed = JSON.parse(localStorage.getItem(REVIEW_STORAGE_KEY) || "[]");
-          return Array.isArray(parsed) ? parsed.map(normalizeReview).filter(Boolean) : [];
-        } catch (error) {
-          localStorage.removeItem(REVIEW_STORAGE_KEY);
-          return [];
-        }
-      }
-
-      function saveReviewStore() {
-        localStorage.setItem(REVIEW_STORAGE_KEY, JSON.stringify(reviews.map(normalizeReview).filter(Boolean).slice(0, 80)));
+        return readStoredReviews(REVIEW_STORAGE_KEY);
       }
 
       function readWishlistStore() {
@@ -1470,26 +1456,6 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           hiddenAt: row.hidden_at || "",
           createdAt: row.created_at,
         };
-      }
-
-      function mergeReviews(primary, secondary) {
-        const merged = [];
-        [...primary, ...secondary].forEach((review) => {
-          review = normalizeReview(review);
-          if (!review) return;
-          const key = [review.orderId, review.productKey, review.size || "FREE", review.customerId || ""].join("|");
-          const existing = merged.find((item) => [item.orderId, item.productKey, item.size || "FREE", item.customerId || ""].join("|") === key);
-          if (!existing) {
-            merged.push(review);
-            return;
-          }
-          if (new Date(review.createdAt || 0).getTime() >= new Date(existing.createdAt || 0).getTime()) {
-            Object.assign(existing, review);
-          }
-        });
-        return merged
-          .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
-          .slice(0, 80);
       }
 
       function encodeDeliveryRequest(order) {
