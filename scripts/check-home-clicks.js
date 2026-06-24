@@ -65,12 +65,24 @@ async function waitForStableProductCards(page) {
 
 async function clickFirstProductAndCheck(page) {
   await waitForStableProductCards(page);
-  const count = await page.locator("#productGrid .product-card").count();
-  if (!count) fail("product detail click target count was 0");
-  const firstCard = page.locator("#productGrid .product-card").first();
-  await firstCard.waitFor({ state: "visible", timeout: 10000 });
-  await firstCard.scrollIntoViewIfNeeded();
-  await firstCard.click({ position: { x: 24, y: 24 } });
+  let lastError = null;
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    try {
+      const productCards = page.locator("#productGrid .product-card");
+      const count = await productCards.count();
+      if (!count) fail("product detail click target count was 0");
+      const firstCard = productCards.first();
+      await firstCard.waitFor({ state: "visible", timeout: 10000 });
+      await firstCard.scrollIntoViewIfNeeded();
+      await firstCard.click({ position: { x: 24, y: 24 } });
+      break;
+    } catch (error) {
+      lastError = error;
+      if (attempt === 3) throw lastError;
+      await page.waitForTimeout(250);
+      await waitForStableProductCards(page);
+    }
+  }
   await expectModal(page, "#detailModal", "product detail");
 }
 

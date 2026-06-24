@@ -155,6 +155,8 @@ import {
   riderNicknameManagerMarkup,
   riderWorkBoardMarkup,
   settlementDetailMarkup,
+  settlementFlowCheckLogsMarkup,
+  settlementFlowCheckReportMarkup,
   settlementRateManagerMarkup,
 } from "./standalone/adminViews.js";
 import {
@@ -2598,48 +2600,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           node.innerHTML = "";
           return;
         }
-        if (!settlementFlowCheckLogs.length) {
-          node.innerHTML = `
-            <div class="settlement-check-log settlement-check-log-empty">
-              <div>
-                <span>정산 플로우 점검 로그</span>
-                <strong>아직 실행된 점검이 없습니다.</strong>
-                <p>정산 플로우 점검을 실행하면 생성, 확정, 지급 결과가 여기에 남습니다.</p>
-              </div>
-            </div>
-          `;
-          return;
-        }
-        node.innerHTML = `
-          <div class="settlement-check-log">
-            <div class="settlement-check-log-head">
-              <div>
-                <span>정산 플로우 점검 로그</span>
-                <strong>최근 ${settlementFlowCheckLogs.length}건</strong>
-              </div>
-              <div class="settlement-check-log-head-actions">
-                <button type="button" onclick="openLatestSettlementFlowCheckReport()">최근 리포트</button>
-                <button type="button" onclick="clearSettlementFlowCheckLogs()">초기화</button>
-              </div>
-            </div>
-            <div class="settlement-check-log-list">
-              ${settlementFlowCheckLogs.map((log, index) => `
-                <div class="settlement-check-log-item">
-                  <div class="settlement-audit-step">${settlementFlowCheckLogs.length - index}</div>
-                  <div>
-                    <span class="admin-status-badge ${log.ok ? "done" : "waiting"}">${log.ok ? "통과" : "확인 필요"}</span>
-                    <strong>${log.orderId} · ${log.partnerName} · ${log.riderName}</strong>
-                    <p>${log.steps.join(" → ")} · ${formatKRW(log.payoutTotal)} · ${settlementTimeLabel(log.createdAt)}</p>
-                    <em>${log.message}</em>
-                    <div class="mini-actions settlement-check-log-actions">
-                      <button type="button" onclick="openSettlementFlowCheckReport('${log.orderId}')">상세보기</button>
-                    </div>
-                  </div>
-                </div>
-              `).join("")}
-            </div>
-          </div>
-        `;
+        node.innerHTML = settlementFlowCheckLogsMarkup(settlementFlowCheckLogs, { formatKRW, settlementTimeLabel });
       }
 
       async function openSettlementFlowCheckReport(orderId) {
@@ -2658,37 +2619,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           const order = await findAdminOrder(orderId);
           const orderStatus = order ? settlementStatusLabel(applyStoredSettlementStatus(order)) : "주문 기록 없음";
           const orderTotal = order ? formatKRW(order.deliveryFee || 0) : "확인 불가";
-          body.innerHTML = `
-            <div class="settlement-check-report">
-              <div class="order-detail-block">
-                <strong>${log.orderId}</strong>
-                <span>${log.partnerName} · ${log.riderName}</span>
-                <span>${settlementTimeLabel(log.createdAt)} · ${log.ok ? "자동 점검 통과" : "확인 필요"}</span>
-              </div>
-              <div class="settlement-detail-progress">
-                <div><span>정산 상태</span><strong>${orderStatus}</strong></div>
-                <div><span>배송비</span><strong>${orderTotal}</strong></div>
-                <div><span>지급액</span><strong>${formatKRW(log.payoutTotal)}</strong></div>
-              </div>
-              <div class="settlement-check-report-steps">
-                ${log.steps.map((step, index) => `
-                  <div class="settlement-check-report-step">
-                    <div class="settlement-audit-step">${index + 1}</div>
-                    <div>
-                      <span class="admin-status-badge done">완료</span>
-                      <strong>${step}</strong>
-                      <p>${index === 0 ? "테스트 주문과 정산 상태를 준비했습니다." : index === 1 ? "확정대기 항목을 지급대기로 전환했습니다." : index === 2 ? "지급대기 항목을 지급완료로 처리했습니다." : "지급 완료 탭과 결과 요약에 반영했습니다."}</p>
-                    </div>
-                  </div>
-                `).join("")}
-              </div>
-              <div class="line-item"><span>점검 메시지</span><strong>${log.message}</strong></div>
-              <div class="mini-actions settlement-check-report-actions">
-                <button type="button" onclick="copySettlementFlowCheckReport('${log.orderId}')">텍스트 복사</button>
-                <button type="button" onclick="downloadSettlementFlowCheckReportCsv('${log.orderId}')">CSV 다운로드</button>
-              </div>
-            </div>
-          `;
+          body.innerHTML = settlementFlowCheckReportMarkup({ log, orderStatus, orderTotal }, { formatKRW, settlementTimeLabel });
         }
         document.getElementById("adminOrderDetailModal").classList.add("open");
         document.getElementById("adminOrderDetailModal").setAttribute("aria-hidden", "false");
