@@ -40,6 +40,7 @@ import {
 } from "./standalone/format.js";
 import { selectedValue } from "./standalone/dom.js";
 import { exposeHandlers } from "./standalone/expose.js";
+import { createClient } from "@supabase/supabase-js";
 
 window.__fitnowAppModuleStarted = true;
 
@@ -867,13 +868,14 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       }
 
       function canUseSupabase() {
-        return !!(window.supabase && SUPABASE_URL && SUPABASE_ANON_KEY);
+        return !!(SUPABASE_URL && SUPABASE_ANON_KEY);
       }
 
       function setupClientIfNeeded() {
         if (!canUseSupabase()) return false;
         if (!supabaseClient) {
-          supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+          const clientFactory = window.supabase?.createClient || createClient;
+          supabaseClient = clientFactory(SUPABASE_URL, SUPABASE_ANON_KEY);
           supabaseClient.auth.onAuthStateChange((event, session) => {
             if (session && session.user) {
               applyAuthSession(session);

@@ -1344,8 +1344,14 @@
         touch-action: manipulation;
       }
       body.native-app-shell .cart-bar {
-        bottom: calc(104px + env(safe-area-inset-bottom, 0px));
-        z-index: 900;
+        position: fixed;
+        left: 12px;
+        right: 12px;
+        bottom: calc(116px + env(safe-area-inset-bottom, 0px));
+        z-index: 2147482990;
+        margin: 0;
+        pointer-events: auto;
+        touch-action: manipulation;
       }
       .bottom-tabs button { min-height: 42px; border-radius: 7px; background: transparent; color: var(--muted); font-size: 11px; font-weight: 950; }
       body.native-app-shell .bottom-tabs button {
