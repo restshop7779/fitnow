@@ -257,6 +257,34 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         document.body.classList.toggle("native-app-shell", isNativeAppShell());
       }
 
+      let lastBottomTabHandledAt = 0;
+
+      function handleBottomTabAction(tab) {
+        if (tab === "home") goHome();
+        else if (tab === "looks") openLooks();
+        else if (tab === "management") openManagement();
+        else if (tab === "my") openMyPage();
+      }
+
+      function setupBottomTabHandlers() {
+        const nav = document.querySelector(".bottom-tabs");
+        if (!nav || nav.dataset.bound === "true") return;
+        nav.dataset.bound = "true";
+        const handle = (event) => {
+          const button = event.target && event.target.closest ? event.target.closest("button[data-bottom-tab]") : null;
+          if (!button || !nav.contains(button)) return;
+          const now = Date.now();
+          if (now - lastBottomTabHandledAt < 250) return;
+          lastBottomTabHandledAt = now;
+          event.preventDefault();
+          event.stopPropagation();
+          handleBottomTabAction(button.dataset.bottomTab);
+        };
+        nav.addEventListener("click", handle, true);
+        nav.addEventListener("touchend", handle, true);
+        nav.addEventListener("pointerup", handle, true);
+      }
+
       function requireAdminAccess() {
         return true;
       }
@@ -10660,6 +10688,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       recentViews = readRecentViewStore();
       reviews = readReviewStore();
       applyAdminAccessVisibility();
+      setupBottomTabHandlers();
       restoreSavedCustomer();
       restoreSavedVendor();
       restoreSavedAdmin();

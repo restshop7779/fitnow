@@ -1331,22 +1331,28 @@
       }
       body.native-app-shell .phone-frame {
         height: 100vh;
-        padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px));
+        padding-bottom: calc(130px + env(safe-area-inset-bottom, 0px));
       }
       body.native-app-shell .bottom-tabs {
         position: fixed;
         left: 12px;
         right: 12px;
-        bottom: calc(10px + env(safe-area-inset-bottom, 0px));
-        z-index: 1000;
+        bottom: calc(34px + env(safe-area-inset-bottom, 0px));
+        z-index: 2147483000;
         margin: 0;
         pointer-events: auto;
+        touch-action: manipulation;
       }
       body.native-app-shell .cart-bar {
-        bottom: calc(74px + env(safe-area-inset-bottom, 0px));
+        bottom: calc(104px + env(safe-area-inset-bottom, 0px));
         z-index: 900;
       }
       .bottom-tabs button { min-height: 42px; border-radius: 7px; background: transparent; color: var(--muted); font-size: 11px; font-weight: 950; }
+      body.native-app-shell .bottom-tabs button {
+        min-height: 58px;
+        touch-action: manipulation;
+        pointer-events: auto;
+      }
       .bottom-tabs .active { background: #171717; color: #fff; }
       .vendor-form {
         display: grid;
