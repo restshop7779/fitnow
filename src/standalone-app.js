@@ -266,6 +266,27 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           modal.classList.remove("open");
           modal.setAttribute("aria-hidden", "true");
         });
+        updateModalActiveState();
+      }
+
+      function updateModalActiveState() {
+        document.body.classList.toggle("modal-active", !!document.querySelector(".modal.open"));
+      }
+
+      function openModalById(id) {
+        const modal = document.getElementById(id);
+        if (!modal) return;
+        modal.classList.add("open");
+        modal.setAttribute("aria-hidden", "false");
+        updateModalActiveState();
+      }
+
+      function closeModalById(id) {
+        const modal = document.getElementById(id);
+        if (!modal) return;
+        modal.classList.remove("open");
+        modal.setAttribute("aria-hidden", "true");
+        updateModalActiveState();
       }
 
       function setActiveBottomTab(tab) {
@@ -10185,13 +10206,11 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
 
       function openCartDetail() {
         renderCartDetail();
-        document.getElementById("cartModal").classList.add("open");
-        document.getElementById("cartModal").setAttribute("aria-hidden", "false");
+        openModalById("cartModal");
       }
 
       function closeCartDetail() {
-        document.getElementById("cartModal").classList.remove("open");
-        document.getElementById("cartModal").setAttribute("aria-hidden", "true");
+        closeModalById("cartModal");
       }
 
       function updateCartQuantity(index, delta) {
@@ -11046,8 +11065,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         renderOrderSummary();
         activeStep = 0;
         renderTimeline();
-        document.getElementById("orderModal").classList.add("open");
-        document.getElementById("orderModal").setAttribute("aria-hidden", "false");
+        openModalById("orderModal");
         clearInterval(trackingTimer);
       }
 
@@ -11145,8 +11163,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       }
 
       function closeModal() {
-        document.getElementById("orderModal").classList.remove("open");
-        document.getElementById("orderModal").setAttribute("aria-hidden", "true");
+        closeModalById("orderModal");
       }
 
       function closeDetail() {

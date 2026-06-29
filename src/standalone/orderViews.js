@@ -140,7 +140,9 @@ export function deliveryFormMarkup({ customerName, phone, address }) {
           </div>
           <textarea id="riderRequest" placeholder="예: 도착 전 연락 주세요. 공동현관 비밀번호는 주문 후 안내합니다."></textarea>
         </label>
-        <button class="primary" type="submit">무료배송 예약 확정</button>
+        <div class="order-submit-bar">
+          <button class="primary" type="submit">무료배송 예약 확정</button>
+        </div>
       </form>
     </section>
   `;

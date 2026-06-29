@@ -1353,6 +1353,10 @@
         pointer-events: auto;
         touch-action: manipulation;
       }
+      body.modal-active .cart-bar,
+      body.modal-active .bottom-tabs {
+        display: none;
+      }
       .bottom-tabs button { min-height: 42px; border-radius: 7px; background: transparent; color: var(--muted); font-size: 11px; font-weight: 950; }
       body.native-app-shell .bottom-tabs button {
         min-height: 58px;
@@ -1363,6 +1367,26 @@
       .vendor-form {
         display: grid;
         gap: 10px;
+      }
+      .delivery-form {
+        display: grid;
+        gap: 10px;
+        padding-bottom: 12px;
+      }
+      .order-submit-bar {
+        position: sticky;
+        bottom: -18px;
+        z-index: 3;
+        display: grid;
+        margin: 4px -12px -12px;
+        padding: 12px;
+        border-top: 1px solid var(--line);
+        background: linear-gradient(180deg, rgba(255,250,240,.82), #fffaf0 34%);
+      }
+      .order-submit-bar .primary {
+        width: 100%;
+        min-height: 48px;
+        box-shadow: 0 12px 24px rgba(23,23,23,.12);
       }
       .vendor-form-section {
         display: grid;
