@@ -242,8 +242,19 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           || ["1", "true", "delivery"].includes(params.get("photo-proof-check") || "");
       }
 
+      function isNativeAppShell() {
+        const capacitor = window.Capacitor;
+        return !!(
+          (capacitor && typeof capacitor.isNativePlatform === "function" && capacitor.isNativePlatform()) ||
+          (capacitor && typeof capacitor.getPlatform === "function" && capacitor.getPlatform() !== "web") ||
+          window.location.protocol === "capacitor:" ||
+          (window.location.protocol === "https:" && window.location.hostname === "localhost")
+        );
+      }
+
       function applyAdminAccessVisibility() {
         document.body.classList.toggle("admin-access-enabled", isAdminAccessEnabled());
+        document.body.classList.toggle("native-app-shell", isNativeAppShell());
       }
 
       function requireAdminAccess() {

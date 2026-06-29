@@ -32,6 +32,7 @@
         border-radius: 34px;
         background: var(--paper);
         box-shadow: 0 28px 70px rgba(0,0,0,.22);
+        padding-bottom: 92px;
       }
       .top-bar {
         position: sticky;
@@ -1313,7 +1314,7 @@
       .bottom-tabs {
         position: sticky;
         bottom: 10px;
-        z-index: 4;
+        z-index: 40;
         display: grid;
         grid-template-columns: repeat(4,1fr);
         gap: 4px;
@@ -1322,6 +1323,28 @@
         border: 1px solid var(--line);
         border-radius: 8px;
         background: rgba(255,253,248,.94);
+      }
+      @supports (padding: max(0px)) {
+        .bottom-tabs {
+          margin-bottom: max(0px, env(safe-area-inset-bottom));
+        }
+      }
+      body.native-app-shell .phone-frame {
+        height: 100vh;
+        padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px));
+      }
+      body.native-app-shell .bottom-tabs {
+        position: fixed;
+        left: 12px;
+        right: 12px;
+        bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+        z-index: 1000;
+        margin: 0;
+        pointer-events: auto;
+      }
+      body.native-app-shell .cart-bar {
+        bottom: calc(74px + env(safe-area-inset-bottom, 0px));
+        z-index: 900;
       }
       .bottom-tabs button { min-height: 42px; border-radius: 7px; background: transparent; color: var(--muted); font-size: 11px; font-weight: 950; }
       .bottom-tabs .active { background: #171717; color: #fff; }
