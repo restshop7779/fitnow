@@ -736,6 +736,19 @@ export function settlementRateManagerMarkup(visiblePartners = [], options = {}) 
   }).join("");
 }
 
+export function settlementExportActionsMarkup(counts, options = {}) {
+  const canCloseSettlement = !!options.canCloseSettlement;
+  return `
+    <button type="button" onclick="openSettlementStatement()">정산서 미리보기</button>
+    <button type="button" onclick="downloadSettlementCsv('all')">전체 ${counts.all}건</button>
+    <button type="button" onclick="downloadSettlementCsv('open')">정산예정 ${counts.open}건</button>
+    <button type="button" onclick="downloadSettlementCsv('paid')">지급완료 ${counts.paid}건</button>
+    <button type="button" onclick="downloadSettlementCsv('held')">보류 ${counts.held}건</button>
+    <button type="button" onclick="downloadSettlementCsv('closed')">마감완료 ${counts.closed}건</button>
+    ${canCloseSettlement ? '<button type="button" onclick="closeSettlementPeriod()">이번 기간 마감 ' + counts.closable + '건</button>' : ""}
+  `;
+}
+
 export function settlementFlowCheckLogsMarkup(logs = [], options = {}) {
   const formatKRW = options.formatKRW || ((value) => String(value || 0));
   const settlementTimeLabel = options.settlementTimeLabel || ((value) => value || "미처리");
