@@ -231,6 +231,8 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         const capacitor = window.Capacitor;
         if (capacitor && typeof capacitor.isNativePlatform === "function" && capacitor.isNativePlatform()) return true;
         if (capacitor && typeof capacitor.getPlatform === "function" && capacitor.getPlatform() !== "web") return true;
+        if (window.location.protocol === "capacitor:") return true;
+        if (window.location.protocol === "https:" && window.location.hostname === "localhost") return true;
         const params = new URLSearchParams(window.location.search || "");
         return ["1", "true", "yes"].includes(params.get("admin") || "")
           || ["1", "true", "yes"].includes(params.get("manage") || "")
