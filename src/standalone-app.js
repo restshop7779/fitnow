@@ -713,7 +713,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         }
         node.innerHTML = `
           <div class="account-manager-grid">
-            <form class="account-manager-card" onsubmit="saveVendorAccountFromAdmin(event)">
+            <form class="account-manager-card vendor-account-card" onsubmit="saveVendorAccountFromAdmin(event)">
               <div class="account-manager-head">
                 <div>
                   <strong>입점업체</strong>
@@ -751,7 +751,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
                 <button type="button" onclick="fillVendorAccountForm('')">신규 입력</button>
               </div>
             </form>
-            <form class="account-manager-card" onsubmit="saveDeliveryPartnerFromAdmin(event)">
+            <form class="account-manager-card delivery-account-card" onsubmit="saveDeliveryPartnerFromAdmin(event)">
               <div class="account-manager-head">
                 <div>
                   <strong>배송사</strong>

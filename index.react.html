@@ -591,6 +591,10 @@
           <button class="close" type="button" onclick="closeAdmin()">X</button>
         </div>
         <div class="vendor-session" id="adminSession">운영자 로그인 후 배송을 관리할 수 있습니다.</div>
+        <details class="summary-card vendor-collapsible admin-only" id="adminAccountManagementSection" open style="margin-top: 12px;">
+          <summary>입점업체/배송사 계정 관리</summary>
+          <div id="adminAccountManagement"></div>
+        </details>
         <div id="adminModeBanner"></div>
         <div id="adminReleaseReadiness"></div>
         <div id="adminDeliveryWorkShortcuts"></div>
@@ -608,10 +612,6 @@
             <span>앱 전체 주문, 정산, 환불, 배송 현황 관리</span>
           </div>
         </div>
-        <details class="summary-card vendor-collapsible admin-only" id="adminAccountManagementSection" open style="margin-top: 12px;">
-          <summary>입점업체/배송사 계정 관리</summary>
-          <div id="adminAccountManagement"></div>
-        </details>
         <details class="summary-card vendor-collapsible" id="adminDeliveryDashboardSection">
           <summary>배송 대시보드</summary>
           <div class="line-item" id="adminDeliveryScope"><span>담당 범위</span><strong>전체 배송권역</strong></div>
