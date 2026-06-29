@@ -379,7 +379,7 @@ using (bucket_id = 'review-photos');
 
 select
   'fitnow_schema_ready' as check_name,
-  (select count(*) from information_schema.tables where table_schema = 'public' and table_name in ('showrooms', 'products', 'orders', 'order_items', 'look_sets', 'look_set_items', 'product_reviews', 'wishlists')) as public_table_count,
+  (select count(*) from information_schema.tables where table_schema = 'public' and table_name in ('showrooms', 'products', 'orders', 'order_items', 'look_sets', 'look_set_items', 'product_reviews', 'wishlists', 'partner_accounts')) as public_table_count,
   (select count(*) from storage.buckets where id = 'product-images') as product_image_bucket_count,
   (select count(*) from storage.buckets where id = 'delivery-proof-photos') as delivery_proof_photo_bucket_count,
   (select count(*) from storage.buckets where id = 'review-photos') as review_photo_bucket_count;
