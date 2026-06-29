@@ -15,6 +15,12 @@ Android Studio:
 corepack pnpm run cap:android
 ```
 
+Android debug APK:
+
+```powershell
+corepack pnpm run android:debug
+```
+
 Xcode on macOS:
 
 ```powershell
@@ -47,16 +53,34 @@ These are needed for delivery proof photos, review photos, and product images.
 
 Android APK/AAB builds require:
 
-- JDK 17 or newer
+- JDK 21 or newer
 - Android SDK with platform 36 and build tools installed
 - Android Studio recommended
 
-This Windows workspace did not have Android SDK installed. A portable JDK was prepared under `.tools`, but Android command line tools download did not complete due slow network. After Android Studio is installed, run:
+This Windows workspace now has portable local build tools under `.tools`:
+
+- `.tools/jdk-21`
+- `.tools/android-sdk`
+
+The verified debug APK path is:
+
+```text
+android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+To rebuild it:
 
 ```powershell
-corepack pnpm run cap:sync
-cd android
-.\gradlew.bat assembleDebug
+corepack pnpm run android:debug
 ```
 
 iOS builds require macOS with Xcode. The iOS project files are generated here, but final iPhone build/archive must be done on a Mac.
+
+## Install on a connected Galaxy device
+
+Enable developer options and USB debugging on the phone, connect it by USB, then run:
+
+```powershell
+.\.tools\android-sdk\platform-tools\adb.exe devices
+.\.tools\android-sdk\platform-tools\adb.exe install -r .\android\app\build\outputs\apk\debug\app-debug.apk
+```
