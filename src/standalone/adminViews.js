@@ -749,6 +749,57 @@ export function settlementExportActionsMarkup(counts, options = {}) {
   `;
 }
 
+export function settlementStatementMarkup(data, options = {}) {
+  const formatKRW = options.formatKRW || ((value) => String(value || 0));
+  const { issuedAt, periodLabel, rows, scope, totals } = data;
+  return `
+    <div class="settlement-statement">
+      <div class="statement-title">
+        <strong>FITNOW 지금배송 정산서</strong>
+        <span>${scope} · ${periodLabel} · 발행 ${issuedAt}</span>
+      </div>
+      <div class="mini-actions settlement-export-actions">
+        <button type="button" onclick="window.print()">인쇄 / PDF 저장</button>
+        <button type="button" onclick="downloadSettlementCsv('all')">CSV 다운로드</button>
+      </div>
+      <div class="statement-grid">
+        <div class="statement-tile"><span>정산 대상</span><strong>${totals.count}건</strong></div>
+        <div class="statement-tile"><span>총 배송비</span><strong>${formatKRW(totals.feeTotal)}</strong></div>
+        <div class="statement-tile"><span>지급 예정액</span><strong>${formatKRW(totals.payout)}</strong></div>
+        <div class="statement-tile"><span>상태</span><strong>예정 ${totals.open} · 대기 ${totals.confirmed} · 완료 ${totals.paid} · 보류 ${totals.held} · 마감 ${totals.closed}</strong></div>
+      </div>
+      <table class="statement-table">
+        <thead>
+          <tr>
+            <th>배송사</th>
+            <th>기사</th>
+            <th>건수</th>
+            <th>상태</th>
+            <th>배송비</th>
+            <th>지급액</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.length ? rows.map((row) => `
+            <tr>
+              <td>${row.partnerName}</td>
+              <td>${row.riderName}</td>
+              <td>${row.count}건</td>
+              <td>예정 ${row.open} · 대기 ${row.confirmed} · 완료 ${row.paid} · 보류 ${row.held} · 마감 ${row.closed}</td>
+              <td>${formatKRW(row.feeTotal)}</td>
+              <td>${formatKRW(row.payout)}</td>
+            </tr>
+          `).join("") : `
+            <tr>
+              <td colspan="6">현재 기간에 출력할 정산 데이터가 없습니다.</td>
+            </tr>
+          `}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
 export function settlementFlowCheckLogsMarkup(logs = [], options = {}) {
   const formatKRW = options.formatKRW || ((value) => String(value || 0));
   const settlementTimeLabel = options.settlementTimeLabel || ((value) => value || "미처리");
