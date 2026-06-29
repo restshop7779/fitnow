@@ -21,6 +21,12 @@ Android debug APK:
 corepack pnpm run android:debug
 ```
 
+Android release bundle:
+
+```powershell
+corepack pnpm run android:bundle
+```
+
 Xcode on macOS:
 
 ```powershell
@@ -68,13 +74,22 @@ The verified debug APK path is:
 android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
+The verified release bundle path is:
+
+```text
+android/app/build/outputs/bundle/release/app-release.aab
+```
+
 To rebuild it:
 
 ```powershell
 corepack pnpm run android:debug
+corepack pnpm run android:bundle
 ```
 
 iOS builds require macOS with Xcode. The iOS project files are generated here, but final iPhone build/archive must be done on a Mac.
+
+Before Play Console upload, configure the real upload signing key and keep the keystore outside Git. The current release bundle confirms that the Android release build pipeline works, but store submission should use the final upload key and version code.
 
 ## Install on a connected Galaxy device
 
