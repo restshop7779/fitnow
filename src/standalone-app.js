@@ -157,7 +157,9 @@ import {
   settlementDetailMarkup,
   settlementFlowCheckLogsMarkup,
   settlementFlowCheckReportMarkup,
+  settlementConfirmMarkup,
   settlementRateManagerMarkup,
+  settlementResultSummaryMarkup,
 } from "./standalone/adminViews.js";
 import {
   deliveryFormMarkup,
@@ -2559,18 +2561,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           node.innerHTML = "";
           return;
         }
-        const result = lastSettlementResult;
-        const statusClass = result.saved ? "done" : "ready";
-        node.innerHTML = `
-          <div class="settlement-result-summary">
-            <div>
-              <span>최근 정산 처리</span>
-              <strong>${result.message}</strong>
-              <p>${result.beforeStatus} → ${result.afterStatus} · ${result.count}건 · ${formatKRW(result.payoutTotal)}</p>
-            </div>
-            <em class="admin-status-badge ${statusClass}">${result.saved ? "저장 완료" : "화면 반영"}</em>
-          </div>
-        `;
+        node.innerHTML = settlementResultSummaryMarkup(lastSettlementResult, { formatKRW });
       }
 
       function readSettlementFlowCheckLogs() {
@@ -4555,8 +4546,10 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         return {
           count: orders.length,
           feeTotal: orders.reduce((sum, order) => sum + (order.deliveryFee || 0), 0),
+          partnerName,
           payoutTotal: orders.reduce((sum, order) => sum + settlementPayout(order.deliveryFee || 0, partnerName, riderName), 0),
           orderIds: orders.map((order) => order.id).slice(0, 4),
+          riderName,
         };
       }
 
@@ -4564,14 +4557,8 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         return orders.slice(0, 4).map((order) => {
           const currentStatus = beforeStatus || settlementStatusLabel(order);
           const amount = settlementPayout(order.deliveryFee || 0, order.deliveryPartnerName || "미배정", assignedRiderLabel(order));
-          return `
-            <div class="settlement-transition-row">
-              <strong>${order.id}</strong>
-              <span>${currentStatus} → ${afterStatus}</span>
-              <small>${formatKRW(amount)}</small>
-            </div>
-          `;
-        }).join("");
+          return { id: order.id, currentStatus, afterStatus, amount };
+        });
       }
 
       function openSettlementConfirm(options) {
@@ -4595,38 +4582,14 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         title.textContent = options.title || "정산 처리 확인";
         button.textContent = options.actionLabel || "확인하고 처리";
         button.className = options.confirmClass || "";
-        body.innerHTML = `
-          <div class="settlement-confirm-panel">
-            <div class="settlement-confirm-alert">
-              <strong>${options.nextStatus || "정산 상태 변경"}</strong>
-              <span>아래 정산 내용을 확인한 뒤 처리하세요. 확인 후에는 주문 이력과 정산 상태가 함께 저장됩니다.</span>
-            </div>
-            <div class="settlement-confirm-grid">
-              <div><span>배송사</span><strong>${options.partnerName}</strong></div>
-              <div><span>기사</span><strong>${options.riderName}</strong></div>
-              <div><span>처리 주문</span><strong>${summary.count}건</strong></div>
-              <div><span>총 배송비</span><strong>${formatKRW(summary.feeTotal)}</strong></div>
-              <div><span>기사 지급액</span><strong>${formatKRW(summary.payoutTotal)}</strong></div>
-              <div><span>처리 후 상태</span><strong>${afterStatus}</strong></div>
-            </div>
-            <div class="settlement-transition-panel">
-              <div class="settlement-transition-status">
-                <div><span>처리 전</span><strong>${beforeStatus}</strong></div>
-                <i></i>
-                <div><span>처리 후</span><strong>${afterStatus}</strong></div>
-              </div>
-              <div class="settlement-transition-list">
-                ${settlementTransitionPreview(orders, beforeStatus, afterStatus)}
-                ${summary.count > 4 ? `<p>외 ${summary.count - 4}건도 같은 상태로 처리됩니다.</p>` : ""}
-              </div>
-            </div>
-            <div class="settlement-confirm-orders">
-              <span>대상 주문</span>
-              <strong>${summary.orderIds.join(", ")}${summary.count > summary.orderIds.length ? " 외 " + (summary.count - summary.orderIds.length) + "건" : ""}</strong>
-            </div>
-            ${options.reason ? `<div class="settlement-confirm-orders"><span>처리 사유</span><strong>${options.reason}</strong></div>` : ""}
-          </div>
-        `;
+        body.innerHTML = settlementConfirmMarkup({
+          afterStatus,
+          beforeStatus,
+          nextStatus: options.nextStatus,
+          reason: options.reason,
+          summary,
+          transitionRows: settlementTransitionPreview(orders, beforeStatus, afterStatus),
+        }, { formatKRW });
         modal.classList.add("open");
         modal.setAttribute("aria-hidden", "false");
       }

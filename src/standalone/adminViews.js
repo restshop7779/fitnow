@@ -819,6 +819,71 @@ export function settlementFlowCheckReportMarkup(data, options = {}) {
   `;
 }
 
+export function settlementResultSummaryMarkup(result, options = {}) {
+  const formatKRW = options.formatKRW || ((value) => String(value || 0));
+  const statusClass = result.saved ? "done" : "ready";
+  return `
+    <div class="settlement-result-summary">
+      <div>
+        <span>최근 정산 처리</span>
+        <strong>${result.message}</strong>
+        <p>${result.beforeStatus} → ${result.afterStatus} · ${result.count}건 · ${formatKRW(result.payoutTotal)}</p>
+      </div>
+      <em class="admin-status-badge ${statusClass}">${result.saved ? "저장 완료" : "화면 반영"}</em>
+    </div>
+  `;
+}
+
+export function settlementConfirmMarkup(data, options = {}) {
+  const formatKRW = options.formatKRW || ((value) => String(value || 0));
+  const {
+    afterStatus,
+    beforeStatus,
+    nextStatus,
+    reason,
+    summary,
+    transitionRows,
+  } = data;
+  return `
+    <div class="settlement-confirm-panel">
+      <div class="settlement-confirm-alert">
+        <strong>${nextStatus || "정산 상태 변경"}</strong>
+        <span>아래 정산 내용을 확인한 뒤 처리하세요. 확인 후에는 주문 이력과 정산 상태가 함께 저장됩니다.</span>
+      </div>
+      <div class="settlement-confirm-grid">
+        <div><span>배송사</span><strong>${summary.partnerName}</strong></div>
+        <div><span>기사</span><strong>${summary.riderName}</strong></div>
+        <div><span>처리 주문</span><strong>${summary.count}건</strong></div>
+        <div><span>총 배송비</span><strong>${formatKRW(summary.feeTotal)}</strong></div>
+        <div><span>기사 지급액</span><strong>${formatKRW(summary.payoutTotal)}</strong></div>
+        <div><span>처리 후 상태</span><strong>${afterStatus}</strong></div>
+      </div>
+      <div class="settlement-transition-panel">
+        <div class="settlement-transition-status">
+          <div><span>처리 전</span><strong>${beforeStatus}</strong></div>
+          <i></i>
+          <div><span>처리 후</span><strong>${afterStatus}</strong></div>
+        </div>
+        <div class="settlement-transition-list">
+          ${transitionRows.map((row) => `
+            <div class="settlement-transition-row">
+              <strong>${row.id}</strong>
+              <span>${row.currentStatus} → ${afterStatus}</span>
+              <small>${formatKRW(row.amount)}</small>
+            </div>
+          `).join("")}
+          ${summary.count > 4 ? `<p>외 ${summary.count - 4}건도 같은 상태로 처리됩니다.</p>` : ""}
+        </div>
+      </div>
+      <div class="settlement-confirm-orders">
+        <span>대상 주문</span>
+        <strong>${summary.orderIds.join(", ")}${summary.count > summary.orderIds.length ? " 외 " + (summary.count - summary.orderIds.length) + "건" : ""}</strong>
+      </div>
+      ${reason ? `<div class="settlement-confirm-orders"><span>처리 사유</span><strong>${reason}</strong></div>` : ""}
+    </div>
+  `;
+}
+
 export function settlementDetailMarkup({ partnerName, riderName, mode, rows, totalFee, totalPayout }, options = {}) {
   const formatKRW = options.formatKRW || ((value) => String(value || 0));
   const renderSettlementAuditTrail = options.renderSettlementAuditTrail || (() => "");
