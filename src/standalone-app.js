@@ -257,6 +257,19 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         document.body.classList.toggle("native-app-shell", isNativeAppShell());
       }
 
+      function closeOpenModals() {
+        document.querySelectorAll(".modal.open").forEach((modal) => {
+          modal.classList.remove("open");
+          modal.setAttribute("aria-hidden", "true");
+        });
+      }
+
+      function setActiveBottomTab(tab) {
+        document.querySelectorAll(".bottom-tabs button").forEach((button) => {
+          button.classList.toggle("active", button.dataset.bottomTab === tab);
+        });
+      }
+
       let lastBottomTabHandledAt = 0;
 
       function handleBottomTabAction(tab) {
@@ -484,13 +497,8 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       }
 
       function goHome() {
-        document.querySelectorAll(".modal.open").forEach((modal) => {
-          modal.classList.remove("open");
-          modal.setAttribute("aria-hidden", "true");
-        });
-        document.querySelectorAll(".bottom-tabs button").forEach((button) => {
-          button.classList.toggle("active", button.textContent.trim() === "홈");
-        });
+        closeOpenModals();
+        setActiveBottomTab("home");
         const frame = document.querySelector(".phone-frame");
         if (frame) frame.scrollTo({ top: 0, behavior: "smooth" });
       }
@@ -6698,9 +6706,11 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
 
       function openManagement() {
         if (!requireAdminAccess()) return;
+        closeOpenModals();
         renderManagementHub();
         document.getElementById("managementModal").classList.add("open");
         document.getElementById("managementModal").setAttribute("aria-hidden", "false");
+        setActiveBottomTab("management");
       }
 
       function closeManagement() {
@@ -6952,6 +6962,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       }
 
       async function openMyPage() {
+        closeOpenModals();
         if (supabaseClient) {
           try {
             await loadSupabaseOrders();
@@ -6962,6 +6973,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         renderMyPage();
         document.getElementById("myModal").classList.add("open");
         document.getElementById("myModal").setAttribute("aria-hidden", "false");
+        setActiveBottomTab("my");
       }
 
       function closeMyPage() {
@@ -7553,9 +7565,11 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       }
 
       function openLooks() {
+        closeOpenModals();
         renderLooks();
         document.getElementById("lookModal").classList.add("open");
         document.getElementById("lookModal").setAttribute("aria-hidden", "false");
+        setActiveBottomTab("looks");
       }
 
       function closeLooks() {
