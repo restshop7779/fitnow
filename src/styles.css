@@ -1707,6 +1707,107 @@
         gap: 8px;
         margin-top: 9px;
       }
+      .account-manager-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .account-manager-card {
+        display: grid;
+        gap: 9px;
+        min-width: 0;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+      }
+      .account-manager-head strong,
+      .account-manager-list strong {
+        display: block;
+        color: #171717;
+        font-size: 14px;
+        font-weight: 950;
+      }
+      .account-manager-head span {
+        display: block;
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 850;
+        line-height: 1.35;
+      }
+      .account-manager-card label {
+        display: grid;
+        gap: 5px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 950;
+      }
+      .account-manager-card input,
+      .account-manager-card select,
+      .account-manager-card textarea {
+        width: 100%;
+        min-height: 38px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fffaf0;
+        color: #171717;
+        padding: 0 10px;
+        font-weight: 900;
+      }
+      .account-manager-card textarea {
+        min-height: 88px;
+        padding: 9px 10px;
+        resize: vertical;
+      }
+      .account-manager-check {
+        grid-template-columns: auto 1fr;
+        align-items: center;
+      }
+      .account-manager-check input {
+        width: 18px;
+        min-height: 18px;
+        padding: 0;
+      }
+      .account-manager-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .account-manager-list > div,
+      .account-manager-empty {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fffaf0;
+        padding: 11px;
+      }
+      .account-manager-list p {
+        display: grid;
+        gap: 3px;
+        margin: 9px 0 0;
+        padding-top: 9px;
+        border-top: 1px solid var(--line);
+      }
+      .account-manager-list b {
+        color: #171717;
+        font-size: 12px;
+        font-weight: 950;
+      }
+      .account-manager-list span,
+      .account-manager-empty {
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 850;
+        line-height: 1.4;
+      }
+      @media (max-width: 520px) {
+        .account-manager-grid,
+        .account-manager-list {
+          grid-template-columns: 1fr;
+        }
+      }
       .admin-review-summary {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));

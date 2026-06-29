@@ -359,6 +359,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       let lastFitRoomAvatarSnapshot = null;
       let avatarTryOnState = { status: "idle", photoDataUrl: "", photoName: "" };
       let fit3dRuntime = null;
+      const PARTNER_ACCOUNT_STORAGE_KEY = "fitnow_partner_accounts";
 
       function saveReviewStore() {
         writeReviewStore(REVIEW_STORAGE_KEY, reviews);
@@ -498,6 +499,276 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       function setSyncStatus(message) {
         const node = document.getElementById("syncStatus");
         if (node) node.textContent = message;
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      function uniqueList(values) {
+        return [...new Set((values || []).map((value) => String(value || "").trim()).filter(Boolean))];
+      }
+
+      function readPartnerAccountStore() {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(PARTNER_ACCOUNT_STORAGE_KEY) || "{}");
+          return parsed && typeof parsed === "object" ? parsed : {};
+        } catch (error) {
+          localStorage.removeItem(PARTNER_ACCOUNT_STORAGE_KEY);
+          return {};
+        }
+      }
+
+      function savePartnerAccountStore() {
+        localStorage.setItem(PARTNER_ACCOUNT_STORAGE_KEY, JSON.stringify({
+          partnerStores,
+          vendorAccounts,
+          deliveryPartners,
+        }));
+      }
+
+      function replaceArrayContents(target, values) {
+        target.splice(0, target.length, ...values);
+      }
+
+      function loadManagedPartnerAccounts() {
+        const saved = readPartnerAccountStore();
+        if (Array.isArray(saved.partnerStores) && saved.partnerStores.length) replaceArrayContents(partnerStores, saved.partnerStores);
+        if (Array.isArray(saved.vendorAccounts) && saved.vendorAccounts.length) replaceArrayContents(vendorAccounts, saved.vendorAccounts);
+        if (Array.isArray(saved.deliveryPartners) && saved.deliveryPartners.length) replaceArrayContents(deliveryPartners, saved.deliveryPartners);
+      }
+
+      function isTotalAdmin() {
+        return !!(currentAdmin && currentAdmin.role === "total");
+      }
+
+      function vendorAccountOptions(selected = "") {
+        return ['<option value="">신규 입점업체</option>'].concat(vendorAccounts.map((account) =>
+          '<option value="' + escapeHtml(account.store) + '"' + (account.store === selected ? " selected" : "") + '>' + escapeHtml(account.store) + '</option>'
+        )).join("");
+      }
+
+      function deliveryPartnerOptions(selected = "") {
+        return ['<option value="">신규 배송사</option>'].concat(deliveryPartners.map((partner) =>
+          '<option value="' + escapeHtml(partner.name) + '"' + (partner.name === selected ? " selected" : "") + '>' + escapeHtml(partner.name) + '</option>'
+        )).join("");
+      }
+
+      function renderAdminAccountManagement() {
+        const node = document.getElementById("adminAccountManagement");
+        if (!node) return;
+        if (!isTotalAdmin()) {
+          node.innerHTML = '<div class="account-manager-empty">총관리자로 로그인하면 입점업체와 배송사를 생성/변경할 수 있습니다.</div>';
+          return;
+        }
+        node.innerHTML = `
+          <div class="account-manager-grid">
+            <form class="account-manager-card" onsubmit="saveVendorAccountFromAdmin(event)">
+              <div class="account-manager-head">
+                <div>
+                  <strong>입점업체</strong>
+                  <span>업체 로그인 PIN과 매장 정보를 관리합니다</span>
+                </div>
+              </div>
+              <label>수정 대상
+                <select id="adminVendorAccountSelect" onchange="fillVendorAccountForm(this.value)">${vendorAccountOptions()}</select>
+              </label>
+              <label>매장명
+                <input id="adminVendorStoreName" required placeholder="예: 동탄 신규 쇼룸" />
+              </label>
+              <label>담당자명
+                <input id="adminVendorManagerName" required placeholder="예: 신규 쇼룸 매니저" />
+              </label>
+              <label>업체 PIN
+                <input id="adminVendorPin" required inputmode="numeric" placeholder="4자리 이상 권장" />
+              </label>
+              <label>권역
+                <input id="adminVendorArea" placeholder="예: 동탄2" />
+              </label>
+              <label>주소/픽업 위치
+                <input id="adminVendorAddress" placeholder="예: 동탄역 인근" />
+              </label>
+              <label>상품 준비시간(분)
+                <input id="adminVendorPrep" type="number" min="0" step="1" value="5" />
+              </label>
+              <label class="account-manager-check">
+                <input id="adminVendorOpen" type="checkbox" checked />
+                <span>운영중</span>
+              </label>
+              <div class="mini-actions">
+                <button class="primary-settlement-action" type="submit">입점업체 저장</button>
+                <button class="danger" type="button" onclick="deleteVendorAccountFromAdmin()">삭제</button>
+                <button type="button" onclick="fillVendorAccountForm('')">신규 입력</button>
+              </div>
+            </form>
+            <form class="account-manager-card" onsubmit="saveDeliveryPartnerFromAdmin(event)">
+              <div class="account-manager-head">
+                <div>
+                  <strong>배송사</strong>
+                  <span>배송사 PIN, 권역, 기사명을 관리합니다</span>
+                </div>
+              </div>
+              <label>수정 대상
+                <select id="adminDeliveryPartnerSelect" onchange="fillDeliveryPartnerForm(this.value)">${deliveryPartnerOptions()}</select>
+              </label>
+              <label>배송사명
+                <input id="adminDeliveryPartnerName" required placeholder="예: 오산 당일배송센터" />
+              </label>
+              <label>배송사 PIN
+                <input id="adminDeliveryPin" required inputmode="numeric" placeholder="4자리 이상 권장" />
+              </label>
+              <label>담당 권역
+                <input id="adminDeliveryAreas" placeholder="예: 오산, 세교" />
+              </label>
+              <label>기사명 목록
+                <textarea id="adminDeliveryRiders" rows="4" placeholder="쉼표 또는 줄바꿈으로 구분"></textarea>
+              </label>
+              <div class="mini-actions">
+                <button class="primary-settlement-action" type="submit">배송사 저장</button>
+                <button class="danger" type="button" onclick="deleteDeliveryPartnerFromAdmin()">삭제</button>
+                <button type="button" onclick="fillDeliveryPartnerForm('')">신규 입력</button>
+              </div>
+            </form>
+          </div>
+          <div class="account-manager-list">
+            <div>
+              <strong>등록 입점업체 ${vendorAccounts.length}개</strong>
+              ${vendorAccounts.map((account) => {
+                const store = partnerStores.find((item) => item.name === account.store) || {};
+                return '<p><b>' + escapeHtml(account.store) + '</b><span>PIN ' + escapeHtml(account.pin) + ' · ' + escapeHtml(account.manager) + ' · ' + escapeHtml(store.area || "권역 미입력") + '</span></p>';
+              }).join("")}
+            </div>
+            <div>
+              <strong>등록 배송사 ${deliveryPartners.length}개</strong>
+              ${deliveryPartners.map((partner) =>
+                '<p><b>' + escapeHtml(partner.name) + '</b><span>PIN ' + escapeHtml(partner.pin) + ' · ' + escapeHtml((partner.areas || []).join("/")) + ' · 기사 ' + escapeHtml((partner.riders || []).length) + '명</span></p>'
+              ).join("")}
+            </div>
+          </div>
+        `;
+      }
+
+      function fillVendorAccountForm(storeName = "") {
+        const account = vendorAccounts.find((item) => item.store === storeName) || null;
+        const store = partnerStores.find((item) => item.name === (account ? account.store : storeName)) || {};
+        document.getElementById("adminVendorAccountSelect").value = account ? account.store : "";
+        document.getElementById("adminVendorStoreName").value = account ? account.store : "";
+        document.getElementById("adminVendorManagerName").value = account ? account.manager : "";
+        document.getElementById("adminVendorPin").value = account ? account.pin : "";
+        document.getElementById("adminVendorArea").value = store.area || "";
+        document.getElementById("adminVendorAddress").value = store.address || "";
+        document.getElementById("adminVendorPrep").value = Number(store.prep || 5);
+        document.getElementById("adminVendorOpen").checked = store.open !== false;
+      }
+
+      function fillDeliveryPartnerForm(partnerName = "") {
+        const partner = deliveryPartners.find((item) => item.name === partnerName) || null;
+        document.getElementById("adminDeliveryPartnerSelect").value = partner ? partner.name : "";
+        document.getElementById("adminDeliveryPartnerName").value = partner ? partner.name : "";
+        document.getElementById("adminDeliveryPin").value = partner ? partner.pin : "";
+        document.getElementById("adminDeliveryAreas").value = partner ? (partner.areas || []).join(", ") : "";
+        document.getElementById("adminDeliveryRiders").value = partner ? (partner.riders || []).join("\n") : "";
+      }
+
+      function saveVendorAccountFromAdmin(event) {
+        event.preventDefault();
+        if (!isTotalAdmin()) return setSyncStatus("총관리자만 입점업체를 저장할 수 있습니다");
+        const previousStore = document.getElementById("adminVendorAccountSelect").value;
+        const storeName = document.getElementById("adminVendorStoreName").value.trim();
+        const manager = document.getElementById("adminVendorManagerName").value.trim();
+        const pin = document.getElementById("adminVendorPin").value.trim();
+        const area = document.getElementById("adminVendorArea").value.trim() || "미지정";
+        const address = document.getElementById("adminVendorAddress").value.trim() || area;
+        const prep = Math.max(0, Math.round(Number(document.getElementById("adminVendorPrep").value) || 0));
+        const open = document.getElementById("adminVendorOpen").checked;
+        if (!storeName || !manager || !pin) return setSyncStatus("입점업체 매장명, 담당자, PIN을 입력해 주세요");
+        const duplicate = vendorAccounts.find((item) => item.store === storeName && item.store !== previousStore);
+        if (duplicate) return setSyncStatus("이미 등록된 입점업체명입니다");
+        const previousIndex = vendorAccounts.findIndex((item) => item.store === previousStore);
+        const account = { store: storeName, pin, manager };
+        if (previousIndex >= 0) vendorAccounts[previousIndex] = account;
+        else vendorAccounts.push(account);
+        const storeIndex = partnerStores.findIndex((item) => item.name === previousStore || item.name === storeName);
+        const store = { name: storeName, area, address, pickup: true, open, prep };
+        if (storeIndex >= 0) partnerStores[storeIndex] = store;
+        else partnerStores.push(store);
+        if (currentVendor && currentVendor.store === previousStore) {
+          currentVendor = account;
+          saveCurrentVendor();
+        }
+        savePartnerAccountStore();
+        renderLoginStores();
+        renderAdminAccountManagement();
+        fillVendorAccountForm(storeName);
+        setSyncStatus(storeName + " 입점업체 계정 저장 완료");
+      }
+
+      function deleteVendorAccountFromAdmin() {
+        if (!isTotalAdmin()) return setSyncStatus("총관리자만 입점업체를 삭제할 수 있습니다");
+        const storeName = document.getElementById("adminVendorAccountSelect").value;
+        if (!storeName) return setSyncStatus("삭제할 입점업체를 선택해 주세요");
+        const usedByProduct = products.some((item) => item.showroom === storeName);
+        if (usedByProduct && !window.confirm(storeName + " 상품이 남아 있습니다. 로그인 계정만 삭제할까요?")) return;
+        replaceArrayContents(vendorAccounts, vendorAccounts.filter((item) => item.store !== storeName));
+        replaceArrayContents(partnerStores, partnerStores.filter((item) => item.name !== storeName));
+        if (currentVendor && currentVendor.store === storeName) {
+          currentVendor = null;
+          saveCurrentVendor();
+        }
+        savePartnerAccountStore();
+        renderLoginStores();
+        renderAdminAccountManagement();
+        setSyncStatus(storeName + " 입점업체 계정 삭제 완료");
+      }
+
+      function saveDeliveryPartnerFromAdmin(event) {
+        event.preventDefault();
+        if (!isTotalAdmin()) return setSyncStatus("총관리자만 배송사를 저장할 수 있습니다");
+        const previousName = document.getElementById("adminDeliveryPartnerSelect").value;
+        const name = document.getElementById("adminDeliveryPartnerName").value.trim();
+        const pin = document.getElementById("adminDeliveryPin").value.trim();
+        const areas = uniqueList(document.getElementById("adminDeliveryAreas").value.split(/[,\n]/));
+        const riders = uniqueList(document.getElementById("adminDeliveryRiders").value.split(/[,\n]/));
+        if (!name || !pin || !areas.length) return setSyncStatus("배송사명, PIN, 담당 권역을 입력해 주세요");
+        const duplicate = deliveryPartners.find((item) => item.name === name && item.name !== previousName);
+        if (duplicate) return setSyncStatus("이미 등록된 배송사명입니다");
+        const partner = { name, pin, areas, riders: riders.length ? riders : Array.from({ length: 5 }, (_, index) => name + " 기사" + String(index + 1).padStart(2, "0")) };
+        const index = deliveryPartners.findIndex((item) => item.name === previousName);
+        if (index >= 0) deliveryPartners[index] = partner;
+        else deliveryPartners.push(partner);
+        orderHistory.forEach((order) => {
+          if (order.deliveryPartnerName === previousName) order.deliveryPartnerName = name;
+        });
+        if (currentAdmin && currentAdmin.name === previousName) {
+          currentAdmin = { name, role: "delivery", areas: partner.areas, riders: riderNicknamesForPartner(partner) };
+          saveCurrentAdmin();
+        }
+        savePartnerAccountStore();
+        renderAdminAccountManagement();
+        renderAdminOrders(orderHistory);
+        fillDeliveryPartnerForm(name);
+        setSyncStatus(name + " 배송사 계정 저장 완료");
+      }
+
+      function deleteDeliveryPartnerFromAdmin() {
+        if (!isTotalAdmin()) return setSyncStatus("총관리자만 배송사를 삭제할 수 있습니다");
+        const name = document.getElementById("adminDeliveryPartnerSelect").value;
+        if (!name) return setSyncStatus("삭제할 배송사를 선택해 주세요");
+        const usedByOrder = orderHistory.some((order) => order.deliveryPartnerName === name);
+        if (usedByOrder && !window.confirm(name + " 배정 주문이 있습니다. 배송사 계정을 삭제할까요?")) return;
+        replaceArrayContents(deliveryPartners, deliveryPartners.filter((item) => item.name !== name));
+        if (currentAdmin && currentAdmin.name === name) {
+          currentAdmin = null;
+          saveCurrentAdmin();
+        }
+        savePartnerAccountStore();
+        renderAdminAccountManagement();
+        renderAdminOrders(orderHistory);
+        setSyncStatus(name + " 배송사 계정 삭제 완료");
       }
 
       function goHome() {
@@ -5105,6 +5376,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         renderSettlementViewTabs(settlementOrders);
         renderSettlementFlowCheckLogs();
         renderAdminReviewModeration();
+        renderAdminAccountManagement();
         const openSettlementSection = document.getElementById("adminOpenSettlementSection");
         if (openSettlementSection && currentAdmin && currentAdmin.role === "total" && shouldOpenSettlementSummary(orders)) openSettlementSection.open = true;
         const settlementRateList = document.getElementById("adminSettlementRateList");
@@ -10706,6 +10978,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       wishlist = readWishlistStore();
       recentViews = readRecentViewStore();
       reviews = readReviewStore();
+      loadManagedPartnerAccounts();
       applyAdminAccessVisibility();
       setupBottomTabHandlers();
       restoreSavedCustomer();
@@ -10732,6 +11005,13 @@ Object.assign(window, {
   clearAdminTestDataFromPreRelease,
   createFit3dTypeTestProducts,
   syncVendorVisualWithCategory,
+  fillVendorAccountForm,
+  saveVendorAccountFromAdmin,
+  deleteVendorAccountFromAdmin,
+  fillDeliveryPartnerForm,
+  saveDeliveryPartnerFromAdmin,
+  deleteDeliveryPartnerFromAdmin,
+  renderAdminAccountManagement,
   openManagement,
   closeManagement,
   openAdmin,
