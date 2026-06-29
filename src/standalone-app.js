@@ -40,6 +40,9 @@ import {
 } from "./standalone/format.js";
 import { selectedValue } from "./standalone/dom.js";
 import { exposeHandlers } from "./standalone/expose.js";
+
+window.__fitnowAppModuleStarted = true;
+
 import {
   availableSizesForItem,
   buildPersonalizedRecommendations,
@@ -10717,6 +10720,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       initSupabase().then(() => {
         renderProducts();
         renderCart();
+        window.__fitnowAppReady = true;
       });
 
 Object.assign(window, {

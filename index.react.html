@@ -788,9 +788,29 @@
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
+          const isNativeHost = window.location.protocol === "https:" && window.location.hostname === "localhost";
+          if (isNativeHost) {
+            navigator.serviceWorker.getRegistrations()
+              .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
+              .catch(() => {});
+            if (window.caches) {
+              caches.keys()
+                .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+                .catch(() => {});
+            }
+            return;
+          }
           navigator.serviceWorker.register("./sw.js").catch(() => {});
         });
       }
+      window.addEventListener("error", (event) => {
+        const node = document.getElementById("syncStatus");
+        if (node && !window.__fitnowAppReady) {
+          node.textContent = "앱 스크립트 로딩 오류 - 새 APK 재설치 또는 앱 데이터 삭제 필요";
+          node.style.display = "block";
+        }
+        console.error("[fitnow-runtime-error]", event.message);
+      });
       window.__fitnowNativeTapBridgeReady = true;
       document.addEventListener("touchend", (event) => {
         const button = event.target && event.target.closest ? event.target.closest("button[data-bottom-tab]") : null;
