@@ -3833,6 +3833,10 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           </div>
           <button class="admin-tool-action" type="button" onclick="openAdminQaChecklist()">QA 체크리스트</button>
           <button class="admin-tool-action primary" type="button" onclick="openAdminFinalQaScenario()">QA 시나리오</button>
+          <button class="admin-tool-action primary" type="button" onclick="createDeliveryFlowTestOrder()">배송 테스트 주문 생성</button>
+          <button class="admin-tool-action" type="button" onclick="createReturnRefundTestOrders()">반품/환불 테스트 4건 생성</button>
+          <button class="admin-tool-action" type="button" onclick="runSettlementFlowAutoCheck()">정산 플로우 점검</button>
+          <button class="admin-tool-action danger" type="button" onclick="clearAdminTestData()">테스트 데이터 정리</button>
           <div class="admin-utility-status" data-return-refund-visibility-status aria-live="polite">반품/환불 표시 점검 결과가 여기에 표시됩니다.</div>
           <div class="admin-utility-status" data-admin-cleanup-status aria-live="polite">테스트 데이터 정리 상태가 여기에 표시됩니다.</div>
         `;
