@@ -1,0 +1,27 @@
+{
+  "name": "FitNow - 오늘 바로 패션배송",
+  "short_name": "FitNow",
+  "description": "동탄, 오산 쇼룸 재고를 보고 오늘 바로 받을 수 있는 패션 배송 앱",
+  "lang": "ko-KR",
+  "start_url": "./index.react.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#111111",
+  "categories": ["shopping", "lifestyle"],
+  "icons": [
+    {
+      "src": "./icons/fitnow-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icons/fitnow-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

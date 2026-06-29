@@ -8,6 +8,7 @@
     "check:encoding": "node ./scripts/check-encoding.js",
     "check:deploy": "node ./scripts/check-deploy-smoke.js",
     "check:e2e": "node ./scripts/check-home-clicks.js",
+    "check:pwa": "node ./scripts/check-pwa.js",
     "dev:local": "powershell -ExecutionPolicy Bypass -File ./scripts/dev-local.ps1",
     "preview": "vite preview"
   },

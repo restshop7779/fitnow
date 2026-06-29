@@ -4,6 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FitNow</title>
+    <meta name="description" content="동탄, 오산 쇼룸 재고를 보고 오늘 바로 받을 수 있는 패션 배송 앱" />
+    <meta name="theme-color" content="#111111" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="FitNow" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./icons/fitnow-icon-192.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="./icons/fitnow-icon-192.png" />
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
@@ -776,5 +785,12 @@
     </section>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script type="module" src="/src/standalone-app.js"></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("./sw.js").catch(() => {});
+        });
+      }
+    </script>
   </body>
 </html>
