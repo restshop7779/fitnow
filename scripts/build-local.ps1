@@ -17,4 +17,11 @@ if ($LASTEXITCODE -ne 0) {
   exit $LASTEXITCODE
 }
 
+$ReactEntry = Join-Path $Root "dist\index.react.html"
+$NativeEntry = Join-Path $Root "dist\index.html"
+if (Test-Path $ReactEntry) {
+  Copy-Item -Path $ReactEntry -Destination $NativeEntry -Force
+}
+
 Write-Host "Build complete: dist\index.react.html"
+Write-Host "Native entry complete: dist\index.html"
