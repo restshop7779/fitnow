@@ -152,6 +152,9 @@ import {
   deliveryRiderGroupsMarkup,
   deliveryWorkShortcutsMarkup,
   deliveryWarningsMarkup,
+  deliverySettlementListMarkup,
+  heldSettlementListMarkup,
+  paidSettlementListMarkup,
   riderNicknameManagerMarkup,
   riderWorkBoardMarkup,
   settlementDetailMarkup,
@@ -3873,37 +3876,12 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         const countNode = document.getElementById("adminDeliverySettlementCount");
         if (countNode) countNode.textContent = rows.reduce((sum, row) => sum + row.count, 0) + "건";
         renderSettlementResultSummary();
-        const demoButton = currentAdmin && currentAdmin.role === "total"
-          ? '<div class="mini-actions order-detail-action"><button type="button" onclick="createSettlementDemoOrders()">정산 테스트 3건 생성</button></div>'
-          : "";
-        if (!rows.length) return '<div class="line-item"><span>도착 인증 완료된 배송이 없습니다</span><strong>정산 대기</strong></div>' + demoButton;
-        return demoButton + rows.map((row) => {
-          const status = row.confirmedCount && !row.pendingCount ? { label: "지급대기", cls: "moving" } : row.confirmedCount ? { label: "부분확정", cls: "ready" } : { label: "확정대기", cls: "ready" };
-          const focusConfirm = activeAdminTodoFocus === "settlement_pending" && row.pendingCount;
-          const focusPaid = activeAdminTodoFocus === "payment_pending" && row.confirmedCount;
-          const focusClass = focusConfirm || focusPaid ? " settlement-action-focus" : "";
-          const focusNote = focusConfirm
-            ? '<div class="settlement-next-action"><span>다음 처리</span><strong>확정대기 ' + row.pendingCount + '건을 정산 확정하세요.</strong></div>'
-            : focusPaid
-              ? '<div class="settlement-next-action"><span>다음 처리</span><strong>지급대기 ' + row.confirmedCount + '건을 지급 완료하세요.</strong></div>'
-              : "";
-          return `
-          <div class="vendor-product-row admin-order-row${focusClass}">
-            <div>
-              <strong>${row.partnerName} · ${row.riderName} <span class="admin-status-badge ${status.cls}">${status.label}</span></strong>
-              <span>정산 대상 ${row.count}건 · 확정대기 ${row.pendingCount}건 · 지급대기 ${row.confirmedCount}건</span>
-              <span>기사 정산 예정액 ${formatKRW(row.payout)} · 적용 정산율 ${riderSettlementRate(row.partnerName, row.riderName)}%</span>
-              ${focusNote}
-            </div>
-            <div class="mini-actions order-detail-action">
-              <button type="button" onclick="openSettlementDetail(decodeURIComponent('${encodeURIComponent(row.partnerName)}'), decodeURIComponent('${encodeURIComponent(row.riderName)}'), 'open')">상세보기</button>
-              <button class="settlement-waiting" type="button" ${currentAdmin && currentAdmin.role === "total" ? "" : "disabled"} onclick="holdSettlementBatch(decodeURIComponent('${encodeURIComponent(row.partnerName)}'), decodeURIComponent('${encodeURIComponent(row.riderName)}'))">보류</button>
-              <button class="${row.pendingCount ? "settlement-confirm" : "settlement-waiting"}${focusConfirm ? " primary-settlement-action" : ""}" type="button" ${currentAdmin && currentAdmin.role === "total" && row.pendingCount ? "" : "disabled"} onclick="confirmSettlementBatch(decodeURIComponent('${encodeURIComponent(row.partnerName)}'), decodeURIComponent('${encodeURIComponent(row.riderName)}'))">${row.pendingCount ? "정산 확정" : "확정 완료"}</button>
-              <button class="${row.confirmedCount ? "settlement-paid" : "settlement-waiting"}${focusPaid ? " primary-settlement-action" : ""}" type="button" ${currentAdmin && currentAdmin.role === "total" && row.confirmedCount ? "" : "disabled"} onclick="paySettlementBatch(decodeURIComponent('${encodeURIComponent(row.partnerName)}'), decodeURIComponent('${encodeURIComponent(row.riderName)}'))">${row.confirmedCount ? "지급 완료" : "지급 대기"}</button>
-            </div>
-          </div>
-          `;
-        }).join("");
+        return deliverySettlementListMarkup(rows, {
+          activeAdminTodoFocus,
+          canManageSettlement: !!(currentAdmin && currentAdmin.role === "total"),
+          formatKRW,
+          riderSettlementRate,
+        });
       }
 
       function paidSettlementRows(orders) {
@@ -3914,26 +3892,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         const rows = paidSettlementRows(orders);
         const countNode = document.getElementById("adminPaidSettlementCount");
         if (countNode) countNode.textContent = rows.reduce((sum, row) => sum + row.count, 0) + "건";
-        if (!rows.length) return '<div class="line-item"><span>아직 지급 완료된 정산이 없습니다</span><strong>완료 대기</strong></div>';
-        return rows.map((row) => {
-          const recentPaid = lastSettlementResult &&
-            lastSettlementResult.afterStatus === "지급완료" &&
-            lastSettlementResult.partnerName === row.partnerName &&
-            lastSettlementResult.riderName === row.riderName;
-          return `
-          <div class="vendor-product-row admin-order-row${recentPaid ? " settlement-paid-focus" : ""}">
-            <div>
-              <strong>${row.partnerName} · ${row.riderName} <span class="admin-status-badge done">지급완료</span></strong>
-              <span>완료 ${row.count}건 · 총 배송비 ${formatKRW(row.feeTotal)}</span>
-              <span>지급액 ${formatKRW(row.payout)} · ${row.paidDate}</span>
-              ${recentPaid ? '<div class="settlement-next-action"><span>방금 처리됨</span><strong>지급완료 처리 결과가 완료 내역에 반영됐습니다.</strong></div>' : ""}
-            </div>
-            <div class="mini-actions order-detail-action">
-              <button type="button" onclick="openSettlementDetail(decodeURIComponent('${encodeURIComponent(row.partnerName)}'), decodeURIComponent('${encodeURIComponent(row.riderName)}'), 'paid')">상세보기</button>
-            </div>
-          </div>
-        `;
-        }).join("");
+        return paidSettlementListMarkup(rows, { formatKRW, lastSettlementResult });
       }
 
       function heldSettlementRows(orders) {
@@ -3944,20 +3903,10 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         const rows = heldSettlementRows(orders);
         const countNode = document.getElementById("adminHeldSettlementCount");
         if (countNode) countNode.textContent = rows.reduce((sum, row) => sum + row.count, 0) + "건";
-        if (!rows.length) return '<div class="line-item"><span>보류 중인 정산이 없습니다</span><strong>정상</strong></div>';
-        return rows.map((row) => `
-          <div class="vendor-product-row admin-order-row">
-            <div>
-              <strong>${row.partnerName} · ${row.riderName} <span class="admin-status-badge waiting">보류</span></strong>
-              <span>보류 ${row.count}건 · 배송비 ${formatKRW(row.feeTotal)} · 예정 정산 ${formatKRW(row.payout)}</span>
-              <span>사유: ${row.reason} · ${row.heldDate}</span>
-            </div>
-            <div class="mini-actions order-detail-action">
-              <button type="button" onclick="openSettlementDetail(decodeURIComponent('${encodeURIComponent(row.partnerName)}'), decodeURIComponent('${encodeURIComponent(row.riderName)}'), 'held')">상세보기</button>
-              <button class="settlement-confirm" type="button" ${currentAdmin && currentAdmin.role === "total" ? "" : "disabled"} onclick="releaseSettlementHold(decodeURIComponent('${encodeURIComponent(row.partnerName)}'), decodeURIComponent('${encodeURIComponent(row.riderName)}'), decodeURIComponent('${encodeURIComponent(row.reason)}'))">보류 해제</button>
-            </div>
-          </div>
-        `).join("");
+        return heldSettlementListMarkup(rows, {
+          canManageSettlement: !!(currentAdmin && currentAdmin.role === "total"),
+          formatKRW,
+        });
       }
 
       function settlementDetailOrders(partnerName, riderName, mode) {

@@ -800,6 +800,101 @@ export function settlementStatementMarkup(data, options = {}) {
   `;
 }
 
+export function deliverySettlementListMarkup(rows, options = {}) {
+  const formatKRW = options.formatKRW || ((value) => String(value || 0));
+  const riderSettlementRate = options.riderSettlementRate || (() => 0);
+  const activeAdminTodoFocus = options.activeAdminTodoFocus || "";
+  const canManageSettlement = !!options.canManageSettlement;
+  const demoButton = canManageSettlement
+    ? '<div class="mini-actions order-detail-action"><button type="button" onclick="createSettlementDemoOrders()">정산 테스트 3건 생성</button></div>'
+    : "";
+  if (!rows.length) return '<div class="line-item"><span>도착 인증 완료된 배송이 없습니다</span><strong>정산 대기</strong></div>' + demoButton;
+  return demoButton + rows.map((row) => {
+    const encodedPartner = encodeURIComponent(row.partnerName);
+    const encodedRider = encodeURIComponent(row.riderName);
+    const status = row.confirmedCount && !row.pendingCount
+      ? { label: "지급대기", cls: "moving" }
+      : row.confirmedCount
+        ? { label: "부분확정", cls: "ready" }
+        : { label: "확정대기", cls: "ready" };
+    const focusConfirm = activeAdminTodoFocus === "settlement_pending" && row.pendingCount;
+    const focusPaid = activeAdminTodoFocus === "payment_pending" && row.confirmedCount;
+    const focusClass = focusConfirm || focusPaid ? " settlement-action-focus" : "";
+    const focusNote = focusConfirm
+      ? '<div class="settlement-next-action"><span>다음 처리</span><strong>확정대기 ' + row.pendingCount + '건을 정산 확정하세요.</strong></div>'
+      : focusPaid
+        ? '<div class="settlement-next-action"><span>다음 처리</span><strong>지급대기 ' + row.confirmedCount + '건을 지급 완료하세요.</strong></div>'
+        : "";
+    return `
+      <div class="vendor-product-row admin-order-row${focusClass}">
+        <div>
+          <strong>${row.partnerName} · ${row.riderName} <span class="admin-status-badge ${status.cls}">${status.label}</span></strong>
+          <span>정산 대상 ${row.count}건 · 확정대기 ${row.pendingCount}건 · 지급대기 ${row.confirmedCount}건</span>
+          <span>기사 정산 예정액 ${formatKRW(row.payout)} · 적용 정산율 ${riderSettlementRate(row.partnerName, row.riderName)}%</span>
+          ${focusNote}
+        </div>
+        <div class="mini-actions order-detail-action">
+          <button type="button" onclick="openSettlementDetail(decodeURIComponent('${encodedPartner}'), decodeURIComponent('${encodedRider}'), 'open')">상세보기</button>
+          <button class="settlement-waiting" type="button" ${canManageSettlement ? "" : "disabled"} onclick="holdSettlementBatch(decodeURIComponent('${encodedPartner}'), decodeURIComponent('${encodedRider}'))">보류</button>
+          <button class="${row.pendingCount ? "settlement-confirm" : "settlement-waiting"}${focusConfirm ? " primary-settlement-action" : ""}" type="button" ${canManageSettlement && row.pendingCount ? "" : "disabled"} onclick="confirmSettlementBatch(decodeURIComponent('${encodedPartner}'), decodeURIComponent('${encodedRider}'))">${row.pendingCount ? "정산 확정" : "확정 완료"}</button>
+          <button class="${row.confirmedCount ? "settlement-paid" : "settlement-waiting"}${focusPaid ? " primary-settlement-action" : ""}" type="button" ${canManageSettlement && row.confirmedCount ? "" : "disabled"} onclick="paySettlementBatch(decodeURIComponent('${encodedPartner}'), decodeURIComponent('${encodedRider}'))">${row.confirmedCount ? "지급 완료" : "지급 대기"}</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+export function paidSettlementListMarkup(rows, options = {}) {
+  const formatKRW = options.formatKRW || ((value) => String(value || 0));
+  const lastSettlementResult = options.lastSettlementResult || null;
+  if (!rows.length) return '<div class="line-item"><span>아직 지급 완료된 정산이 없습니다</span><strong>완료 대기</strong></div>';
+  return rows.map((row) => {
+    const encodedPartner = encodeURIComponent(row.partnerName);
+    const encodedRider = encodeURIComponent(row.riderName);
+    const recentPaid = lastSettlementResult &&
+      lastSettlementResult.afterStatus === "지급완료" &&
+      lastSettlementResult.partnerName === row.partnerName &&
+      lastSettlementResult.riderName === row.riderName;
+    return `
+      <div class="vendor-product-row admin-order-row${recentPaid ? " settlement-paid-focus" : ""}">
+        <div>
+          <strong>${row.partnerName} · ${row.riderName} <span class="admin-status-badge done">지급완료</span></strong>
+          <span>완료 ${row.count}건 · 총 배송비 ${formatKRW(row.feeTotal)}</span>
+          <span>지급액 ${formatKRW(row.payout)} · ${row.paidDate}</span>
+          ${recentPaid ? '<div class="settlement-next-action"><span>방금 처리됨</span><strong>지급완료 처리 결과가 완료 내역에 반영됐습니다.</strong></div>' : ""}
+        </div>
+        <div class="mini-actions order-detail-action">
+          <button type="button" onclick="openSettlementDetail(decodeURIComponent('${encodedPartner}'), decodeURIComponent('${encodedRider}'), 'paid')">상세보기</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+export function heldSettlementListMarkup(rows, options = {}) {
+  const formatKRW = options.formatKRW || ((value) => String(value || 0));
+  const canManageSettlement = !!options.canManageSettlement;
+  if (!rows.length) return '<div class="line-item"><span>보류 중인 정산이 없습니다</span><strong>정상</strong></div>';
+  return rows.map((row) => {
+    const encodedPartner = encodeURIComponent(row.partnerName);
+    const encodedRider = encodeURIComponent(row.riderName);
+    const encodedReason = encodeURIComponent(row.reason);
+    return `
+      <div class="vendor-product-row admin-order-row">
+        <div>
+          <strong>${row.partnerName} · ${row.riderName} <span class="admin-status-badge waiting">보류</span></strong>
+          <span>보류 ${row.count}건 · 배송비 ${formatKRW(row.feeTotal)} · 예정 정산 ${formatKRW(row.payout)}</span>
+          <span>사유: ${row.reason} · ${row.heldDate}</span>
+        </div>
+        <div class="mini-actions order-detail-action">
+          <button type="button" onclick="openSettlementDetail(decodeURIComponent('${encodedPartner}'), decodeURIComponent('${encodedRider}'), 'held')">상세보기</button>
+          <button class="settlement-confirm" type="button" ${canManageSettlement ? "" : "disabled"} onclick="releaseSettlementHold(decodeURIComponent('${encodedPartner}'), decodeURIComponent('${encodedRider}'), decodeURIComponent('${encodedReason}'))">보류 해제</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
 export function settlementFlowCheckLogsMarkup(logs = [], options = {}) {
   const formatKRW = options.formatKRW || ((value) => String(value || 0));
   const settlementTimeLabel = options.settlementTimeLabel || ((value) => value || "미처리");
