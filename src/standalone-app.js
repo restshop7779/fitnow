@@ -360,6 +360,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       let avatarTryOnState = { status: "idle", photoDataUrl: "", photoName: "" };
       let fit3dRuntime = null;
       const PARTNER_ACCOUNT_STORAGE_KEY = "fitnow_partner_accounts";
+      const PARTNER_ACCOUNT_DB_READY_KEY = "fitnow_partner_accounts_db_ready";
 
       function saveReviewStore() {
         writeReviewStore(REVIEW_STORAGE_KEY, reviews);
@@ -542,6 +543,151 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         if (Array.isArray(saved.deliveryPartners) && saved.deliveryPartners.length) replaceArrayContents(deliveryPartners, saved.deliveryPartners);
       }
 
+      function partnerAccountSlug(kind, name) {
+        return kind + "-" + slugify(name || "account");
+      }
+
+      function partnerAccountTableMissing(error) {
+        const message = String(error && (error.message || error.details || error.hint || error.code) || "");
+        return /partner_accounts/i.test(message) || /42P01|PGRST205/i.test(message);
+      }
+
+      function isPartnerAccountDbReady() {
+        return localStorage.getItem(PARTNER_ACCOUNT_DB_READY_KEY) === "true";
+      }
+
+      function setPartnerAccountDbReady(ready) {
+        if (ready) localStorage.setItem(PARTNER_ACCOUNT_DB_READY_KEY, "true");
+        else localStorage.removeItem(PARTNER_ACCOUNT_DB_READY_KEY);
+      }
+
+      function upsertArrayItem(items, predicate, value) {
+        const index = items.findIndex(predicate);
+        if (index >= 0) items[index] = value;
+        else items.push(value);
+      }
+
+      function applyPartnerAccountRows(rows) {
+        (rows || []).forEach((row) => {
+          if (!row || !row.name) return;
+          if (row.kind === "vendor") {
+            const account = {
+              store: row.name,
+              pin: row.pin || "",
+              manager: row.manager_name || row.name + " 담당자",
+            };
+            const store = {
+              slug: slugify(row.name),
+              name: row.name,
+              area: row.area || "미지정",
+              address: row.address || row.area || "",
+              pickup: true,
+              open: row.is_open !== false,
+              prep: Number(row.prep_minutes) || 5,
+            };
+            upsertArrayItem(vendorAccounts, (item) => item.store === account.store, account);
+            upsertArrayItem(partnerStores, (item) => item.name === store.name, store);
+            return;
+          }
+          if (row.kind === "delivery") {
+            const areas = Array.isArray(row.areas) && row.areas.length ? row.areas : uniqueList([row.area]);
+            const riders = Array.isArray(row.riders) ? row.riders : [];
+            const partner = {
+              name: row.name,
+              pin: row.pin || "",
+              areas: areas.length ? areas : ["미지정"],
+              riders,
+            };
+            upsertArrayItem(deliveryPartners, (item) => item.name === partner.name, partner);
+          }
+        });
+        savePartnerAccountStore();
+      }
+
+      function vendorPartnerAccountPayload(account, store) {
+        return {
+          kind: "vendor",
+          slug: partnerAccountSlug("vendor", account.store),
+          name: account.store,
+          pin: account.pin,
+          manager_name: account.manager,
+          area: store.area || "미지정",
+          address: store.address || store.area || "",
+          prep_minutes: Number(store.prep) || 5,
+          is_open: store.open !== false,
+          areas: store.area ? [store.area] : [],
+          riders: [],
+          updated_at: new Date().toISOString(),
+        };
+      }
+
+      function deliveryPartnerAccountPayload(partner) {
+        return {
+          kind: "delivery",
+          slug: partnerAccountSlug("delivery", partner.name),
+          name: partner.name,
+          pin: partner.pin,
+          manager_name: "",
+          area: (partner.areas || [])[0] || "미지정",
+          address: "",
+          prep_minutes: 0,
+          is_open: true,
+          areas: partner.areas || [],
+          riders: partner.riders || [],
+          updated_at: new Date().toISOString(),
+        };
+      }
+
+      async function loadSupabasePartnerAccounts() {
+        if (!supabaseClient) return false;
+        const result = await supabaseClient
+          .from("partner_accounts")
+          .select("*")
+          .order("kind", { ascending: true })
+          .order("sort_order", { ascending: true })
+          .order("created_at", { ascending: true });
+        if (result.error) {
+          if (partnerAccountTableMissing(result.error)) {
+            setPartnerAccountDbReady(false);
+            return false;
+          }
+          throw result.error;
+        }
+        setPartnerAccountDbReady(true);
+        if (result.data && result.data.length) {
+          applyPartnerAccountRows(result.data);
+          renderLoginStores();
+          renderAdminAccountManagement();
+        }
+        return true;
+      }
+
+      async function syncPartnerAccountToSupabase(payload, previousKind = "", previousName = "") {
+        if (!supabaseClient) return false;
+        const result = await supabaseClient
+          .from("partner_accounts")
+          .upsert(payload, { onConflict: "slug" })
+          .select("id")
+          .single();
+        if (result.error) throw result.error;
+        setPartnerAccountDbReady(true);
+        if (previousKind && previousName && previousName !== payload.name) {
+          await deletePartnerAccountFromSupabase(previousKind, previousName);
+        }
+        return true;
+      }
+
+      async function deletePartnerAccountFromSupabase(kind, name) {
+        if (!supabaseClient || !kind || !name) return false;
+        const result = await supabaseClient
+          .from("partner_accounts")
+          .delete()
+          .eq("slug", partnerAccountSlug(kind, name));
+        if (result.error) throw result.error;
+        setPartnerAccountDbReady(true);
+        return true;
+      }
+
       function isTotalAdmin() {
         return !!(currentAdmin && currentAdmin.role === "total");
       }
@@ -674,7 +820,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         document.getElementById("adminDeliveryRiders").value = partner ? (partner.riders || []).join("\n") : "";
       }
 
-      function saveVendorAccountFromAdmin(event) {
+      async function saveVendorAccountFromAdmin(event) {
         event.preventDefault();
         if (!isTotalAdmin()) return setSyncStatus("총관리자만 입점업체를 저장할 수 있습니다");
         const previousStore = document.getElementById("adminVendorAccountSelect").value;
@@ -705,9 +851,16 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         renderAdminAccountManagement();
         fillVendorAccountForm(storeName);
         setSyncStatus(storeName + " 입점업체 계정 저장 완료");
+        try {
+          await syncPartnerAccountToSupabase(vendorPartnerAccountPayload(account, store), "vendor", previousStore);
+          setSyncStatus(storeName + " 입점업체 계정 DB 저장 완료");
+        } catch (error) {
+          const suffix = partnerAccountTableMissing(error) ? " - Supabase partner_accounts SQL 실행 필요" : "";
+          setSyncStatus(storeName + " 입점업체는 이 기기에 저장됨" + suffix);
+        }
       }
 
-      function deleteVendorAccountFromAdmin() {
+      async function deleteVendorAccountFromAdmin() {
         if (!isTotalAdmin()) return setSyncStatus("총관리자만 입점업체를 삭제할 수 있습니다");
         const storeName = document.getElementById("adminVendorAccountSelect").value;
         if (!storeName) return setSyncStatus("삭제할 입점업체를 선택해 주세요");
@@ -723,9 +876,16 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         renderLoginStores();
         renderAdminAccountManagement();
         setSyncStatus(storeName + " 입점업체 계정 삭제 완료");
+        try {
+          await deletePartnerAccountFromSupabase("vendor", storeName);
+          setSyncStatus(storeName + " 입점업체 계정 DB 삭제 완료");
+        } catch (error) {
+          const suffix = partnerAccountTableMissing(error) ? " - Supabase partner_accounts SQL 실행 필요" : "";
+          setSyncStatus(storeName + " 입점업체는 이 기기에서 삭제됨" + suffix);
+        }
       }
 
-      function saveDeliveryPartnerFromAdmin(event) {
+      async function saveDeliveryPartnerFromAdmin(event) {
         event.preventDefault();
         if (!isTotalAdmin()) return setSyncStatus("총관리자만 배송사를 저장할 수 있습니다");
         const previousName = document.getElementById("adminDeliveryPartnerSelect").value;
@@ -752,9 +912,16 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         renderAdminOrders(orderHistory);
         fillDeliveryPartnerForm(name);
         setSyncStatus(name + " 배송사 계정 저장 완료");
+        try {
+          await syncPartnerAccountToSupabase(deliveryPartnerAccountPayload(partner), "delivery", previousName);
+          setSyncStatus(name + " 배송사 계정 DB 저장 완료");
+        } catch (error) {
+          const suffix = partnerAccountTableMissing(error) ? " - Supabase partner_accounts SQL 실행 필요" : "";
+          setSyncStatus(name + " 배송사는 이 기기에 저장됨" + suffix);
+        }
       }
 
-      function deleteDeliveryPartnerFromAdmin() {
+      async function deleteDeliveryPartnerFromAdmin() {
         if (!isTotalAdmin()) return setSyncStatus("총관리자만 배송사를 삭제할 수 있습니다");
         const name = document.getElementById("adminDeliveryPartnerSelect").value;
         if (!name) return setSyncStatus("삭제할 배송사를 선택해 주세요");
@@ -769,6 +936,13 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         renderAdminAccountManagement();
         renderAdminOrders(orderHistory);
         setSyncStatus(name + " 배송사 계정 삭제 완료");
+        try {
+          await deletePartnerAccountFromSupabase("delivery", name);
+          setSyncStatus(name + " 배송사 계정 DB 삭제 완료");
+        } catch (error) {
+          const suffix = partnerAccountTableMissing(error) ? " - Supabase partner_accounts SQL 실행 필요" : "";
+          setSyncStatus(name + " 배송사는 이 기기에서 삭제됨" + suffix);
+        }
       }
 
       function goHome() {
@@ -1218,7 +1392,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           return;
         }
         const checks = [];
-        for (const table of ["showrooms", "products", "orders", "order_items", "look_sets", "look_set_items", "product_reviews", "wishlists"]) {
+        for (const table of ["showrooms", "products", "orders", "order_items", "look_sets", "look_set_items", "product_reviews", "wishlists", "partner_accounts"]) {
           const result = await supabaseClient.from(table).select("*").limit(1);
           checks.push({ name: table, ok: !result.error, error: result.error ? result.error.message : "" });
         }
@@ -1234,11 +1408,15 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         }
         const failed = checks.filter((item) => !item.ok);
         const failedStorage = storageChecks.filter((item) => !item.ok);
+        setPartnerAccountDbReady(!failed.some((item) => item.name === "partner_accounts"));
         if (!failed.length && !failedStorage.length) {
-          resultNode.textContent = "정상입니다. 테이블 8개와 이미지 저장소 3개가 준비됐습니다.";
+          resultNode.textContent = "정상입니다. 테이블 9개와 이미지 저장소 3개가 준비됐습니다.";
           setSyncStatus("Supabase SQL 확인 완료");
         } else {
-          const tableText = failed.length ? "실패 테이블: " + failed.map((item) => item.name).join(", ") + ". " : "";
+          const tableText = failed.length ? "실패 테이블: " + failed.map((item) => {
+            if (item.name === "partner_accounts") return "partner_accounts - docs/supabase-schema.sql 최신 실행 필요";
+            return item.name;
+          }).join(", ") + ". " : "";
           const storageText = failedStorage.length ? "이미지 저장소 실패: " + failedStorage.map((item) => {
             const missingBucket = /bucket not found/i.test(item.error || "");
             if (missingBucket) return item.name + " 버킷 없음 - docs/supabase-schema.sql 전체 실행 또는 Storage에서 Public 버킷 생성 필요";
@@ -1544,6 +1722,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         if (showroomResult.data && showroomResult.data.length) {
           partnerStores.splice(0, partnerStores.length, ...showroomResult.data.map(showroomToStore));
         }
+        if (isPartnerAccountDbReady()) await loadSupabasePartnerAccounts();
         if (productResult.data && productResult.data.length) {
           products.splice(0, products.length, ...productResult.data.map(productToItem));
           ensureAvatarTestProduct();

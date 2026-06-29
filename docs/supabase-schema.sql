@@ -144,6 +144,24 @@ create table if not exists public.wishlists (
   unique (user_id, product_slug)
 );
 
+create table if not exists public.partner_accounts (
+  id uuid primary key default gen_random_uuid(),
+  kind text not null check (kind in ('vendor', 'delivery')),
+  slug text not null unique,
+  name text not null,
+  pin text not null,
+  manager_name text not null default '',
+  area text not null default '',
+  address text not null default '',
+  prep_minutes integer not null default 5 check (prep_minutes >= 0),
+  is_open boolean not null default true,
+  areas text[] not null default '{}',
+  riders text[] not null default '{}',
+  sort_order integer not null default 0,
+  updated_at timestamptz not null default now(),
+  created_at timestamptz not null default now()
+);
+
 create index if not exists products_showroom_id_idx on public.products(showroom_id);
 create index if not exists order_items_order_id_idx on public.order_items(order_id);
 create index if not exists orders_created_at_idx on public.orders(created_at desc);
@@ -153,6 +171,8 @@ create index if not exists product_reviews_product_slug_idx on public.product_re
 create index if not exists product_reviews_showroom_name_idx on public.product_reviews(showroom_name);
 create index if not exists wishlists_user_id_idx on public.wishlists(user_id);
 create index if not exists wishlists_product_slug_idx on public.wishlists(product_slug);
+create index if not exists partner_accounts_kind_idx on public.partner_accounts(kind);
+create index if not exists partner_accounts_updated_at_idx on public.partner_accounts(updated_at desc);
 
 grant select, insert, update, delete on public.showrooms, public.products to anon, authenticated;
 grant select, insert, update, delete on public.look_sets, public.look_set_items to anon, authenticated;
@@ -160,6 +180,7 @@ grant select, insert, update, delete on public.orders to anon, authenticated;
 grant select, insert, delete on public.order_items to anon, authenticated;
 grant select, insert, update, delete on public.product_reviews to anon, authenticated;
 grant select, insert, update, delete on public.wishlists to anon, authenticated;
+grant select, insert, update, delete on public.partner_accounts to anon, authenticated;
 
 alter table public.showrooms enable row level security;
 alter table public.products enable row level security;
@@ -169,6 +190,7 @@ alter table public.look_sets enable row level security;
 alter table public.look_set_items enable row level security;
 alter table public.product_reviews enable row level security;
 alter table public.wishlists enable row level security;
+alter table public.partner_accounts enable row level security;
 
 drop policy if exists "Showrooms public read" on public.showrooms;
 drop policy if exists "Showrooms public write" on public.showrooms;
@@ -189,6 +211,8 @@ drop policy if exists "Product reviews public read" on public.product_reviews;
 drop policy if exists "Product reviews public write" on public.product_reviews;
 drop policy if exists "Wishlists public read" on public.wishlists;
 drop policy if exists "Wishlists public write" on public.wishlists;
+drop policy if exists "Partner accounts public read" on public.partner_accounts;
+drop policy if exists "Partner accounts public write" on public.partner_accounts;
 
 create policy "Showrooms public read"
 on public.showrooms for select
@@ -270,6 +294,15 @@ using (true);
 
 create policy "Wishlists public write"
 on public.wishlists for all
+using (true)
+with check (true);
+
+create policy "Partner accounts public read"
+on public.partner_accounts for select
+using (true);
+
+create policy "Partner accounts public write"
+on public.partner_accounts for all
 using (true)
 with check (true);
 
