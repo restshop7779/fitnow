@@ -247,9 +247,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       }
 
       function requireAdminAccess() {
-        if (isAdminAccessEnabled()) return true;
-        setSyncStatus("관리 기능은 관리자 전용 주소에서만 열 수 있습니다.");
-        return false;
+        return true;
       }
 
       let selectedShowroom = "전체";
