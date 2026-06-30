@@ -10997,8 +10997,16 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           return;
         }
         activeAdminMode = mode;
+        const adminEyebrow = document.getElementById("adminEyebrow");
         const title = document.getElementById("adminTitle");
-        if (title) title.textContent = mode === "total" ? "총관리자" : currentAdmin.role === "delivery" ? "배송관리 · " + currentAdmin.name : "배송관리";
+        if (adminEyebrow) adminEyebrow.textContent = isRiderAppMode() ? "FITNOW RIDER" : "FITNOW CONTROL";
+        if (title) {
+          title.textContent = mode === "total"
+            ? "총관리자"
+            : currentAdmin.role === "delivery"
+              ? (isRiderAppMode() ? "배송 대시보드 · " : "배송관리 · ") + currentAdmin.name
+              : "배송관리";
+        }
         if (mode === "total") {
           await clearAdminTestData({ expiredOnly: true, auto: true });
         }

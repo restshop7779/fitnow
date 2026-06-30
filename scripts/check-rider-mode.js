@@ -87,6 +87,11 @@ async function verifyRiderDeliveryDashboard(page) {
   await expectVisible(page, "#adminDeliveryDashboardSection", "rider delivery dashboard");
   await expectVisible(page, "#adminPermissionDelivery", "rider delivery permission");
 
+  const riderEyebrow = await page.locator("#adminEyebrow").innerText();
+  const riderTitle = await page.locator("#adminTitle").innerText();
+  if (riderEyebrow !== "FITNOW RIDER") fail("rider dashboard eyebrow should be FITNOW RIDER");
+  if (!riderTitle.includes("배송 대시보드")) fail("rider dashboard title should use delivery dashboard wording");
+
   await expectHidden(page, "#adminPermissionTotal", "rider total permission");
   await expectHidden(page, "#adminAccountManagementSection", "rider account management");
   await expectHidden(page, "#adminReviewModerationSection", "rider review moderation");

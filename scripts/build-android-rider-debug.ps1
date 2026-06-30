@@ -70,7 +70,9 @@ try {
   $RiderApk = Join-Path $Apk.Directory.FullName "fitnow-rider-debug.apk"
   $StableRiderApk = Join-Path $DistApkDir "fitnow-rider-debug.apk"
   New-Item -ItemType Directory -Path $DistApkDir -Force | Out-Null
-  Copy-Item -Path $Apk.FullName -Destination $RiderApk -Force
+  if ([System.IO.Path]::GetFullPath($Apk.FullName) -ne [System.IO.Path]::GetFullPath($RiderApk)) {
+    Copy-Item -Path $Apk.FullName -Destination $RiderApk -Force
+  }
   Copy-Item -Path $Apk.FullName -Destination $StableRiderApk -Force
   Write-Host "FitNow Rider debug APK: $RiderApk"
   Write-Host "FitNow Rider stable APK: $StableRiderApk"
