@@ -285,6 +285,21 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         document.body.classList.toggle("modal-active", !!document.querySelector(".modal.open"));
       }
 
+      let modalActiveObserver = null;
+
+      function setupModalActiveObserver() {
+        if (modalActiveObserver) return;
+        modalActiveObserver = new MutationObserver((mutations) => {
+          if (mutations.some((mutation) => mutation.attributeName === "class")) {
+            updateModalActiveState();
+          }
+        });
+        document.querySelectorAll(".modal").forEach((modal) => {
+          modalActiveObserver.observe(modal, { attributes: true, attributeFilter: ["class"] });
+        });
+        updateModalActiveState();
+      }
+
       function openModalById(id) {
         const modal = document.getElementById(id);
         if (!modal) return;
@@ -7200,6 +7215,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         document.getElementById("vendorSession").innerHTML = currentVendor.manager + " 로그인 중 - " + currentVendor.store + '만 관리 가능 <button class="secondary" type="button" onclick="logoutVendor()" style="min-height:30px;margin-top:8px;">로그아웃</button>';
         document.getElementById("vendorModal").classList.add("open");
         document.getElementById("vendorModal").setAttribute("aria-hidden", "false");
+        updateModalActiveState();
       }
 
       function renderLoginStores() {
@@ -7267,12 +7283,14 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         renderManagementHub();
         document.getElementById("managementModal").classList.add("open");
         document.getElementById("managementModal").setAttribute("aria-hidden", "false");
+        updateModalActiveState();
         setActiveBottomTab("management");
       }
 
       function closeManagement() {
         document.getElementById("managementModal").classList.remove("open");
         document.getElementById("managementModal").setAttribute("aria-hidden", "true");
+        updateModalActiveState();
       }
 
       function openVendorFromManagement() {
@@ -11249,6 +11267,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       loadManagedPartnerAccounts();
       applyAdminAccessVisibility();
       setupBottomTabHandlers();
+      setupModalActiveObserver();
       restoreSavedCustomer();
       restoreSavedVendor();
       restoreSavedAdmin();
