@@ -34,6 +34,7 @@ Load the signing environment before store-ready builds:
 . .\.secrets\android-release-env.ps1
 corepack pnpm run android:bundle
 corepack pnpm run android:rider:bundle
+corepack pnpm run check:release-bundles
 ```
 
 If these variables are not set, the scripts still build local release bundles, but they are not ready for store upload.

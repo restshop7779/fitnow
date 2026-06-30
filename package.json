@@ -13,6 +13,7 @@
     "check:order-flow": "node ./scripts/check-order-flow.js",
     "check:pwa": "node ./scripts/check-pwa.js",
     "check:preflight": "corepack pnpm run build && corepack pnpm run check:deploy && corepack pnpm run check:e2e && corepack pnpm run check:roles && corepack pnpm run check:order-flow && corepack pnpm run check:rider-mode && corepack pnpm run check:native",
+    "check:release-bundles": "powershell -ExecutionPolicy Bypass -File ./scripts/check-android-release-bundles.ps1",
     "check:rider-mode": "node ./scripts/check-rider-mode.js",
     "check:roles": "node ./scripts/check-role-visibility.js",
     "cap:sync": "pnpm run build:local && cap sync",
