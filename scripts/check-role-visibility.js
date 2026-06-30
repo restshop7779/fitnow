@@ -7,6 +7,9 @@ const port = Number(process.env.PORT || (4300 + Math.floor(Math.random() * 1000)
 const baseUrl = `http://127.0.0.1:${port}/index.react.html?admin=1&role-check=${Date.now()}`;
 
 function fail(message) {
+  if (process.env.GITHUB_ACTIONS) {
+    console.error("::error file=scripts/check-role-visibility.js,title=Role visibility check::" + message);
+  }
   throw new Error("[role-visibility] " + message);
 }
 
