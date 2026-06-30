@@ -34,8 +34,26 @@ jobs:
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Run preflight QA
-        run: pnpm check:preflight
+      - name: Build production bundle
+        run: pnpm run build
+
+      - name: Check deploy bundle
+        run: pnpm run check:deploy
+
+      - name: Check home interactions
+        run: pnpm run check:e2e
+
+      - name: Check role visibility
+        run: pnpm run check:roles
+
+      - name: Check order flow
+        run: pnpm run check:order-flow
+
+      - name: Check rider mode
+        run: pnpm run check:rider-mode
+
+      - name: Check native shell
+        run: pnpm run check:native
 
       - name: Prepare Pages files
         run: |
