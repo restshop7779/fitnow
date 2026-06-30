@@ -67,8 +67,7 @@ git status --short
 
 ```powershell
 & "C:\Program Files\nodejs\npm.cmd" run build:local
-& "C:\Program Files\nodejs\npm.cmd" run check:deploy
-& "C:\Program Files\nodejs\npm.cmd" run check:e2e
+& "C:\Program Files\nodejs\npm.cmd" run check:preflight
 ```
 
 푸시 후에는 GitHub Actions의 `Deploy GitHub Pages`가 성공했는지 확인합니다.

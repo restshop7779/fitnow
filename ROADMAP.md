@@ -32,7 +32,7 @@ FitNow는 쇼핑 홈, 주문/배송, 입점업체 관리, 총관리자 QA/정산
 
 5. 배포 안정성
 
-- `check:deploy`와 `check:e2e`를 배포 전 필수 확인으로 유지합니다.
+- `check:preflight`를 배포 전 필수 확인으로 유지합니다.
 - 로컬 확인은 `02_PREVIEW_BUILD_AND_OPEN.bat`를 기준으로 합니다.
 - GitHub Actions 성공 후 배포 주소에서 한 번 더 확인합니다.
 

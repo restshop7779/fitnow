@@ -70,8 +70,7 @@ http://127.0.0.1:4173/index.react.html
 검증:
 
 ```powershell
-& "C:\Program Files\nodejs\npm.cmd" run check:deploy
-& "C:\Program Files\nodejs\npm.cmd" run check:e2e
+& "C:\Program Files\nodejs\npm.cmd" run check:preflight
 ```
 
 ## 5. 문제가 생겼을 때
