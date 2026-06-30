@@ -51,7 +51,6 @@ try {
   }
 
   $Gradle = [System.IO.File]::ReadAllText($BuildGradle, [System.Text.Encoding]::UTF8)
-  $Gradle = $Gradle -replace 'namespace = "com\.fitnow\.app"', 'namespace = "com.fitnow.rider"'
   $Gradle = $Gradle -replace 'applicationId "com\.fitnow\.app"', 'applicationId "com.fitnow.rider"'
   $Gradle = $Gradle -replace 'versionCode \d+', 'versionCode 1'
   $Gradle = $Gradle -replace 'versionName "[^"]+"', 'versionName "0.1.0"'
