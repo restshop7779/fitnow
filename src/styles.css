@@ -1357,6 +1357,56 @@
       body.modal-active .bottom-tabs {
         display: none;
       }
+      body.rider-app-shell .shopping-hero,
+      body.rider-app-shell .quick-category-strip,
+      body.rider-app-shell .promo-rail,
+      body.rider-app-shell .shopping-status,
+      body.rider-app-shell .location-panel,
+      body.rider-app-shell .hero,
+      body.rider-app-shell .moments,
+      body.rider-app-shell .store-card,
+      body.rider-app-shell .recommend-panel,
+      body.rider-app-shell .section-head,
+      body.rider-app-shell .feed-tabs,
+      body.rider-app-shell .catalog-controls,
+      body.rider-app-shell .product-grid,
+      body.rider-app-shell .cart-bar,
+      body.rider-app-shell .bottom-tabs {
+        display: none !important;
+      }
+      body.rider-app-shell .phone-frame {
+        padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+      }
+      .rider-app-home {
+        display: none;
+      }
+      body.rider-app-shell .rider-app-home {
+        display: grid;
+        gap: 14px;
+        margin: 16px 12px;
+        padding: 18px;
+        border: 1px solid #191919;
+        border-radius: 8px;
+        background: #fffaf0;
+        box-shadow: 0 16px 34px rgba(23,23,23,.08);
+      }
+      .rider-app-home h1 {
+        margin: 0;
+        color: #171717;
+        font-size: 24px;
+        line-height: 1.18;
+        letter-spacing: 0;
+      }
+      .rider-app-home span {
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 850;
+        line-height: 1.55;
+      }
+      .rider-app-home .primary {
+        width: 100%;
+        min-height: 48px;
+      }
       .bottom-tabs button { min-height: 42px; border-radius: 7px; background: transparent; color: var(--muted); font-size: 11px; font-weight: 950; }
       body.native-app-shell .bottom-tabs button {
         min-height: 58px;

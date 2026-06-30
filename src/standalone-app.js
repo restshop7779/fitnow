@@ -231,7 +231,18 @@ import {
 import * as THREE from "three";
 import realFitModelImage from "../assets/fitnow-real-fit-model.png";
 
+      function appModeParam() {
+        const params = new URLSearchParams(window.location.search || "");
+        return String(window.FITNOW_APP_MODE || params.get("app") || params.get("mode") || "").toLowerCase();
+      }
+
+      function isRiderAppMode() {
+        const params = new URLSearchParams(window.location.search || "");
+        return appModeParam() === "rider" || ["1", "true", "yes"].includes(params.get("rider") || "");
+      }
+
       function isAdminAccessEnabled() {
+        if (isRiderAppMode()) return true;
         const capacitor = window.Capacitor;
         if (capacitor && typeof capacitor.isNativePlatform === "function" && capacitor.isNativePlatform()) return true;
         if (capacitor && typeof capacitor.getPlatform === "function" && capacitor.getPlatform() !== "web") return true;
@@ -259,6 +270,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       function applyAdminAccessVisibility() {
         document.body.classList.toggle("admin-access-enabled", isAdminAccessEnabled());
         document.body.classList.toggle("native-app-shell", isNativeAppShell());
+        document.body.classList.toggle("rider-app-shell", isRiderAppMode());
       }
 
       function closeOpenModals() {
@@ -321,6 +333,64 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         nav.addEventListener("click", handle, true);
         nav.addEventListener("touchend", handle, true);
         nav.addEventListener("pointerup", handle, true);
+      }
+
+      function openRiderDashboard() {
+        if (!isRiderAppMode()) return;
+        pendingAdminMode = "delivery";
+        if (currentAdmin && currentAdmin.role === "delivery") {
+          openAdmin("delivery");
+          return;
+        }
+        if (currentAdmin && currentAdmin.role !== "delivery") {
+          currentAdmin = null;
+          saveCurrentAdmin();
+        }
+        openAdminLogin();
+      }
+
+      function setupRiderAppShell() {
+        if (!isRiderAppMode()) return;
+        document.title = "FitNow Rider";
+        const brand = document.querySelector(".top-bar .brand");
+        if (brand) {
+          brand.innerHTML = "FITNOW RIDER<small>배송 오픈콜 전용</small>";
+          brand.onclick = () => openRiderDashboard();
+          brand.setAttribute("aria-label", "배송 대시보드 열기");
+        }
+        const leftButton = document.querySelector(".top-bar .icon-button:first-child");
+        if (leftButton) {
+          leftButton.textContent = "배송";
+          leftButton.onclick = () => openRiderDashboard();
+          leftButton.setAttribute("aria-label", "배송 대시보드 열기");
+        }
+        const rightButton = document.querySelector(".top-bar .icon-button:last-child");
+        if (rightButton) {
+          rightButton.textContent = "로그인";
+          rightButton.onclick = () => openRiderDashboard();
+          rightButton.setAttribute("aria-label", "배송사 로그인 열기");
+        }
+        const frame = document.querySelector(".phone-frame");
+        if (frame && !document.getElementById("riderAppHome")) {
+          const panel = document.createElement("section");
+          panel.className = "rider-app-home";
+          panel.id = "riderAppHome";
+          panel.innerHTML = [
+            '<p class="eyebrow">FITNOW RIDER</p>',
+            "<h1>배송 오픈콜과 배정 주문만 확인합니다</h1>",
+            "<span>입점업체 픽업준비 이후 열린 주문을 확인하고, 배차부터 도착 인증까지 처리하는 배송사 전용 앱입니다.</span>",
+            '<button class="primary" type="button" onclick="openRiderDashboard()">배송 대시보드 열기</button>',
+          ].join("");
+          const syncCheck = document.querySelector(".sync-check");
+          if (syncCheck && syncCheck.parentNode) syncCheck.parentNode.insertBefore(panel, syncCheck.nextSibling);
+          else frame.insertBefore(panel, frame.firstChild);
+        }
+        const syncStatus = document.getElementById("syncStatus");
+        if (syncStatus && !syncStatus.dataset.riderReady) {
+          syncStatus.textContent = "FitNow Rider - 배송사 앱 모드";
+          syncStatus.dataset.riderReady = "true";
+        }
+        window.setTimeout(openRiderDashboard, 0);
       }
 
       function requireAdminAccess() {
@@ -10783,13 +10853,11 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         if (hint) hint.textContent = deliveryMode
           ? "배송사에 발급된 운영 PIN을 입력해 주세요."
           : "총관리자에게 발급된 운영 PIN을 입력해 주세요.";
-        document.getElementById("adminLoginModal").classList.add("open");
-        document.getElementById("adminLoginModal").setAttribute("aria-hidden", "false");
+        openModalById("adminLoginModal");
       }
 
       function closeAdminLogin() {
-        document.getElementById("adminLoginModal").classList.remove("open");
-        document.getElementById("adminLoginModal").setAttribute("aria-hidden", "true");
+        closeModalById("adminLoginModal");
       }
 
       function loginAdmin(event) {
@@ -10860,14 +10928,12 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         renderAdminHomeBoard(adminOrders || orderHistory, totalMode);
         const deliveryScope = currentAdmin.role === "delivery" ? " · 담당권역 " + (currentAdmin.areas || []).join("/") : "";
         document.getElementById("adminSession").innerHTML = currentAdmin.name + " 로그인 중 - " + (totalMode ? "앱 전체 권한 활성" : "배송 대시보드 전용" + deliveryScope) + ' <button class="secondary" type="button" onclick="logoutAdmin()" style="min-height:30px;margin-top:8px;">로그아웃</button>';
-        document.getElementById("adminModal").classList.add("open");
-        document.getElementById("adminModal").setAttribute("aria-hidden", "false");
+        openModalById("adminModal");
       }
 
       function closeAdmin() {
         closeAdminOrderDetail();
-        document.getElementById("adminModal").classList.remove("open");
-        document.getElementById("adminModal").setAttribute("aria-hidden", "true");
+        closeModalById("adminModal");
       }
 
       async function payOrder() {
@@ -11197,10 +11263,12 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       ensureAvatarTestProduct();
       renderProducts();
       renderCart();
+      setupRiderAppShell();
       openSharedAvatarLookFromUrl();
       initSupabase().then(() => {
         renderProducts();
         renderCart();
+        if (isRiderAppMode()) openRiderDashboard();
         window.__fitnowAppReady = true;
       });
 
@@ -11218,6 +11286,7 @@ Object.assign(window, {
   saveDeliveryPartnerFromAdmin,
   deleteDeliveryPartnerFromAdmin,
   renderAdminAccountManagement,
+  openRiderDashboard,
   openManagement,
   closeManagement,
   openAdmin,
