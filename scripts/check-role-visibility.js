@@ -61,15 +61,31 @@ async function expectOpenModal(page, selector, label) {
 }
 
 async function expectVisible(page, selector, label) {
-  const target = page.locator(selector);
-  if ((await target.count()) !== 1) fail(label + " target count mismatch");
-  if (!(await target.isVisible())) fail(label + " should be visible");
+  const state = await page.locator(selector).evaluateAll((nodes) => {
+    if (nodes.length !== 1) return { count: nodes.length, available: false };
+    const node = nodes[0];
+    const style = window.getComputedStyle(node);
+    return {
+      count: nodes.length,
+      available: !node.hidden && style.display !== "none" && style.visibility !== "hidden",
+    };
+  });
+  if (state.count !== 1) fail(label + " target count mismatch");
+  if (!state.available) fail(label + " should be available");
 }
 
 async function expectHidden(page, selector, label) {
-  const target = page.locator(selector);
-  if ((await target.count()) !== 1) fail(label + " target count mismatch");
-  if (await target.isVisible()) fail(label + " should be hidden");
+  const state = await page.locator(selector).evaluateAll((nodes) => {
+    if (nodes.length !== 1) return { count: nodes.length, available: false };
+    const node = nodes[0];
+    const style = window.getComputedStyle(node);
+    return {
+      count: nodes.length,
+      available: !node.hidden && style.display !== "none" && style.visibility !== "hidden",
+    };
+  });
+  if (state.count !== 1) fail(label + " target count mismatch");
+  if (state.available) fail(label + " should be hidden");
 }
 
 async function verifyGuest(page) {
