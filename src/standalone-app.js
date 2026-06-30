@@ -316,6 +316,41 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         updateModalActiveState();
       }
 
+      function openPhotoPreview(src, alt = "사진 보기") {
+        const modal = document.getElementById("photoPreviewModal");
+        const image = document.getElementById("photoPreviewImage");
+        const title = document.getElementById("photoPreviewTitle");
+        if (!modal || !image) {
+          window.open(src, "_blank", "noopener");
+          return;
+        }
+        image.src = src;
+        image.alt = alt || "사진 보기";
+        if (title) title.textContent = alt || "사진 보기";
+        openModalById("photoPreviewModal");
+      }
+
+      function closePhotoPreview() {
+        const image = document.getElementById("photoPreviewImage");
+        closeModalById("photoPreviewModal");
+        if (image) image.removeAttribute("src");
+      }
+
+      let photoPreviewLinksBound = false;
+
+      function setupPhotoPreviewLinks() {
+        if (photoPreviewLinksBound) return;
+        photoPreviewLinksBound = true;
+        document.addEventListener("click", (event) => {
+          const link = event.target && event.target.closest ? event.target.closest(".delivery-proof-link") : null;
+          if (!link) return;
+          const src = link.dataset.previewSrc || link.getAttribute("href") || "";
+          if (!src) return;
+          event.preventDefault();
+          openPhotoPreview(src, link.dataset.previewAlt || link.textContent || "사진 보기");
+        });
+      }
+
       function setActiveBottomTab(tab) {
         document.querySelectorAll(".bottom-tabs button").forEach((button) => {
           button.classList.toggle("active", button.dataset.bottomTab === tab);
@@ -11268,6 +11303,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       applyAdminAccessVisibility();
       setupBottomTabHandlers();
       setupModalActiveObserver();
+      setupPhotoPreviewLinks();
       restoreSavedCustomer();
       restoreSavedVendor();
       restoreSavedAdmin();
@@ -11454,6 +11490,7 @@ exposeHandlers({
   closeMyAvatarLook,
   closeMyPage,
   closeOrders,
+  closePhotoPreview,
   closeReviewModal,
   closeSettlementConfirm,
   closeSettlementPeriod,
@@ -11581,6 +11618,7 @@ exposeHandlers({
   openMyPage,
   openOrders,
   openOrdersFromMy,
+  openPhotoPreview,
   openRecentDetail,
   openSettlementDetail,
   openSettlementFlowCheckReport,

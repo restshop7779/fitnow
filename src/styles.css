@@ -741,6 +741,46 @@
       .customer-proof-card .delivery-proof-preview {
         max-width: 260px;
       }
+      .photo-preview-modal {
+        z-index: 90;
+      }
+      .photo-preview-panel {
+        width: min(94vw, 760px);
+        max-height: min(88vh, 920px);
+        padding: 18px;
+        border-radius: 8px;
+        border: 1px solid rgba(255,255,255,.18);
+        background: #101010;
+        color: #fff;
+        box-shadow: 0 24px 70px rgba(0,0,0,.45);
+        overflow: hidden;
+      }
+      .photo-preview-head {
+        margin-bottom: 14px;
+        color: #fff;
+      }
+      .photo-preview-head .eyebrow {
+        color: #b8f332;
+      }
+      .photo-preview-head .close {
+        background: rgba(255,255,255,.12);
+        color: #fff;
+      }
+      .photo-preview-stage {
+        display: grid;
+        place-items: center;
+        min-height: 240px;
+        max-height: calc(88vh - 126px);
+        border-radius: 8px;
+        background: #050505;
+        overflow: auto;
+      }
+      .photo-preview-stage img {
+        display: block;
+        max-width: 100%;
+        max-height: calc(88vh - 126px);
+        object-fit: contain;
+      }
       .section-head span {
         display: block;
         margin-top: 4px;

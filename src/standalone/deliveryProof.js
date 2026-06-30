@@ -51,7 +51,7 @@ export function renderDeliveryProofPhoto(photo, alt, className = "delivery-proof
     <div class="delivery-proof-media">
       <img class="${className}" src="${mediaSrc}" alt="${alt}">
       ${meta ? '<span class="delivery-proof-meta">' + meta + '</span>' : ""}
-      ${photo && photo.publicUrl ? '<a class="delivery-proof-link" href="' + mediaSrc + '" target="_blank" rel="noopener">사진 원본 보기</a>' : ""}
+      ${photo && photo.publicUrl ? '<a class="delivery-proof-link" href="' + mediaSrc + '" data-preview-src="' + mediaSrc + '" data-preview-alt="' + alt + '" target="_blank" rel="noopener">사진 원본 보기</a>' : ""}
     </div>
   `;
 }
@@ -70,7 +70,7 @@ export function renderCustomerArrivalProof(order) {
       <div class="delivery-proof-media">
         <img class="delivery-proof-preview" src="${mediaSrc}" alt="도착 인증 사진">
         <span class="delivery-proof-meta">${capturedAt ? "촬영 " + capturedAt : "도착 인증 완료"}</span>
-        <a class="delivery-proof-link" href="${mediaSrc}" target="_blank" rel="noopener">사진 크게 보기</a>
+        <a class="delivery-proof-link" href="${mediaSrc}" data-preview-src="${mediaSrc}" data-preview-alt="도착 인증 사진" target="_blank" rel="noopener">사진 크게 보기</a>
       </div>
     </section>
   `;
