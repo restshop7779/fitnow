@@ -7528,14 +7528,12 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           }
         }
         renderMyPage();
-        document.getElementById("myModal").classList.add("open");
-        document.getElementById("myModal").setAttribute("aria-hidden", "false");
+        openModalById("myModal");
         setActiveBottomTab("my");
       }
 
       function closeMyPage() {
-        document.getElementById("myModal").classList.remove("open");
-        document.getElementById("myModal").setAttribute("aria-hidden", "true");
+        closeModalById("myModal");
       }
 
       function openTrackingFromMy() {
@@ -8124,14 +8122,12 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       function openLooks() {
         closeOpenModals();
         renderLooks();
-        document.getElementById("lookModal").classList.add("open");
-        document.getElementById("lookModal").setAttribute("aria-hidden", "false");
+        openModalById("lookModal");
         setActiveBottomTab("looks");
       }
 
       function closeLooks() {
-        document.getElementById("lookModal").classList.remove("open");
-        document.getElementById("lookModal").setAttribute("aria-hidden", "true");
+        closeModalById("lookModal");
       }
 
       function addLookToCart(lookKey) {
