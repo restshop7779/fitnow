@@ -1021,9 +1021,19 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         );
       }
 
+      function isOpenCallOrder(order) {
+        return !!(
+          order &&
+          !isOrderCancelled(order) &&
+          !isDeliveryOrderClaimed(order) &&
+          (order.progressStep || 0) >= 2 &&
+          (order.progressStep || 0) < 3
+        );
+      }
+
       function ordersForCurrentAdmin(orders) {
         if (!currentAdmin || currentAdmin.role === "total") return orders;
-        return orders.filter((order) => canCurrentAdminManageOrder(order));
+        return orders.filter((order) => canCurrentAdminManageOrder(order) || isOpenCallOrder(order));
       }
 
       function ordersForSettlementPartnerFilter(orders) {

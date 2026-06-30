@@ -280,37 +280,38 @@ export function deliveryRiderGroupsMarkup(orders = [], emptyText, badge, actionL
 export function deliveryClaimOrdersMarkup(orders = [], options = {}) {
   const canCurrentDeliveryClaimOrder = options.canCurrentDeliveryClaimOrder || (() => false);
   const currentAdminName = options.currentAdminName || "";
-  const deliveryNextActionState = options.deliveryNextActionState || (() => ({ label: "확인 필요", detail: "주문 상태를 확인해 주세요.", cls: "waiting" }));
+  const deliveryNextActionState = options.deliveryNextActionState || (() => ({ label: "\ud655\uc778 \ud544\uc694", detail: "\uc8fc\ubb38 \uc0c1\ud0dc\ub97c \ud655\uc778\ud574 \uc8fc\uc138\uc694", cls: "waiting" }));
   const formatKRW = options.formatKRW || ((value) => String(value || 0));
   const riderOptionsForPartner = options.riderOptionsForPartner || (() => "");
   const totalAdminActions = !!options.totalAdminActions;
-  if (!orders.length) return '<div class="line-item"><span>현재 배정 대기 주문이 없습니다</span><strong>대기</strong></div>';
+  if (!orders.length) return '<div class="line-item"><span>\ud604\uc7ac \ubc30\uc815 \ub300\uae30 \uc8fc\ubb38\uc774 \uc5c6\uc2b5\ub2c8\ub2e4</span><strong>\ub300\uae30</strong></div>';
   return orders.map((order) => {
     const storeNames = order.items.map((item) => item.showroom).filter((store, idx, stores) => stores.indexOf(store) === idx).join(", ");
-    const pickupText = storeNames || "픽업지 확인 필요";
+    const pickupText = storeNames || "\ud53d\uc5c5\uc9c0 \ud655\uc778 \ud544\uc694";
     const nextState = deliveryNextActionState(order);
     const canClaim = canCurrentDeliveryClaimOrder(order);
+    const claimDisabledLabel = currentAdminName ? "\uad8c\uc5ed \ud655\uc778 \ud544\uc694" : "\ubc30\uc1a1\uc0ac \ub85c\uadf8\uc778 \ud544\uc694";
     const deliverySelectId = "claimRider-" + order.id;
     const dongtanSelectId = "claimDongtanRider-" + order.id;
     const osanSelectId = "claimOsanRider-" + order.id;
     return `
       <div class="vendor-product-row admin-order-row">
         <div>
-          <strong>${order.id} · 오픈콜 <span class="admin-status-badge ${nextState.cls}">${nextState.label}</span></strong>
-          <span>픽업지: ${pickupText}</span>
-          <span>도착지: ${order.address}</span>
-          <span>다음 작업: ${nextState.detail}</span>
-          <span>상품 ${order.items.reduce((sum, item) => sum + (item.quantity || 0), 0)}개 · 배송비 ${order.deliveryFee ? formatKRW(order.deliveryFee) : "무료"}</span>
+          <strong>${order.id} \u00b7 \uc624\ud508\ucf5c <span class="admin-status-badge ${canClaim ? nextState.cls : "waiting"}">${canClaim ? nextState.label : "\uad8c\uc5ed \ud655\uc778"}</span></strong>
+          <span>\ud53d\uc5c5\uc9c0: ${pickupText}</span>
+          <span>\ub3c4\ucc29\uc9c0: ${order.address || order.region || "\ubc30\uc1a1\uc9c0 \ud655\uc778 \ud544\uc694"}</span>
+          <span>\ub2e4\uc74c \uc791\uc5c5: ${canClaim ? nextState.detail : "\ub2f4\ub2f9 \uad8c\uc5ed\uc5d0 \ud3ec\ud568\ub418\ub294\uc9c0 \ud655\uc778\ud574 \uc8fc\uc138\uc694"}</span>
+          <span>\uc0c1\ud488 ${order.items.reduce((sum, item) => sum + (item.quantity || 0), 0)}\uac1c \u00b7 \ubc30\uc1a1\ube44 ${order.deliveryFee ? formatKRW(order.deliveryFee) : "\ubb34\ub8cc"}</span>
         </div>
         <div class="mini-actions order-detail-action">
           ${totalAdminActions ? `
-            <select id="${dongtanSelectId}">${riderOptionsForPartner("지금배송 동탄센터")}</select>
-            <button type="button" onclick="adminAssignDelivery('${order.id}', '지금배송 동탄센터', selectedValue('${dongtanSelectId}'))">동탄센터 배정</button>
-            <select id="${osanSelectId}">${riderOptionsForPartner("지금배송 오산센터")}</select>
-            <button type="button" onclick="adminAssignDelivery('${order.id}', '지금배송 오산센터', selectedValue('${osanSelectId}'))">오산센터 배정</button>
+            <select id="${dongtanSelectId}">${riderOptionsForPartner("\uc9c0\uae08\ubc30\uc1a1 \ub3d9\ud0c4\uc13c\ud130")}</select>
+            <button type="button" onclick="adminAssignDelivery('${order.id}', '\uc9c0\uae08\ubc30\uc1a1 \ub3d9\ud0c4\uc13c\ud130', selectedValue('${dongtanSelectId}'))">\ub3d9\ud0c4\uc13c\ud130 \ubc30\uc815</button>
+            <select id="${osanSelectId}">${riderOptionsForPartner("\uc9c0\uae08\ubc30\uc1a1 \uc624\uc0b0\uc13c\ud130")}</select>
+            <button type="button" onclick="adminAssignDelivery('${order.id}', '\uc9c0\uae08\ubc30\uc1a1 \uc624\uc0b0\uc13c\ud130', selectedValue('${osanSelectId}'))">\uc624\uc0b0\uc13c\ud130 \ubc30\uc815</button>
           ` : `
             ${canClaim ? `<select id="${deliverySelectId}">${riderOptionsForPartner(currentAdminName)}</select>` : ""}
-            <button type="button" ${canClaim ? "" : "disabled"} onclick="claimDeliveryOrder('${order.id}', selectedValue('${deliverySelectId}'))">${canClaim ? "내가 배정받기" : "배송사 로그인 필요"}</button>
+            <button type="button" ${canClaim ? "" : "disabled"} onclick="claimDeliveryOrder('${order.id}', selectedValue('${deliverySelectId}'))">${canClaim ? "\ub0b4\uac00 \ubc30\uc815\ubc1b\uae30" : claimDisabledLabel}</button>
           `}
         </div>
       </div>
