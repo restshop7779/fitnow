@@ -11,6 +11,7 @@
     "check:e2e": "node ./scripts/check-home-clicks.js",
     "check:native": "node ./scripts/check-native.js",
     "check:pwa": "node ./scripts/check-pwa.js",
+    "check:roles": "node ./scripts/check-role-visibility.js",
     "cap:sync": "pnpm run build:local && cap sync",
     "cap:android": "pnpm run cap:sync && cap open android",
     "cap:ios": "pnpm run cap:sync && cap open ios",
