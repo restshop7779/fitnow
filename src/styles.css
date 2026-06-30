@@ -1427,7 +1427,7 @@
         height: 100vh;
         border: 0;
         border-radius: 0;
-        padding-bottom: calc(130px + env(safe-area-inset-bottom, 0px));
+        padding-bottom: calc(236px + env(safe-area-inset-bottom, 0px));
       }
       body.native-app-shell .app-shell {
         display: block;
@@ -1450,8 +1450,44 @@
         bottom: calc(116px + env(safe-area-inset-bottom, 0px));
         z-index: 2147482990;
         margin: 0;
+        min-height: 72px;
+        padding: 8px 10px;
         pointer-events: auto;
         touch-action: manipulation;
+      }
+      body.native-app-shell .cart-summary {
+        grid-template-columns: 32px minmax(0, 1fr);
+        gap: 8px;
+      }
+      body.native-app-shell .cart-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 17px;
+      }
+      body.native-app-shell .cart-bar p {
+        margin-bottom: 2px;
+        font-size: 11px;
+      }
+      body.native-app-shell .cart-bar strong {
+        display: block;
+        line-height: 1.2;
+      }
+      body.native-app-shell .cart-bar small {
+        max-width: 100%;
+        margin-top: 2px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      body.native-app-shell .cart-action {
+        gap: 3px;
+      }
+      body.native-app-shell .cart-action span {
+        font-size: 10px;
+      }
+      body.native-app-shell .cart-bar button {
+        min-height: 34px;
+        min-width: 92px;
       }
       body.modal-active .cart-bar,
       body.modal-active .bottom-tabs {
