@@ -129,6 +129,17 @@ async function main() {
       if (hidden !== "true") fail("detail modal did not close");
     });
 
+    const addedToCart = await page.evaluate(() => {
+      if (typeof window.addItemByKey !== "function") return false;
+      const firstCard = document.querySelector("#productGrid .product-card");
+      const onclick = firstCard ? firstCard.getAttribute("onclick") || "" : "";
+      const match = onclick.match(/'([^']+)'/);
+      window.addItemByKey(match ? match[1] : "ring");
+      if (typeof window.renderCart === "function") window.renderCart();
+      return true;
+    });
+    if (!addedToCart) fail("cart setup handler was not available");
+    await page.locator(".cart-bar").waitFor({ state: "visible", timeout: 5000 });
     await clickAndCheck(page, ".cart-bar", "#cartModal", "cart");
 
     const newPageErrors = pageErrors.filter((message) => !/favicon/i.test(message));

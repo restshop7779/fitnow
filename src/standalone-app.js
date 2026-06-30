@@ -8437,8 +8437,10 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       function renderCart() {
         const count = cart.reduce((sum, item) => sum + item.quantity, 0);
         const totals = cartTotals();
+        const cartBar = document.querySelector(".cart-bar");
         const checkoutButton = document.getElementById("cartCheckoutButton");
         const etaNode = document.getElementById("cartEta");
+        if (cartBar) cartBar.classList.toggle("empty", !count);
         document.getElementById("cartCount").textContent = count ? count + "개 담김" : "장바구니 비어 있음";
         document.getElementById("cartTotal").textContent = formatKRW(totals.total);
         document.getElementById("cartHint").textContent = count
