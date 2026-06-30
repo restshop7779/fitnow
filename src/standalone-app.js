@@ -8096,6 +8096,43 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         return detailRecommendationMarkupForItems(items, { eta, isWishlisted });
       }
 
+      function detailReviewMarkup(item) {
+        const items = productReviews(item.key).slice(0, 3);
+        const summary = ratingLabelForProduct(item);
+        if (!items.length) {
+          return `
+            <div class="summary-card detail-review-section">
+              <div class="detail-section-head">
+                <h3>최근 후기</h3>
+                <span>${summary}</span>
+              </div>
+              <div class="line-item"><span>아직 등록된 후기가 없습니다</span><strong>첫 리뷰 대기</strong></div>
+            </div>
+          `;
+        }
+        return `
+          <div class="summary-card detail-review-section">
+            <div class="detail-section-head">
+              <h3>최근 후기</h3>
+              <span>${summary}</span>
+            </div>
+            <div class="detail-review-list">
+              ${items.map((review) => `
+                <div class="detail-review-card">
+                  <div class="detail-review-head">
+                    <strong>별점 ${review.rating}</strong>
+                    <span>${new Date(review.createdAt).toLocaleDateString("ko-KR", { month: "short", day: "numeric" })}</span>
+                  </div>
+                  <p>${escapeHtml(review.comment)}</p>
+                  <div class="detail-review-meta">${escapeHtml(review.customerName || "고객")} · ${escapeHtml(review.size || "FREE")}${review.fit ? " · " + escapeHtml(review.fit) : ""}</div>
+                  ${renderReviewPhoto(review)}
+                </div>
+              `).join("")}
+            </div>
+          </div>
+        `;
+      }
+
       function visualMarkup(item, extraClass = "") {
         return visualMarkupForItem(item, extraClass);
       }
@@ -8340,6 +8377,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
             <div class="line-item"><span>반품/환불</span><strong>배송완료 후 14일 이내 요청</strong></div>
           </div>
           <p class="fit-note">${item.note}</p>
+          ${detailReviewMarkup(item)}
           ${detailRecommendationMarkup(item)}
           <div class="detail-actions three-actions">
             <button class="wish-button ${isWishlisted(item.key) ? "active-control" : ""}" type="button" onclick="toggleWishlist('${item.key}')">${isWishlisted(item.key) ? "♥" : "♡"}</button>

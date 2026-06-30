@@ -27,19 +27,35 @@ export function saveReviewStore(storageKey, reviews) {
 
 export function mergeReviews(primary, secondary) {
   const merged = [];
-  [...primary, ...secondary].forEach((review) => {
+  const priorities = new Map();
+  [
+    { items: primary, priority: 1 },
+    { items: secondary, priority: 0 },
+  ].forEach((source) => (source.items || []).forEach((review) => {
     review = normalizeReview(review);
     if (!review) return;
     const key = [review.orderId, review.productKey, review.size || "FREE", review.customerId || ""].join("|");
     const existing = merged.find((item) => [item.orderId, item.productKey, item.size || "FREE", item.customerId || ""].join("|") === key);
     if (!existing) {
       merged.push(review);
+      priorities.set(key, source.priority);
       return;
     }
-    if (new Date(review.createdAt || 0).getTime() >= new Date(existing.createdAt || 0).getTime()) {
+    const reviewTime = new Date(review.createdAt || 0).getTime();
+    const existingTime = new Date(existing.createdAt || 0).getTime();
+    const existingPriority = priorities.get(key) || 0;
+    if (reviewTime > existingTime || (reviewTime === existingTime && source.priority > existingPriority)) {
       Object.assign(existing, review);
+      priorities.set(key, source.priority);
+      const carriesServerPhotoState = Object.prototype.hasOwnProperty.call(review, "photoPublicUrl") || Object.prototype.hasOwnProperty.call(review, "photoPath");
+      if (carriesServerPhotoState && !reviewPhotoSrc(review)) {
+        delete existing.photoUrl;
+        delete existing.photoDataUrl;
+        existing.photoPublicUrl = "";
+        existing.photoPath = "";
+      }
     }
-  });
+  }));
   return merged
     .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
     .slice(0, 80);
