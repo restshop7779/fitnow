@@ -7,6 +7,9 @@ dist-apks/
 .pnpm-store/
 .vite/
 *.log
+.secrets/
+*.jks
+*.keystore
 
 # Local generated business-plan/recovery artifacts
 converted/

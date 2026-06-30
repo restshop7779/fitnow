@@ -16,14 +16,29 @@ corepack pnpm run android:rider:bundle
 
 Release signing is injected from environment variables. Do not commit keystores or passwords.
 
+Generate a local upload keystore once:
+
 ```powershell
-$env:FITNOW_ANDROID_KEYSTORE="C:\secure\fitnow-upload.jks"
-$env:FITNOW_ANDROID_KEYSTORE_PASSWORD="..."
-$env:FITNOW_ANDROID_KEY_ALIAS="fitnow-upload"
-$env:FITNOW_ANDROID_KEY_PASSWORD="..."
+powershell -ExecutionPolicy Bypass -File ./scripts/create-android-upload-keystore.ps1
+```
+
+This creates local-only files under `.secrets/`:
+
+- `.secrets/fitnow-upload.jks`
+- `.secrets/android-release-env.ps1`
+- `.secrets/README.txt`
+
+Load the signing environment before store-ready builds:
+
+```powershell
+. .\.secrets\android-release-env.ps1
+corepack pnpm run android:bundle
+corepack pnpm run android:rider:bundle
 ```
 
 If these variables are not set, the scripts still build local release bundles, but they are not ready for store upload.
+
+Back up `.secrets/fitnow-upload.jks` and `.secrets/android-release-env.ps1` to a secure password manager or encrypted drive before publishing. Losing the upload key can block future store updates.
 
 ## Version Policy
 
