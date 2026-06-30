@@ -11397,6 +11397,7 @@ Object.assign(window, {
   saveDeliveryPartnerFromAdmin,
   deleteDeliveryPartnerFromAdmin,
   renderAdminAccountManagement,
+  renderAdminOrders,
   openRiderDashboard,
   openManagement,
   closeManagement,
@@ -11473,6 +11474,7 @@ Object.assign(window, {
   handleAvatarTryOnPhotoUpload,
   downloadSettlementCsv,
   openSettlementStatement,
+  renderVendorOrders,
   closeSettlementPeriod,
 });
 
