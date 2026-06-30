@@ -11007,13 +11007,29 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         const orderControlSection = document.getElementById("adminOrderControlSection");
         const releaseReadiness = document.getElementById("adminReleaseReadiness");
         const homeBoard = document.getElementById("adminHomeBoard");
+        const accountManagementSection = document.getElementById("adminAccountManagementSection");
+        const reviewModerationSection = document.getElementById("adminReviewModerationSection");
+        const settlementRateSection = document.getElementById("adminSettlementRateSection");
+        const riderWorkSection = document.getElementById("adminRiderWorkSection");
+        const riderNicknameSection = document.getElementById("adminRiderNicknameSection");
         const deliveryRole = document.getElementById("adminPermissionDelivery");
         const totalRole = document.getElementById("adminPermissionTotal");
         const totalMode = mode === "total";
+        const totalAdmin = currentAdmin.role === "total";
         if (settlementSection) settlementSection.style.display = totalMode ? "" : "none";
         if (orderControlSection) orderControlSection.style.display = totalMode ? "" : "none";
         if (releaseReadiness) releaseReadiness.style.display = totalMode ? "" : "none";
         if (homeBoard) homeBoard.style.display = totalMode ? "" : "none";
+        if (accountManagementSection) {
+          accountManagementSection.style.display = totalAdmin ? "" : "none";
+          if (!totalAdmin) accountManagementSection.open = false;
+        }
+        if (reviewModerationSection) reviewModerationSection.style.display = totalMode && totalAdmin ? "" : "none";
+        [settlementRateSection, riderWorkSection, riderNicknameSection].forEach((section) => {
+          if (!section) return;
+          section.style.display = totalAdmin ? "" : "none";
+          if (!totalAdmin) section.open = false;
+        });
         const deliveryDashboard = document.getElementById("adminDeliveryDashboardSection");
         if (deliveryDashboard) deliveryDashboard.open = shouldAutoOpenAdminDeliveryDashboard(adminOrders || orderHistory, totalMode);
         if (deliveryRole) deliveryRole.style.display = "";
