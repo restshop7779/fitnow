@@ -606,7 +606,7 @@
           <button class="close" type="button" onclick="closeAdmin()">X</button>
         </div>
         <div class="vendor-session" id="adminSession">운영자 로그인 후 배송을 관리할 수 있습니다.</div>
-        <details class="summary-card vendor-collapsible admin-only" id="adminAccountManagementSection" open style="margin-top: 12px;">
+        <details class="summary-card vendor-collapsible admin-only" id="adminAccountManagementSection" style="margin-top: 12px;">
           <summary>입점업체/배송사 계정 관리</summary>
           <div id="adminAccountManagement"></div>
         </details>
@@ -634,6 +634,28 @@
             <summary>지금배송 주의 주문 <span id="adminDeliveryWarningCount">0건</span></summary>
             <div id="adminDeliveryWarningTodoFocus"></div>
             <div class="admin-store-orders" id="adminDeliveryWarningList"></div>
+          </details>
+          <div class="line-item"><span>전체 주문</span><strong id="adminTotalOrders">0건</strong></div>
+          <div class="line-item"><span>총배송건수</span><strong id="adminDeliveryOrders">0건</strong></div>
+          <div class="line-item"><span>총배송비</span><strong id="adminDeliveryFees">KRW 0</strong></div>
+          <div class="line-item"><span>오픈콜 대기</span><strong id="adminClaimableOrders">0건</strong></div>
+          <div class="line-item"><span>픽업 준비</span><strong id="adminPickupOrders">0건</strong></div>
+          <div class="line-item"><span>배송 중</span><strong id="adminActiveOrders">0건</strong></div>
+          <details class="admin-store-group admin-priority-section" id="adminClaimableDeliverySection" open style="margin-top: 10px;">
+            <summary>오픈콜 대기 주문 <span id="adminClaimableDeliveryCount">0건</span></summary>
+            <div class="admin-store-orders" id="adminClaimableDeliveryList"></div>
+          </details>
+          <details class="admin-store-group" id="adminPickupDeliverySection" open style="margin-top: 10px;">
+            <summary>배정 완료 픽업 주문 <span id="adminPickupDeliveryCount">0건</span></summary>
+            <div class="admin-store-orders" id="adminPickupDeliveryList"></div>
+          </details>
+          <details class="admin-store-group" id="adminActiveDeliverySection" open style="margin-top: 10px;">
+            <summary>배송중 주문 <span id="adminActiveDeliveryCount">0건</span></summary>
+            <div class="admin-store-orders" id="adminActiveDeliveryList"></div>
+          </details>
+          <details class="admin-store-group" id="adminDoneDeliverySection" style="margin-top: 10px;">
+            <summary>오늘 배송완료 주문 <span id="adminDoneDeliveryCount">0건</span></summary>
+            <div class="admin-store-orders" id="adminDoneDeliveryList"></div>
           </details>
           <details class="admin-store-group" id="adminOpenSettlementSection" open style="margin-top: 10px;">
             <summary>지금배송 정산 요약 <span id="adminDeliverySettlementCount">0건</span></summary>
@@ -669,28 +691,6 @@
           <details class="admin-store-group" id="adminRiderNicknameSection" style="margin-top: 10px;">
             <summary>기사 닉네임 관리 <span>배송사별 1~10번</span></summary>
             <div class="admin-store-orders" id="adminRiderNicknameList"></div>
-          </details>
-          <div class="line-item"><span>전체 주문</span><strong id="adminTotalOrders">0건</strong></div>
-          <div class="line-item"><span>총배송건수</span><strong id="adminDeliveryOrders">0건</strong></div>
-          <div class="line-item"><span>총배송비</span><strong id="adminDeliveryFees">KRW 0</strong></div>
-          <div class="line-item"><span>배정 대기</span><strong id="adminClaimableOrders">0건</strong></div>
-          <div class="line-item"><span>픽업 준비</span><strong id="adminPickupOrders">0건</strong></div>
-          <div class="line-item"><span>배송 중</span><strong id="adminActiveOrders">0건</strong></div>
-          <details class="admin-store-group" id="adminClaimableDeliverySection" open style="margin-top: 10px;">
-            <summary>배정 대기 주문 <span id="adminClaimableDeliveryCount">0건</span></summary>
-            <div class="admin-store-orders" id="adminClaimableDeliveryList"></div>
-          </details>
-          <details class="admin-store-group" id="adminPickupDeliverySection" open style="margin-top: 10px;">
-            <summary>배정 완료 픽업 주문 <span id="adminPickupDeliveryCount">0건</span></summary>
-            <div class="admin-store-orders" id="adminPickupDeliveryList"></div>
-          </details>
-          <details class="admin-store-group" id="adminActiveDeliverySection" open style="margin-top: 10px;">
-            <summary>배송중 주문 <span id="adminActiveDeliveryCount">0건</span></summary>
-            <div class="admin-store-orders" id="adminActiveDeliveryList"></div>
-          </details>
-          <details class="admin-store-group" id="adminDoneDeliverySection" style="margin-top: 10px;">
-            <summary>오늘 배송완료 주문 <span id="adminDoneDeliveryCount">0건</span></summary>
-            <div class="admin-store-orders" id="adminDoneDeliveryList"></div>
           </details>
         </details>
         <details class="summary-card vendor-collapsible" id="adminSettlementSection" style="margin-top: 12px;">

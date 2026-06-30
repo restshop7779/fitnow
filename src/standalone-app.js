@@ -5557,7 +5557,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       function renderDeliveryWorkShortcuts(orders = []) {
         const node = document.getElementById("adminDeliveryWorkShortcuts");
         if (!node) return;
-        if (!currentAdmin || currentAdmin.role !== "delivery") {
+        if (!currentAdmin || activeAdminMode !== "delivery") {
           node.innerHTML = "";
           return;
         }
@@ -11005,11 +11005,15 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         const adminOrders = await renderAdminOrders();
         const settlementSection = document.getElementById("adminSettlementSection");
         const orderControlSection = document.getElementById("adminOrderControlSection");
+        const releaseReadiness = document.getElementById("adminReleaseReadiness");
+        const homeBoard = document.getElementById("adminHomeBoard");
         const deliveryRole = document.getElementById("adminPermissionDelivery");
         const totalRole = document.getElementById("adminPermissionTotal");
         const totalMode = mode === "total";
         if (settlementSection) settlementSection.style.display = totalMode ? "" : "none";
         if (orderControlSection) orderControlSection.style.display = totalMode ? "" : "none";
+        if (releaseReadiness) releaseReadiness.style.display = totalMode ? "" : "none";
+        if (homeBoard) homeBoard.style.display = totalMode ? "" : "none";
         const deliveryDashboard = document.getElementById("adminDeliveryDashboardSection");
         if (deliveryDashboard) deliveryDashboard.open = shouldAutoOpenAdminDeliveryDashboard(adminOrders || orderHistory, totalMode);
         if (deliveryRole) deliveryRole.style.display = "";

@@ -1509,7 +1509,19 @@
         line-height: 1;
       }
       body.native-app-shell .shopping-status {
-        margin-bottom: 64px;
+        min-height: 0;
+        margin-bottom: 72px;
+        padding-top: 12px;
+        padding-bottom: 12px;
+      }
+      body.native-app-shell .shopping-status h2 {
+        font-size: 16px;
+        line-height: 1.2;
+      }
+      body.native-app-shell .shopping-status .primary {
+        min-height: 38px;
+        padding: 0 14px;
+        font-size: 13px;
       }
       body.modal-active .cart-bar,
       body.modal-active .bottom-tabs {
@@ -1861,6 +1873,11 @@
         border: 1px solid var(--line);
         border-radius: 8px;
         background: #fffaf0;
+      }
+      .admin-store-group.admin-priority-section {
+        border-color: #171717;
+        background: #fff8e6;
+        box-shadow: 0 0 0 2px rgba(23, 23, 23, .06);
       }
       .admin-store-group > summary {
         cursor: pointer;
