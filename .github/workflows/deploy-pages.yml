@@ -31,17 +31,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build
-        run: pnpm build
-
-      - name: Check deploy bundle
-        run: pnpm check:deploy
-
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Check home clicks
-        run: pnpm check:e2e
+      - name: Run preflight QA
+        run: pnpm check:preflight
 
       - name: Prepare Pages files
         run: |
