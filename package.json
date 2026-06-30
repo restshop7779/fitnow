@@ -21,6 +21,7 @@
     "android:debug": "powershell -ExecutionPolicy Bypass -File ./scripts/build-android-debug.ps1",
     "android:rider:debug": "powershell -ExecutionPolicy Bypass -File ./scripts/build-android-rider-debug.ps1",
     "android:bundle": "powershell -ExecutionPolicy Bypass -File ./scripts/build-android-release-bundle.ps1",
+    "android:rider:bundle": "powershell -ExecutionPolicy Bypass -File ./scripts/build-android-rider-release-bundle.ps1",
     "dev:local": "powershell -ExecutionPolicy Bypass -File ./scripts/dev-local.ps1",
     "preview": "vite preview"
   },

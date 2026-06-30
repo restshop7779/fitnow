@@ -3,6 +3,21 @@ apply plugin: 'com.android.application'
 android {
     namespace = "com.fitnow.app"
     compileSdk = rootProject.ext.compileSdkVersion
+    def uploadKeyStorePath = System.getenv("FITNOW_ANDROID_KEYSTORE")
+    def uploadKeyStorePassword = System.getenv("FITNOW_ANDROID_KEYSTORE_PASSWORD")
+    def uploadKeyAlias = System.getenv("FITNOW_ANDROID_KEY_ALIAS")
+    def uploadKeyPassword = System.getenv("FITNOW_ANDROID_KEY_PASSWORD")
+    def hasUploadSigning = uploadKeyStorePath && uploadKeyStorePassword && uploadKeyAlias && uploadKeyPassword
+    signingConfigs {
+        release {
+            if (hasUploadSigning) {
+                storeFile file(uploadKeyStorePath)
+                storePassword uploadKeyStorePassword
+                keyAlias uploadKeyAlias
+                keyPassword uploadKeyPassword
+            }
+        }
+    }
     defaultConfig {
         applicationId "com.fitnow.app"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -19,6 +34,9 @@ android {
     buildTypes {
         release {
             minifyEnabled false
+            if (hasUploadSigning) {
+                signingConfig signingConfigs.release
+            }
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
