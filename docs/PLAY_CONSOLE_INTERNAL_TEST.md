@@ -125,7 +125,7 @@ The current public policy covers:
 - Delivery proof photo retention.
 - Security practices.
 
-Before moving beyond internal testing, replace the contact placeholder with the final business/customer-support email shown in Play Console.
+The public policy pages currently route inquiries through the app support channel and the developer contact shown in Google Play.
 
 ## Local Build Commands
 
