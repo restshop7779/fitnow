@@ -16,6 +16,7 @@
     "check:release-bundles": "powershell -ExecutionPolicy Bypass -File ./scripts/check-android-release-bundles.ps1",
     "check:rider-mode": "node ./scripts/check-rider-mode.js",
     "check:roles": "node ./scripts/check-role-visibility.js",
+    "store:assets": "node ./scripts/capture-play-store-assets.js",
     "cap:sync": "pnpm run build:local && cap sync",
     "cap:android": "pnpm run cap:sync && cap open android",
     "cap:ios": "pnpm run cap:sync && cap open ios",
