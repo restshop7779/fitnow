@@ -7563,6 +7563,20 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
               </div>
             </div>
           </section>
+          <section class="summary-card my-section-card">
+            <h3>약관 및 개인정보</h3>
+            <div class="vendor-preview-list">
+              <div class="vendor-product-row">
+                <div>
+                  <strong>개인정보처리방침</strong>
+                  <span>주문, 배송 인증 사진, 계정 정보 처리 기준 확인</span>
+                </div>
+                <div class="mini-actions">
+                  <a href="./privacy.html" target="_blank" rel="noopener">열기</a>
+                </div>
+              </div>
+            </div>
+          </section>
           <div class="detail-actions">
             <button class="secondary" type="button" onclick="openCustomerLogin()">${guestCustomer ? "고객 로그인" : "고객 변경"}</button>
             <button class="primary" type="button" onclick="openTrackingFromMy()">배송 추적</button>

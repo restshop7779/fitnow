@@ -11,6 +11,7 @@ This file is the Play Console entry checklist for the two FitNow Android apps.
 - App type: App
 - Category: Shopping
 - Distribution track: Internal testing first
+- Privacy policy URL: `https://restshop7779.github.io/fitnow/privacy.html`
 
 ### Short Description
 
@@ -42,6 +43,7 @@ Test focus:
 - App type: App
 - Category: Business or Productivity
 - Distribution track: Internal testing first
+- Privacy policy URL: `https://restshop7779.github.io/fitnow/privacy.html`
 
 ### Short Description
 
@@ -97,9 +99,15 @@ FitNow currently needs review before final declaration. Expected data categories
 
 Do not submit the Data safety form until actual Supabase tables, storage buckets, auth providers, and retention rules are reviewed against the production configuration.
 
-## Privacy Policy Gaps
+## Privacy Policy URL
 
-Before moving beyond internal testing, prepare a public privacy policy URL that covers:
+Use this URL in Play Console:
+
+```text
+https://restshop7779.github.io/fitnow/privacy.html
+```
+
+The current public policy covers:
 
 - Developer/contact information.
 - What personal and sensitive data is collected.
@@ -108,6 +116,8 @@ Before moving beyond internal testing, prepare a public privacy policy URL that 
 - Data retention and deletion requests.
 - Delivery proof photo retention.
 - Security practices.
+
+Before moving beyond internal testing, replace the contact placeholder with the final business/customer-support email shown in Play Console.
 
 ## Local Build Commands
 
