@@ -27,6 +27,8 @@ Both bundles must be built after loading `.secrets/android-release-env.ps1` so t
 
 Create two separate Play Console apps.
 
+If creating an organization account first, prepare the D-U-N-S number using `docs/DUNS_PREP.md` before continuing. Google Play Console organization signup will not proceed without a valid D-U-N-S number unless Google approves an alternative verification route.
+
 ### FitNow
 
 - App name: `FitNow`
