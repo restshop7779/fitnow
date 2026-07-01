@@ -12,6 +12,7 @@ This file is the Play Console entry checklist for the two FitNow Android apps.
 - Category: Shopping
 - Distribution track: Internal testing first
 - Privacy policy URL: `https://restshop7779.github.io/fitnow/privacy.html`
+- Account/data deletion URL: `https://restshop7779.github.io/fitnow/data-deletion.html`
 
 ### Short Description
 
@@ -44,6 +45,7 @@ Test focus:
 - Category: Business or Productivity
 - Distribution track: Internal testing first
 - Privacy policy URL: `https://restshop7779.github.io/fitnow/privacy.html`
+- Account/data deletion URL: `https://restshop7779.github.io/fitnow/data-deletion.html`
 
 ### Short Description
 
@@ -105,6 +107,12 @@ Use this URL in Play Console:
 
 ```text
 https://restshop7779.github.io/fitnow/privacy.html
+```
+
+Use this account/data deletion URL if Play Console asks for account deletion information:
+
+```text
+https://restshop7779.github.io/fitnow/data-deletion.html
 ```
 
 The current public policy covers:

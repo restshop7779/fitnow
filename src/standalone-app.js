@@ -7575,6 +7575,15 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
                   <a href="./privacy.html" target="_blank" rel="noopener">열기</a>
                 </div>
               </div>
+              <div class="vendor-product-row">
+                <div>
+                  <strong>계정 및 데이터 삭제</strong>
+                  <span>계정 삭제 요청, 보관 데이터, 삭제 예외 기준 확인</span>
+                </div>
+                <div class="mini-actions">
+                  <a href="./data-deletion.html" target="_blank" rel="noopener">열기</a>
+                </div>
+              </div>
             </div>
           </section>
           <div class="detail-actions">

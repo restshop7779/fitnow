@@ -6,6 +6,7 @@ const root = path.resolve(__dirname, "..");
 const distDir = path.join(root, "dist");
 const htmlPath = path.join(distDir, "index.react.html");
 const privacyPath = path.join(distDir, "privacy.html");
+const deletionPath = path.join(distDir, "data-deletion.html");
 
 function fail(message) {
   console.error("[deploy-smoke] " + message);
@@ -36,6 +37,10 @@ if (hasConflictMarker(html)) fail("deploy html contains git conflict markers");
 const privacyHtml = readRequired(privacyPath, "privacy policy html");
 if (privacyHtml && hasConflictMarker(privacyHtml)) fail("privacy policy html contains git conflict markers");
 if (privacyHtml && !privacyHtml.includes("개인정보처리방침")) fail("privacy policy html missing policy title");
+
+const deletionHtml = readRequired(deletionPath, "data deletion html");
+if (deletionHtml && hasConflictMarker(deletionHtml)) fail("data deletion html contains git conflict markers");
+if (deletionHtml && !deletionHtml.includes("계정 및 데이터 삭제 요청")) fail("data deletion html missing deletion title");
 
 const scriptRefs = [...html.matchAll(/<script[^>]+src=["']([^"']+)["'][^>]*>/g)].map((match) => match[1]);
 const localScriptRefs = scriptRefs.filter((ref) => !/^https?:\/\//i.test(ref));
