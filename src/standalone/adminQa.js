@@ -275,7 +275,7 @@ export function qaScenarioActionManualItems(action) {
     return ["정산 플로우 체크리스트 항목은 자동 체크됨", "최종 QA 시나리오 버튼 완료 표시는 수동 확인"];
   }
   if (action === "cleanup") {
-    return ["정리 후 7번 정리 상태 점검을 실행해 0건 확인"];
+    return ["정리 완료 메시지의 정리 후 자동검증 결과가 0건 정상인지 확인"];
   }
   if (action === "excelDemo") {
     return ["엑셀 다운로드 파일 열림/금액/상태값 수동 확인"];

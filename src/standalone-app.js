@@ -3776,7 +3776,17 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         saveTestToolMeta({ lastCleanupAt: new Date().toISOString(), lastCleanupMode: expiredOnly ? "expired" : "manual" });
         renderSettlementExportActions();
         renderAdminReleaseReadiness(adminRenderedOrders.length ? adminRenderedOrders : orderHistory);
-        setSyncStatus((expiredOnly ? "만료 테스트 데이터 자동 정리 완료 - " : "테스트 데이터 정리 완료 - ") + "화면 주문 " + removedOrderTotal + "건, DB 주문 " + supabaseRemovedOrderCount + "건, 상태 " + removedStatusCount + "건, 로그 " + removedLogTotal + "건 삭제" + (supabaseCleanupFailed ? " · Supabase 삭제 확인 필요: " + supabaseCleanupError : ""));
+        const cleanupSummary = (expiredOnly ? "만료 테스트 데이터 자동 정리 완료" : "테스트 데이터 정리 완료") +
+          " - 화면 주문 " + removedOrderTotal + "건, DB 주문 " + supabaseRemovedOrderCount + "건, 상태 " + removedStatusCount + "건, 로그 " + removedLogTotal + "건 삭제" +
+          (supabaseCleanupFailed ? " · Supabase 삭제 확인 필요: " + supabaseCleanupError : "");
+        if (options.auto) {
+          setSyncStatus(cleanupSummary);
+          return;
+        }
+        const snapshot = await checkAdminTestDataCleanupState({ silentStart: true, prefix: cleanupSummary + " · 정리 후 자동검증" });
+        if (!snapshot.clean && !supabaseCleanupFailed) {
+          renderAdminReleaseReadiness(adminRenderedOrders.length ? adminRenderedOrders : orderHistory);
+        }
       }
 
       function setAdminCleanupCheckStatus(message) {
@@ -3786,12 +3796,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         });
       }
 
-      async function checkAdminTestDataCleanupState() {
-        setAdminCleanupCheckStatus("테스트 데이터 정리 상태 점검 중...");
-        if (!currentAdmin || currentAdmin.role !== "total") {
-          setAdminCleanupCheckStatus("테스트 데이터 정리 상태 점검은 총관리자만 가능합니다");
-          return;
-        }
+      async function adminTestDataCleanupSnapshot() {
         const localDiagnostic = adminDiagnosticState(orderHistory);
         let dbDiagnosticOrders = 0;
         let dbError = "";
@@ -3803,16 +3808,38 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
             dbError = shortSupabaseError(error);
           }
         }
-        const clean = !localDiagnostic.hasTestState && dbDiagnosticOrders === 0 && !dbError;
-        if (clean) markFinalQaScenarioItem("cleanup-zero", { render: false });
-        setAdminCleanupCheckStatus(
-          "테스트 데이터 정리 상태 " + (clean ? "정상" : "확인 필요") +
-          " - 화면 주문 " + localDiagnostic.orders + "건" +
-          " · DB 주문 " + dbDiagnosticOrders + "건" +
-          " · 상태 " + localDiagnostic.statuses + "건" +
-          " · 로그 " + localDiagnostic.logs + "건" +
-          (dbError ? " · DB 확인 실패: " + dbError : "")
-        );
+        return {
+          localDiagnostic,
+          dbDiagnosticOrders,
+          dbError,
+          clean: !localDiagnostic.hasTestState && dbDiagnosticOrders === 0 && !dbError,
+        };
+      }
+
+      function adminCleanupSnapshotMessage(snapshot, prefix = "테스트 데이터 정리 상태") {
+        return prefix + " " + (snapshot.clean ? "정상" : "확인 필요") +
+          " - 화면 주문 " + snapshot.localDiagnostic.orders + "건" +
+          " · DB 주문 " + snapshot.dbDiagnosticOrders + "건" +
+          " · 상태 " + snapshot.localDiagnostic.statuses + "건" +
+          " · 로그 " + snapshot.localDiagnostic.logs + "건" +
+          (snapshot.dbError ? " · DB 확인 실패: " + snapshot.dbError : "");
+      }
+
+      async function checkAdminTestDataCleanupState(options = {}) {
+        if (!options.silentStart) setAdminCleanupCheckStatus("테스트 데이터 정리 상태 점검 중...");
+        if (!currentAdmin || currentAdmin.role !== "total") {
+          setAdminCleanupCheckStatus("테스트 데이터 정리 상태 점검은 총관리자만 가능합니다");
+          return { clean: false, reason: "not-admin" };
+        }
+        const snapshot = await adminTestDataCleanupSnapshot();
+        if (snapshot.clean) {
+          markFinalQaScenarioItem("cleanup-zero", { render: false });
+          saveTestToolMeta({ lastCleanupVerifiedAt: new Date().toISOString() });
+          renderSettlementExportActions();
+          renderAdminReleaseReadiness(adminRenderedOrders.length ? adminRenderedOrders : orderHistory);
+        }
+        setAdminCleanupCheckStatus(adminCleanupSnapshotMessage(snapshot, options.prefix || "테스트 데이터 정리 상태"));
+        return snapshot;
       }
 
       async function checkSupabaseCleanupPermission() {
