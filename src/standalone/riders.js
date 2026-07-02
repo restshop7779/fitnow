@@ -20,7 +20,10 @@ export function orderAreaText(order) {
 export function deliveryPartnerServesOrder(partner, order) {
   if (!partner || !order) return false;
   const areaText = orderAreaText(order);
-  return (partner.areas || []).some((area) => areaText.includes(area));
+  const keywords = [...(partner.areas || []), ...(partner.addressKeywords || [])]
+    .map((keyword) => String(keyword || "").trim())
+    .filter(Boolean);
+  return keywords.some((keyword) => areaText.includes(keyword));
 }
 
 export function deliveryPartnerForOrder(order) {

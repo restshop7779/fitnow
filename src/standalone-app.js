@@ -268,7 +268,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       }
 
       function applyAdminAccessVisibility() {
-        document.body.classList.toggle("admin-access-enabled", isAdminAccessEnabled());
+        document.body.classList.toggle("admin-access-enabled", isAdminAccessEnabled() || !!currentAdmin);
         document.body.classList.toggle("native-app-shell", isNativeAppShell());
         document.body.classList.toggle("rider-app-shell", isRiderAppMode());
       }
@@ -655,6 +655,19 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         return [...new Set((values || []).map((value) => String(value || "").trim()).filter(Boolean))];
       }
 
+      function deliveryPartnerAddressKeywords(partner) {
+        return uniqueList([...(partner && partner.areas || []), ...(partner && partner.addressKeywords || [])]);
+      }
+
+      function deliveryCoverageKeywords() {
+        return uniqueList(deliveryPartners.flatMap((partner) => deliveryPartnerAddressKeywords(partner)));
+      }
+
+      function deliveryCoverageLabel() {
+        const labels = deliveryCoverageKeywords().slice(0, 6);
+        return labels.length ? labels.join("/") : "배송 가능 권역";
+      }
+
       function readPartnerAccountStore() {
         try {
           const parsed = JSON.parse(localStorage.getItem(PARTNER_ACCOUNT_STORAGE_KEY) || "{}");
@@ -737,6 +750,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
               name: row.name,
               pin: row.pin || "",
               areas: areas.length ? areas : ["미지정"],
+              addressKeywords: areas.length ? areas : ["미지정"],
               riders,
             };
             upsertArrayItem(deliveryPartners, (item) => item.name === partner.name, partner);
@@ -911,6 +925,9 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
               <label>담당 권역
                 <input id="adminDeliveryAreas" placeholder="예: 오산, 세교" />
               </label>
+              <label>배송 가능 주소 키워드
+                <textarea id="adminDeliveryAddressKeywords" rows="3" placeholder="예: 오산역, 세교동, 운암뜰&#10;쉼표 또는 줄바꿈으로 구분"></textarea>
+              </label>
               <label>기사명 목록
                 <textarea id="adminDeliveryRiders" rows="4" placeholder="쉼표 또는 줄바꿈으로 구분"></textarea>
               </label>
@@ -932,7 +949,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
             <div>
               <strong>등록 배송사 ${deliveryPartners.length}개</strong>
               ${deliveryPartners.map((partner) =>
-                '<p><b>' + escapeHtml(partner.name) + '</b><span>PIN ' + escapeHtml(partner.pin) + ' · ' + escapeHtml((partner.areas || []).join("/")) + ' · 기사 ' + escapeHtml((partner.riders || []).length) + '명</span></p>'
+                '<p><b>' + escapeHtml(partner.name) + '</b><span>PIN ' + escapeHtml(partner.pin) + ' · ' + escapeHtml((partner.areas || []).join("/")) + ' · 주소키워드 ' + escapeHtml(deliveryPartnerAddressKeywords(partner).length) + '개 · 기사 ' + escapeHtml((partner.riders || []).length) + '명</span></p>'
               ).join("")}
             </div>
           </div>
@@ -958,6 +975,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         document.getElementById("adminDeliveryPartnerName").value = partner ? partner.name : "";
         document.getElementById("adminDeliveryPin").value = partner ? partner.pin : "";
         document.getElementById("adminDeliveryAreas").value = partner ? (partner.areas || []).join(", ") : "";
+        document.getElementById("adminDeliveryAddressKeywords").value = partner ? deliveryPartnerAddressKeywords(partner).join("\n") : "";
         document.getElementById("adminDeliveryRiders").value = partner ? (partner.riders || []).join("\n") : "";
       }
 
@@ -1033,11 +1051,12 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         const name = document.getElementById("adminDeliveryPartnerName").value.trim();
         const pin = document.getElementById("adminDeliveryPin").value.trim();
         const areas = uniqueList(document.getElementById("adminDeliveryAreas").value.split(/[,\n]/));
+        const addressKeywords = uniqueList(document.getElementById("adminDeliveryAddressKeywords").value.split(/[,\n]/));
         const riders = uniqueList(document.getElementById("adminDeliveryRiders").value.split(/[,\n]/));
         if (!name || !pin || !areas.length) return setSyncStatus("배송사명, PIN, 담당 권역을 입력해 주세요");
         const duplicate = deliveryPartners.find((item) => item.name === name && item.name !== previousName);
         if (duplicate) return setSyncStatus("이미 등록된 배송사명입니다");
-        const partner = { name, pin, areas, riders: riders.length ? riders : Array.from({ length: 5 }, (_, index) => name + " 기사" + String(index + 1).padStart(2, "0")) };
+        const partner = { name, pin, areas, addressKeywords: addressKeywords.length ? addressKeywords : areas, riders: riders.length ? riders : Array.from({ length: 5 }, (_, index) => name + " 기사" + String(index + 1).padStart(2, "0")) };
         const index = deliveryPartners.findIndex((item) => item.name === previousName);
         if (index >= 0) deliveryPartners[index] = partner;
         else deliveryPartners.push(partner);
@@ -7757,11 +7776,13 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         const value = (address || "").toLowerCase();
         const matchedSuggestion = addressSuggestions.find((item) => addressQueryMatches(item, address));
         if (matchedSuggestion) return matchedSuggestion.regionKey;
-        if (value.includes("세교")) return "segyeo";
-        if (value.includes("오산")) return "osan";
-        if (value.includes("동탄1") || value.includes("반송") || value.includes("북광장") || value.includes("메타폴리스")) return "dongtan1";
-        if (value.includes("동탄") || value.includes("화성시 오산동") || value.includes("화성시 청계동") || value.includes("화성시 영천동")) return "dongtan2";
-        return "";
+        const matchedKeyword = deliveryCoverageKeywords().find((keyword) => value.includes(keyword.toLowerCase()));
+        if (!matchedKeyword) return "";
+        if (matchedKeyword.includes("세교") || value.includes("세교")) return "segyeo";
+        if (matchedKeyword.includes("오산") || value.includes("오산")) return "osan";
+        if (matchedKeyword.includes("동탄1") || value.includes("동탄1") || value.includes("반송") || value.includes("북광장") || value.includes("메타폴리스")) return "dongtan1";
+        if (matchedKeyword.includes("동탄") || value.includes("동탄") || value.includes("화성시 오산동") || value.includes("화성시 청계동") || value.includes("화성시 영천동")) return "dongtan2";
+        return selectedRegion || "dongtan2";
       }
 
       function isDeliveryAddressSupported(address) {
@@ -7856,7 +7877,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         const supportedRegionKey = deliveryAddressRegionKey(address);
         if (!supportedRegionKey) {
           updateAddressStatus(address, "배송 불가 또는 확인 필요");
-          setSyncStatus("현재 배송 가능 권역은 동탄/오산/세교입니다. 주소를 다시 확인해 주세요.");
+          setSyncStatus("현재 배송 가능 권역은 " + deliveryCoverageLabel() + "입니다. 주소를 다시 확인해 주세요.");
           return;
         }
         selectedRegion = supportedRegionKey;
@@ -11124,6 +11145,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           currentAdmin = { name: adminAccount.name, role: "total" };
         }
         saveCurrentAdmin();
+        applyAdminAccessVisibility();
         closeAdminLogin();
         setSyncStatus((deliveryMode ? currentAdmin.name : "총관리자") + " 로그인 완료");
         pendingAdminMode = "delivery";
@@ -11133,6 +11155,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       function logoutAdmin() {
         currentAdmin = null;
         saveCurrentAdmin();
+        applyAdminAccessVisibility();
         closeAdmin();
         setSyncStatus("운영자 로그아웃 완료");
       }
@@ -11425,7 +11448,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           return;
         }
         if (!isDeliveryAddressSupported(deliveryInfo.address)) {
-          setSyncStatus("배송 가능 권역 밖 주소입니다. 동탄/오산/세교 주소로 다시 입력해 주세요.");
+          setSyncStatus("배송 가능 권역 밖 주소입니다. 현재 권역: " + deliveryCoverageLabel());
           updateAddressStatus(deliveryInfo.address, "배송 불가 또는 확인 필요");
           renderAddressSuggestions("order");
           return;

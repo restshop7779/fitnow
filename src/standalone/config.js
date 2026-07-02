@@ -31,8 +31,8 @@ export const vendorAccounts = [
 { store: "오산 비트 아카이브", pin: "3333", manager: "비트 아카이브 매니저" },
 ];
 export const deliveryPartners = [
-{ name: "지금배송 동탄센터", pin: "7701", areas: ["동탄"], riders: Array.from({ length: 10 }, (_, index) => "동탄 기사" + String(index + 1).padStart(2, "0")) },
-{ name: "지금배송 오산센터", pin: "7702", areas: ["오산", "세교"], riders: Array.from({ length: 10 }, (_, index) => "오산 기사" + String(index + 1).padStart(2, "0")) },
+{ name: "지금배송 동탄센터", pin: "7701", areas: ["동탄"], addressKeywords: ["동탄", "동탄역", "반송", "메타폴리스", "화성시 오산동", "화성시 청계동", "화성시 영천동"], riders: Array.from({ length: 10 }, (_, index) => "동탄 기사" + String(index + 1).padStart(2, "0")) },
+{ name: "지금배송 오산센터", pin: "7702", areas: ["오산", "세교"], addressKeywords: ["오산", "세교", "오산역", "오산대역", "운암"], riders: Array.from({ length: 10 }, (_, index) => "오산 기사" + String(index + 1).padStart(2, "0")) },
 ];
 export const products = [
 { key: "jacket", name: "라이트 셔링 재킷", price: 89000, discountRate: 12, showroom: "어반클로젯 동탄", stock: 1, minutes: 32, match: 92, material: "나일론 코튼", visual: "jacket", category: "상의", fit: "살짝 여유 있는 숏 기장", size: "Free / 44-66", garmentLength: 55, shoulderWidth: 43, chestWidth: 52, waistWidth: 49, modelHeight: 168, modelWeight: 53, note: "퇴근 후 약속에 바로 입기 좋은 가벼운 아우터예요. 링과 함께 담으면 깔끔한 원마일 룩으로 완성됩니다." },
