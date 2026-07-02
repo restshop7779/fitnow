@@ -93,6 +93,7 @@ const requiredWindowHandlers = [
   "openDetail",
   "applyTypedAddress",
   "openPostcodeSearch",
+  "runDeliveryCoverageAutoCheck",
 ];
 requiredWindowHandlers.forEach((handler) => {
   const exposedPattern = new RegExp(handler + "\\s*:");

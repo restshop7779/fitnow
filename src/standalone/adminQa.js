@@ -58,6 +58,7 @@ export function adminQaChecklistSections() {
       items: [
         { id: "delivery-order", label: "배송 테스트 주문 생성" },
         { id: "delivery-proof", label: "픽업/도착 인증 흐름 확인" },
+        { id: "delivery-coverage", label: "배송권역 주소 키워드와 오픈콜 노출 자동 점검" },
         { id: "return-refund-visible", label: "반품/환불 표시 점검 4/4 통과" },
         { id: "vendor-refund-action", label: "입점업체 승인/거절 버튼 확인" },
         { id: "admin-refund-action", label: "총관리자 환불 완료 버튼 확인" },
@@ -177,6 +178,7 @@ export function adminPreReleaseQuickActions(qaStore, diagnostic, testMeta, optio
   };
   const hasDeliveryOrder = !!checked[adminQaChecklistItemKey("final-scenario", "delivery-order")];
   const hasDeliveryProof = !!checked[adminQaChecklistItemKey("final-scenario", "delivery-proof")];
+  const hasDeliveryCoverage = !!checked[adminQaChecklistItemKey("final-scenario", "delivery-coverage")];
   const hasReturnVisible = !!checked[adminQaChecklistItemKey("final-scenario", "return-refund-visible")];
   const hasCleanupZero = !!checked[adminQaChecklistItemKey("final-scenario", "cleanup-zero")];
   const hasReturnOrdersToday = testMeta.lastCheckType === "return_refund" && isToday(testMeta.lastCheckAt);
@@ -185,6 +187,7 @@ export function adminPreReleaseQuickActions(qaStore, diagnostic, testMeta, optio
   );
   if (!hasDeliveryOrder) addAction("deliveryOrder", "배송 테스트 주문 생성", "배송 QA 시작용 주문을 만듭니다");
   if (!hasDeliveryProof) addAction("deliveryFlow", "배송 플로우 자동 점검", "배정, 픽업, 도착 인증까지 자동 확인합니다");
+  if (!hasDeliveryCoverage) addAction("deliveryCoverage", "배송권역/오픈콜 자동 점검", "주소 키워드, 주문 생성, 배송사 오픈콜 노출을 확인합니다");
   if (!hasReturnVisible) {
     if (!hasReturnOrdersToday) addAction("returnOrders", "반품/환불 테스트 4건 생성", "표시 점검용 고객/업체 주문을 준비합니다", "neutral");
     addAction("returnVisibility", "반품/환불 표시 점검", "고객, 업체, 관리자 화면 노출을 확인합니다");
@@ -252,6 +255,7 @@ export function qaScenarioActionLabel(action) {
   const labels = {
     deliveryOrder: "배송 테스트 주문 생성",
     deliveryFlow: "배송 플로우 자동 점검",
+    deliveryCoverage: "배송권역/오픈콜 자동 점검",
     settlementFlow: "정산 플로우 점검",
     returnOrders: "반품/환불 테스트 4건 생성",
     returnVisibility: "반품/환불 표시 점검",
@@ -289,6 +293,9 @@ export function qaScenarioActionSuccessUpdates(action) {
   } else if (action === "deliveryFlow") {
     updates[adminQaChecklistItemKey("final-scenario", "delivery-order")] = true;
     updates[adminQaChecklistItemKey("final-scenario", "delivery-proof")] = true;
+  } else if (action === "deliveryCoverage") {
+    updates[adminQaChecklistItemKey("final-scenario", "delivery-order")] = true;
+    updates[adminQaChecklistItemKey("final-scenario", "delivery-coverage")] = true;
   } else if (action === "settlementFlow") {
     ["test-order-created", "paid", "paid-tab", "logs-updated"].forEach((itemId) => {
       updates[adminQaChecklistItemKey("settlement-flow", itemId)] = true;

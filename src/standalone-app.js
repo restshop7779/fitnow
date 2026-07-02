@@ -4108,7 +4108,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
                     <div class="admin-qa-scenario-guide">
                       <strong>권장 실행 순서</strong>
                       <ol>
-                        <li><b>1~2</b><span>배송 주문 생성 후 배송 플로우 자동 점검</span></li>
+                        <li><b>1~3</b><span>배송 주문 생성, 배송 플로우, 배송권역 오픈콜 자동 점검</span></li>
                         <li><b>3~4</b><span>반품/환불 테스트 주문 생성 후 화면 표시 점검</span></li>
                         <li><b>5</b><span>정산 플로우 점검으로 주문/로그 상태 확인</span></li>
                         <li><b>6~7</b><span>테스트 데이터 정리 후 0건 상태 확인</span></li>
@@ -4118,13 +4118,14 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
                     <div class="admin-qa-scenario-actions">
                       ${scenarioButton(1, "deliveryOrder", "배송 테스트 주문 생성", "delivery-order")}
                       ${scenarioButton(2, "deliveryFlow", "배송 플로우 자동 점검", "delivery-proof")}
-                      ${scenarioButton(3, "returnOrders", "반품/환불 테스트 4건 생성")}
-                      ${scenarioButton(4, "returnVisibility", "반품/환불 표시 점검", "return-refund-visible")}
-                      ${scenarioButton(5, "settlementFlow", "정산 플로우 점검")}
-                      ${scenarioButton(6, "cleanup", "테스트 데이터 정리", "", "danger")}
-                      ${scenarioButton(7, "cleanupState", "정리 상태 점검", "cleanup-zero", "primary")}
-                      ${scenarioButton(8, "excelDemo", "엑셀 테스트 6건 생성", "", "")}
-                      ${scenarioButton(9, "dbCleanup", "DB 삭제권한 점검", "", "")}
+                      ${scenarioButton(3, "deliveryCoverage", "배송권역/오픈콜 자동 점검", "delivery-coverage")}
+                      ${scenarioButton(4, "returnOrders", "반품/환불 테스트 4건 생성")}
+                      ${scenarioButton(5, "returnVisibility", "반품/환불 표시 점검", "return-refund-visible")}
+                      ${scenarioButton(6, "settlementFlow", "정산 플로우 점검")}
+                      ${scenarioButton(7, "cleanup", "테스트 데이터 정리", "", "danger")}
+                      ${scenarioButton(8, "cleanupState", "정리 상태 점검", "cleanup-zero", "primary")}
+                      ${scenarioButton(9, "excelDemo", "엑셀 테스트 6건 생성", "", "")}
+                      ${scenarioButton(10, "dbCleanup", "DB 삭제권한 점검", "", "")}
                     </div>
                     <div class="admin-utility-status" data-qa-scenario-action-status aria-live="polite">QA 시나리오 버튼 실행 결과가 여기에 표시됩니다.</div>
                     <div class="admin-utility-status" data-return-refund-visibility-status aria-live="polite">반품/환불 표시 점검 결과가 여기에 표시됩니다.</div>
@@ -4389,6 +4390,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         try {
           if (action === "deliveryOrder") await createDeliveryFlowTestOrder();
           else if (action === "deliveryFlow") await runDeliveryFlowAutoCheck();
+          else if (action === "deliveryCoverage") await runDeliveryCoverageAutoCheck();
           else if (action === "settlementFlow") await runSettlementFlowAutoCheck();
           else if (action === "returnOrders") await createReturnRefundTestOrders();
           else if (action === "returnVisibility") await runReturnRefundVisibilityCheck();
@@ -4519,6 +4521,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           <button class="admin-tool-action" type="button" onclick="openAdminQaChecklist()">QA 체크리스트</button>
           <button class="admin-tool-action primary" type="button" onclick="openAdminFinalQaScenario()">QA 시나리오</button>
           <button class="admin-tool-action primary" type="button" onclick="createDeliveryFlowTestOrder()">배송 테스트 주문 생성</button>
+          <button class="admin-tool-action primary" type="button" onclick="runDeliveryCoverageAutoCheck()">배송권역/오픈콜 점검</button>
           <button class="admin-tool-action" type="button" onclick="createReturnRefundTestOrders()">반품/환불 테스트 4건 생성</button>
           <button class="admin-tool-action" type="button" onclick="runSettlementFlowAutoCheck()">정산 플로우 점검</button>
           <button class="admin-tool-action danger" type="button" onclick="clearAdminTestData()">테스트 데이터 정리</button>
@@ -4901,6 +4904,121 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         renderOrders();
         renderTracking();
         return order;
+      }
+
+      function deliveryCoverageTestAddress(partner) {
+        const keyword = deliveryPartnerAddressKeywords(partner).find((item) => !["동탄", "오산", "세교"].includes(item)) || (partner.areas || [])[0] || partner.name;
+        return keyword + " 배송가능 QA 주소";
+      }
+
+      async function runDeliveryCoverageAutoCheck() {
+        if (!currentAdmin || currentAdmin.role !== "total") {
+          setSyncStatus("배송권역/오픈콜 점검은 총관리자만 가능합니다");
+          return;
+        }
+        const partner = deliveryPartners.find((item) => deliveryPartnerAddressKeywords(item).length) || deliveryPartners[0];
+        if (!partner) {
+          setSyncStatus("배송권역/오픈콜 점검에 사용할 배송사가 없습니다");
+          return;
+        }
+        const product = products.find((item) => item.stock > 0) || products[0];
+        if (!product) {
+          setSyncStatus("배송권역/오픈콜 점검에 사용할 상품이 없습니다");
+          return;
+        }
+        const address = deliveryCoverageTestAddress(partner);
+        const regionKey = deliveryAddressRegionKey(address);
+        if (!regionKey || !deliveryPartnerServesOrder(partner, { region: regionNameForKey(regionKey), address })) {
+          setSyncStatus("배송권역/오픈콜 점검 실패 - " + partner.name + " 주소 키워드가 주소 판정에 걸리지 않습니다");
+          return;
+        }
+        const createdAt = new Date().toISOString();
+        const subtotal = itemSalePrice(product);
+        const order = {
+          id: "FN-TEST-COVERAGE-" + Date.now(),
+          region: regionNameForKey(regionKey) || (partner.areas || [])[0] || "배송 가능 권역",
+          address,
+          receiveType: "문앞 수령",
+          paymentMethod: "카카오페이",
+          riderRequest: "배송권역 오픈콜 자동 점검",
+          items: [{ ...product, quantity: 1, size: availableSizeOptions(product)[0] || product.size || "FREE" }],
+          subtotal,
+          deliveryFee: 3500,
+          total: subtotal + 3500,
+          fastest: product.minutes || 36,
+          customerId: "delivery-coverage-test",
+          customerName: "배송권역 테스트 고객",
+          customerContact: "01000000000",
+          progressStep: 2,
+          statusCode: "pickup",
+          statusLabel: "픽업 요청",
+          paid: true,
+          paymentLabel: "카카오페이 결제 완료",
+          deliveryPartnerName: "",
+          riderName: "",
+          pickupConfirmedAt: "",
+          arrivalConfirmedAt: "",
+          pickupProofPhoto: null,
+          arrivalProofPhoto: null,
+          settlementStatus: "",
+          settlementConfirmedAt: "",
+          settlementPaidAt: "",
+          settlementHoldReason: "",
+          settlementHeldAt: "",
+          settlementReleasedAt: "",
+          settlementClosedAt: "",
+          settlementClosedBy: "",
+          settlementCloseLabel: "",
+          createdAt,
+          createdLabel: new Date(createdAt).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }),
+          deliveryLogs: [],
+        };
+        addDeliveryLog(order, "배송권역 오픈콜 점검", partner.name + " 키워드 주소가 오픈콜에 노출되는지 확인");
+        lastOrder = order;
+        saveOrderStatusOverride(order, { allowStepBack: true });
+        saveOrderHistory(order);
+        let sourceOrders = orderHistory;
+        let dbSaved = false;
+        let dbError = "";
+        if (setupClientIfNeeded()) {
+          try {
+            await syncOrderToSupabase(order);
+            sourceOrders = await loadAdminOrders({ includeDiagnostic: true });
+            dbSaved = true;
+          } catch (error) {
+            dbError = shortSupabaseError(error);
+          }
+        }
+        const allOrders = sourceOrders.length ? sourceOrders : orderHistory;
+        await renderAdminOrders(allOrders);
+        const orderForCheck = allOrders.find((item) => item.id === order.id) || order;
+        const openCallVisible = isOpenCallOrder(orderForCheck);
+        const partnerServes = deliveryPartnerServesOrder(partner, orderForCheck);
+        const previousAdmin = currentAdmin;
+        currentAdmin = { name: partner.name, role: "delivery", areas: partner.areas, riders: riderNicknamesForPartner(partner) };
+        const deliveryVisible = ordersForCurrentAdmin([orderForCheck]).some((item) => item.id === order.id && canCurrentDeliveryClaimOrder(item));
+        currentAdmin = previousAdmin;
+        renderOrders();
+        renderTracking();
+        renderSettlementExportActions();
+        renderAdminReleaseReadiness(adminRenderedOrders.length ? adminRenderedOrders : orderHistory);
+        const ok = openCallVisible && partnerServes && deliveryVisible;
+        if (ok) {
+          markAdminQaChecklistItems({
+            [adminQaChecklistItemKey("final-scenario", "delivery-order")]: true,
+            [adminQaChecklistItemKey("final-scenario", "delivery-coverage")]: true,
+          }, { render: false });
+          saveTestToolMeta({ lastCheckAt: new Date().toISOString(), lastCheckType: "delivery_coverage" });
+        }
+        setSyncStatus(
+          "배송권역/오픈콜 점검 " + (ok ? "통과" : "확인 필요") +
+          " - " + partner.name +
+          " · 주소 " + address +
+          " · 오픈콜 " + (openCallVisible ? "노출" : "미노출") +
+          " · 배송사 매칭 " + (partnerServes ? "성공" : "실패") +
+          " · 배송사 화면 " + (deliveryVisible ? "노출" : "미노출") +
+          (dbSaved ? " · Supabase 반영" : " · 화면 기준" + (dbError ? " · DB 확인 필요: " + dbError : ""))
+        );
       }
 
       function buildReturnRefundTestOrders() {
@@ -11645,6 +11763,7 @@ Object.assign(window, {
   releaseSettlementHold,
   runQaScenarioAction,
   runSettlementConfirmAction,
+  runDeliveryCoverageAutoCheck,
   runSettlementFlowAutoCheck,
   runReturnRefundVisibilityCheck,
   clearSettlementFlowCheckLogs,
@@ -11961,6 +12080,7 @@ exposeHandlers({
   releaseSettlementHold,
   runQaScenarioAction,
   runSettlementConfirmAction,
+  runDeliveryCoverageAutoCheck,
   runSettlementFlowAutoCheck,
   runReturnRefundVisibilityCheck,
   clearSettlementFlowCheckLogs,
