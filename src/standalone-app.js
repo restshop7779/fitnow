@@ -703,7 +703,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
 
       function partnerAccountTableMissing(error) {
         const message = String(error && (error.message || error.details || error.hint || error.code) || "");
-        return /partner_accounts/i.test(message) || /42P01|PGRST205/i.test(message);
+        return /partner_accounts|address_keywords/i.test(message) || /42P01|PGRST204|PGRST205|42703/i.test(message);
       }
 
       function isPartnerAccountDbReady() {
@@ -745,12 +745,13 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           }
           if (row.kind === "delivery") {
             const areas = Array.isArray(row.areas) && row.areas.length ? row.areas : uniqueList([row.area]);
+            const addressKeywords = Array.isArray(row.address_keywords) && row.address_keywords.length ? row.address_keywords : areas;
             const riders = Array.isArray(row.riders) ? row.riders : [];
             const partner = {
               name: row.name,
               pin: row.pin || "",
               areas: areas.length ? areas : ["미지정"],
-              addressKeywords: areas.length ? areas : ["미지정"],
+              addressKeywords: addressKeywords.length ? addressKeywords : ["미지정"],
               riders,
             };
             upsertArrayItem(deliveryPartners, (item) => item.name === partner.name, partner);
@@ -788,6 +789,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           prep_minutes: 0,
           is_open: true,
           areas: partner.areas || [],
+          address_keywords: deliveryPartnerAddressKeywords(partner),
           riders: partner.riders || [],
           updated_at: new Date().toISOString(),
         };
@@ -1566,6 +1568,12 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           const result = await supabaseClient.from(table).select("*").limit(1);
           checks.push({ name: table, ok: !result.error, error: result.error ? result.error.message : "" });
         }
+        const partnerAccountColumn = await supabaseClient.from("partner_accounts").select("address_keywords").limit(1);
+        checks.push({
+          name: "partner_accounts.address_keywords",
+          ok: !partnerAccountColumn.error,
+          error: partnerAccountColumn.error ? partnerAccountColumn.error.message : "",
+        });
         const storageChecks = [];
         try {
           const blob = new Blob(["fitnow storage check"], { type: "text/plain" });
@@ -1578,13 +1586,14 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         }
         const failed = checks.filter((item) => !item.ok);
         const failedStorage = storageChecks.filter((item) => !item.ok);
-        setPartnerAccountDbReady(!failed.some((item) => item.name === "partner_accounts"));
+        setPartnerAccountDbReady(!failed.some((item) => item.name.startsWith("partner_accounts")));
         if (!failed.length && !failedStorage.length) {
-          resultNode.textContent = "정상입니다. 테이블 9개와 이미지 저장소 3개가 준비됐습니다.";
+          resultNode.textContent = "정상입니다. 테이블 9개, 배송 주소 키워드 컬럼, 이미지 저장소 3개가 준비됐습니다.";
           setSyncStatus("Supabase SQL 확인 완료");
         } else {
           const tableText = failed.length ? "실패 테이블: " + failed.map((item) => {
             if (item.name === "partner_accounts") return "partner_accounts - docs/supabase-schema.sql 최신 실행 필요";
+            if (item.name === "partner_accounts.address_keywords") return "partner_accounts.address_keywords - docs/supabase-schema.sql 최신 실행 필요";
             return item.name;
           }).join(", ") + ". " : "";
           const storageText = failedStorage.length ? "이미지 저장소 실패: " + failedStorage.map((item) => {

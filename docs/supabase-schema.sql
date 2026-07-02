@@ -156,11 +156,15 @@ create table if not exists public.partner_accounts (
   prep_minutes integer not null default 5 check (prep_minutes >= 0),
   is_open boolean not null default true,
   areas text[] not null default '{}',
+  address_keywords text[] not null default '{}',
   riders text[] not null default '{}',
   sort_order integer not null default 0,
   updated_at timestamptz not null default now(),
   created_at timestamptz not null default now()
 );
+
+alter table public.partner_accounts
+  add column if not exists address_keywords text[] not null default '{}';
 
 create index if not exists products_showroom_id_idx on public.products(showroom_id);
 create index if not exists order_items_order_id_idx on public.order_items(order_id);
