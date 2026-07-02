@@ -73,7 +73,15 @@
             <h2 id="areaTitle">동탄2 신도시로 받을게요</h2>
           </div>
           <div class="address-search">
-            <input id="addressInput" type="search" value="동탄역 센트럴 상권 근처" placeholder="동탄역, 오산역, 세교 등 주소 검색" oninput="updateAddress()" />
+            <input id="addressInput" type="search" value="동탄역 센트럴 상권 근처" placeholder="실제 배송 주소를 입력해 주세요" oninput="updateAddress()" autocomplete="street-address" />
+            <div class="address-confirm-row">
+              <button class="address-apply-button" type="button" onclick="applyTypedAddress('home')">주소 적용</button>
+              <span>동/건물명 또는 상세주소까지 입력 후 적용하세요.</span>
+            </div>
+            <div class="address-status" id="addressStatus">
+              <strong>현재 배송지</strong>
+              <span>동탄역 센트럴 상권 근처</span>
+            </div>
             <div class="address-suggestions" id="addressSuggestions"></div>
           </div>
           <div class="region-grid" id="regionGrid"></div>

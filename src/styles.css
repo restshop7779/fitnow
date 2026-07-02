@@ -616,6 +616,47 @@
         display: grid;
         gap: 8px;
       }
+      .address-confirm-row {
+        display: grid;
+        grid-template-columns: minmax(92px, auto) 1fr;
+        align-items: center;
+        gap: 8px;
+      }
+      .address-apply-button {
+        min-height: 38px;
+        padding: 0 12px;
+        border: 0;
+        border-radius: 8px;
+        background: #171717;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 950;
+      }
+      .address-confirm-row span {
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 850;
+        line-height: 1.35;
+      }
+      .address-status {
+        display: grid;
+        gap: 3px;
+        padding: 10px 11px;
+        border: 1px solid #d7f1eb;
+        border-radius: 8px;
+        background: #f4fbf8;
+      }
+      .address-status strong {
+        color: #0f6f61;
+        font-size: 11px;
+        font-weight: 950;
+      }
+      .address-status span {
+        color: var(--ink);
+        font-size: 12px;
+        font-weight: 900;
+        line-height: 1.35;
+      }
       .address-search.compact {
         gap: 7px;
       }
@@ -653,6 +694,10 @@
         color: #1f7d6d;
         font-size: 11px;
         font-weight: 900;
+      }
+      .address-suggestion.direct-address {
+        border-color: #171717;
+        background: #fafafa;
       }
       .region-grid {
         display: grid;

@@ -2149,9 +2149,13 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
 
       function renderRegions() {
         const region = currentRegion();
+        const addressInput = document.getElementById("addressInput");
+        const activeAddress = (addressInput && addressInput.value.trim()) || region.address;
+        const hasTypedAddress = activeAddress !== region.address;
         document.querySelector(".brand small").textContent = "오산, 동탄 지금배송";
         document.getElementById("areaTitle").textContent = region.label + "로 받을게요";
-        document.getElementById("areaCopy").textContent = region.copy;
+        document.getElementById("areaCopy").textContent = hasTypedAddress ? activeAddress + " 기준으로 도착 시간을 다시 계산 중입니다." : region.copy;
+        updateAddressStatus(activeAddress, hasTypedAddress ? "적용된 배송지" : "현재 배송지");
         document.getElementById("regionGrid").innerHTML = regions.map((item) => `
           <button class="region-button ${item.key === selectedRegion ? "active-control" : ""}" type="button" onclick="setRegion('${item.key}')">
             ${item.name}
@@ -7718,7 +7722,10 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
 
       function setRegion(key) {
         selectedRegion = key;
-        document.getElementById("addressInput").value = currentRegion().address;
+        const address = currentRegion().address;
+        document.getElementById("addressInput").value = address;
+        syncOrderAddress(address);
+        updateAddressStatus(address);
         renderAddressSuggestions("home");
         renderProducts();
       }
@@ -7726,7 +7733,24 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       function updateAddress() {
         const value = document.getElementById("addressInput").value.trim();
         document.getElementById("areaCopy").textContent = value ? value + " 기준으로 도착 시간을 다시 계산 중입니다." : currentRegion().copy;
+        updateAddressStatus(value || currentRegion().address, value ? "입력 중인 배송지" : "현재 배송지");
         renderAddressSuggestions("home");
+      }
+
+      function syncOrderAddress(address) {
+        const orderInput = document.getElementById("orderAddress");
+        if (orderInput) orderInput.value = address;
+      }
+
+      function updateAddressStatus(address, label = "현재 배송지") {
+        const status = document.getElementById("addressStatus");
+        if (!status) return;
+        status.replaceChildren();
+        const title = document.createElement("strong");
+        title.textContent = label;
+        const value = document.createElement("span");
+        value.textContent = address || currentRegion().address;
+        status.append(title, value);
       }
 
       function addressSearchConfig(source) {
@@ -7745,6 +7769,17 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         return haystack.includes(query.toLowerCase());
       }
 
+      function regionKeyForAddress(address) {
+        const value = (address || "").toLowerCase();
+        const matchedSuggestion = addressSuggestions.find((item) => addressQueryMatches(item, address));
+        if (matchedSuggestion) return matchedSuggestion.regionKey;
+        if (value.includes("오산")) return "osan";
+        if (value.includes("세교")) return "segyeo";
+        if (value.includes("동탄1") || value.includes("반송") || value.includes("북광장") || value.includes("메타폴리스")) return "dongtan1";
+        if (value.includes("동탄")) return "dongtan2";
+        return selectedRegion;
+      }
+
       function addressMatchesFor(source) {
         const config = addressSearchConfig(source);
         const input = document.getElementById(config.inputId);
@@ -7758,15 +7793,26 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         const config = addressSearchConfig(source);
         const list = document.getElementById(config.listId);
         if (!list) return;
+        const input = document.getElementById(config.inputId);
+        const query = input ? input.value.trim() : "";
         const matches = addressMatchesFor(source);
         addressSuggestionState[source] = matches;
-        list.innerHTML = matches.map((item, index) => `
+        const directAddress = query ? `
+          <button class="address-suggestion direct-address" type="button" onclick="applyTypedAddress('${source}')">
+            <strong>입력한 주소 사용</strong>
+            <span></span>
+            <small>후보에 없어도 이 주소로 배송지를 적용합니다.</small>
+          </button>
+        ` : "";
+        list.innerHTML = directAddress + matches.map((item, index) => `
           <button class="address-suggestion" type="button" onclick="selectAddressSuggestion('${source}', ${index})">
             <strong>${item.title}</strong>
             <span>${item.address}</span>
             <small>${regionNameForKey(item.regionKey)} · ${item.hint}</small>
           </button>
         `).join("");
+        const directSpan = list.querySelector(".direct-address span");
+        if (directSpan) directSpan.textContent = query;
       }
 
       function updateOrderAddressSearch() {
@@ -7782,10 +7828,35 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         if (input) input.value = item.address;
         const homeInput = document.getElementById("addressInput");
         if (homeInput) homeInput.value = item.address;
+        syncOrderAddress(item.address);
+        updateAddressStatus(item.address);
         renderProducts();
         document.getElementById("areaCopy").textContent = item.title + " 기준으로 도착 시간을 다시 계산 중입니다.";
         renderAddressSuggestions(source);
         if (source === "order") renderAddressSuggestions("home");
+      }
+
+      function applyTypedAddress(source = "home") {
+        const config = addressSearchConfig(source);
+        const input = document.getElementById(config.inputId);
+        const address = input ? input.value.trim() : "";
+        if (!address) {
+          setSyncStatus("배송 주소를 먼저 입력해 주세요.");
+          updateAddressStatus(currentRegion().address);
+          return;
+        }
+        selectedRegion = regionKeyForAddress(address);
+        const homeInput = document.getElementById("addressInput");
+        if (homeInput) homeInput.value = address;
+        syncOrderAddress(address);
+        const region = currentRegion();
+        document.getElementById("areaTitle").textContent = region.label + "로 받을게요";
+        document.getElementById("areaCopy").textContent = address + " 기준으로 도착 시간을 다시 계산 중입니다.";
+        updateAddressStatus(address, "적용된 배송지");
+        renderProducts();
+        renderAddressSuggestions("home");
+        if (source === "order") renderAddressSuggestions("order");
+        setSyncStatus("배송지가 적용됨 - " + address);
       }
 
       function setupFilters() {
@@ -10449,10 +10520,18 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       }
 
       function deliveryFormValues() {
+        const addressInput = document.getElementById("orderAddress");
+        const address = addressInput ? addressInput.value.trim() : (document.getElementById("addressInput").value.trim() || currentRegion().address);
+        if (address) {
+          selectedRegion = regionKeyForAddress(address);
+          const homeInput = document.getElementById("addressInput");
+          if (homeInput) homeInput.value = address;
+          updateAddressStatus(address, "적용된 배송지");
+        }
         return {
           name: document.getElementById("orderCustomerName") ? document.getElementById("orderCustomerName").value.trim() : currentCustomer.name,
           phone: document.getElementById("orderCustomerPhone") ? document.getElementById("orderCustomerPhone").value.replace(/\D/g, "") : (currentCustomer.phone || ""),
-          address: document.getElementById("orderAddress") ? document.getElementById("orderAddress").value.trim() : (document.getElementById("addressInput").value.trim() || currentRegion().address),
+          address,
           receiveType: document.getElementById("receiveType") ? document.getElementById("receiveType").value : "문앞 수령",
           paymentMethod: document.getElementById("paymentMethod") ? document.getElementById("paymentMethod").value : "카카오페이",
           riderRequest: document.getElementById("riderRequest") ? document.getElementById("riderRequest").value.trim() : "",
@@ -11503,6 +11582,7 @@ Object.assign(window, {
   submitReviewForm,
   startAvatarTryOnGeneration,
   handleAvatarTryOnPhotoUpload,
+  applyTypedAddress,
   downloadSettlementCsv,
   openSettlementStatement,
   renderVendorOrders,
@@ -11537,6 +11617,7 @@ exposeHandlers({
   applyAuthSession,
   applyDeliveryAssignment,
   applyExcelDemoSettlementState,
+  applyTypedAddress,
   applyStoredOrderStatus,
   applyStoredSettlementStatus,
   assignedRiderLabel,
