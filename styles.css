@@ -1442,6 +1442,23 @@ button {
   font-size: 14px;
 }
 
+#detailBody,
+#cartDetailBody {
+  padding-bottom: 88px;
+}
+
+#detailBody > .detail-actions,
+#cartDetailBody > .detail-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 6;
+  margin-inline: -4px;
+  padding: 10px 4px calc(10px + env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(218, 207, 192, 0.9);
+  background: linear-gradient(180deg, rgba(255, 253, 248, 0.78), #fffdf8 30%);
+  backdrop-filter: blur(12px);
+}
+
 .tracking-view {
   place-items: center;
 }

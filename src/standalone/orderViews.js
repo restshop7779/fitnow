@@ -79,12 +79,12 @@ export function orderSummaryMarkup({ cart, lastOrder, eta, paymentLabelForOrder,
       <div class="price-row"><span>지금배송비</span><strong>무료</strong></div>
       <div class="price-row total-row"><span>총 결제 예정</span><strong>${formatKRW(totals.total)}</strong></div>
     </section>
-    <section class="summary-card">
+    <section class="summary-card order-payment-card">
       <h3>결제와 배송 배정</h3>
       <div class="line-item"><span>결제 상태</span><strong>${orderForSummary ? paymentLabelForOrder(orderForSummary) : "주문 확정 대기"}</strong></div>
       <div class="line-item"><span>결제수단</span><strong>${orderForSummary ? orderForSummary.paymentMethod || "카카오페이" : "선택 대기"}</strong></div>
       <div class="line-item"><span>배송 배정</span><strong>${orderForSummary ? assignedRiderLabel(orderForSummary) : "주문 후 즉시 배정"}</strong></div>
-      ${orderForSummary && orderForSummary.paid ? '<button class="primary" type="button" disabled style="width:100%;margin-top:8px;">결제 완료</button>' : '<button class="primary" type="button" onclick="payOrder()" style="width:100%;margin-top:8px;">결제하기</button>'}
+      ${orderForSummary && orderForSummary.paid ? '<button class="primary" type="button" disabled>결제 완료</button>' : '<button class="primary" type="button" onclick="payOrder()">결제하기</button>'}
     </section>
   `;
 }

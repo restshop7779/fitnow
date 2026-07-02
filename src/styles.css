@@ -1645,15 +1645,15 @@
       .delivery-form {
         display: grid;
         gap: 10px;
-        padding-bottom: 12px;
+        padding-bottom: 84px;
       }
       .order-submit-bar {
         position: sticky;
-        bottom: -18px;
-        z-index: 3;
+        bottom: 0;
+        z-index: 45;
         display: grid;
         margin: 4px -12px -12px;
-        padding: 12px;
+        padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
         border-top: 1px solid var(--line);
         background: linear-gradient(180deg, rgba(255,250,240,.82), #fffaf0 34%);
       }
@@ -1661,6 +1661,22 @@
         width: 100%;
         min-height: 48px;
         box-shadow: 0 12px 24px rgba(23,23,23,.12);
+      }
+      #orderSummary {
+        padding-bottom: 88px;
+      }
+      .order-payment-card {
+        position: sticky;
+        bottom: 0;
+        z-index: 45;
+        margin-inline: -4px;
+        padding-bottom: calc(12px + env(safe-area-inset-bottom));
+        box-shadow: 0 -12px 28px rgba(23, 23, 23, 0.08);
+      }
+      .order-payment-card .primary {
+        width: 100%;
+        min-height: 48px;
+        margin-top: 8px;
       }
       .vendor-form-section {
         display: grid;
@@ -5334,6 +5350,21 @@
         margin-top: 14px;
       }
       .detail-actions.three-actions { grid-template-columns: .72fr 1fr 1fr; }
+      #detailBody,
+      #cartDetailBody {
+        padding-bottom: 88px;
+      }
+      #detailBody > .detail-actions,
+      #cartDetailBody > .detail-actions {
+        position: sticky;
+        bottom: 0;
+        z-index: 45;
+        margin-inline: -4px;
+        padding: 10px 4px calc(10px + env(safe-area-inset-bottom));
+        border-top: 1px solid rgba(218, 207, 192, 0.9);
+        background: linear-gradient(180deg, rgba(255, 253, 248, 0.78), #fffdf8 30%);
+        backdrop-filter: blur(12px);
+      }
       @media (max-width: 380px) {
         .avatar-share-actions { grid-template-columns: 1fr; }
       }
