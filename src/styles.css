@@ -618,10 +618,11 @@
       }
       .address-confirm-row {
         display: grid;
-        grid-template-columns: minmax(92px, auto) 1fr;
+        grid-template-columns: minmax(82px, auto) minmax(82px, auto) 1fr;
         align-items: center;
         gap: 8px;
       }
+      .address-search-button,
       .address-apply-button {
         min-height: 38px;
         padding: 0 12px;
@@ -631,6 +632,11 @@
         color: #fff;
         font-size: 12px;
         font-weight: 950;
+      }
+      .address-search-button {
+        border: 1px solid #171717;
+        background: #fff;
+        color: #171717;
       }
       .address-confirm-row span {
         color: var(--muted);

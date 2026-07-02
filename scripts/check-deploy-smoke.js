@@ -91,6 +91,8 @@ const requiredWindowHandlers = [
   "openMyPage",
   "openCartDetail",
   "openDetail",
+  "applyTypedAddress",
+  "openPostcodeSearch",
 ];
 requiredWindowHandlers.forEach((handler) => {
   const exposedPattern = new RegExp(handler + "\\s*:");

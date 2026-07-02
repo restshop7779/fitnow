@@ -75,6 +75,7 @@
           <div class="address-search">
             <input id="addressInput" type="search" value="동탄역 센트럴 상권 근처" placeholder="실제 배송 주소를 입력해 주세요" oninput="updateAddress()" autocomplete="street-address" />
             <div class="address-confirm-row">
+              <button class="address-search-button" type="button" onclick="openPostcodeSearch('home')">주소 검색</button>
               <button class="address-apply-button" type="button" onclick="applyTypedAddress('home')">주소 적용</button>
               <span>동/건물명 또는 상세주소까지 입력 후 적용하세요.</span>
             </div>

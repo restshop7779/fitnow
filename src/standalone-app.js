@@ -7753,6 +7753,21 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         status.append(title, value);
       }
 
+      function deliveryAddressRegionKey(address) {
+        const value = (address || "").toLowerCase();
+        const matchedSuggestion = addressSuggestions.find((item) => addressQueryMatches(item, address));
+        if (matchedSuggestion) return matchedSuggestion.regionKey;
+        if (value.includes("세교")) return "segyeo";
+        if (value.includes("오산")) return "osan";
+        if (value.includes("동탄1") || value.includes("반송") || value.includes("북광장") || value.includes("메타폴리스")) return "dongtan1";
+        if (value.includes("동탄") || value.includes("화성시 오산동") || value.includes("화성시 청계동") || value.includes("화성시 영천동")) return "dongtan2";
+        return "";
+      }
+
+      function isDeliveryAddressSupported(address) {
+        return !!deliveryAddressRegionKey(address);
+      }
+
       function addressSearchConfig(source) {
         if (source === "order") return { inputId: "orderAddress", listId: "orderAddressSuggestions" };
         return { inputId: "addressInput", listId: "addressSuggestions" };
@@ -7770,14 +7785,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       }
 
       function regionKeyForAddress(address) {
-        const value = (address || "").toLowerCase();
-        const matchedSuggestion = addressSuggestions.find((item) => addressQueryMatches(item, address));
-        if (matchedSuggestion) return matchedSuggestion.regionKey;
-        if (value.includes("오산")) return "osan";
-        if (value.includes("세교")) return "segyeo";
-        if (value.includes("동탄1") || value.includes("반송") || value.includes("북광장") || value.includes("메타폴리스")) return "dongtan1";
-        if (value.includes("동탄")) return "dongtan2";
-        return selectedRegion;
+        return deliveryAddressRegionKey(address) || selectedRegion;
       }
 
       function addressMatchesFor(source) {
@@ -7845,7 +7853,13 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           updateAddressStatus(currentRegion().address);
           return;
         }
-        selectedRegion = regionKeyForAddress(address);
+        const supportedRegionKey = deliveryAddressRegionKey(address);
+        if (!supportedRegionKey) {
+          updateAddressStatus(address, "배송 불가 또는 확인 필요");
+          setSyncStatus("현재 배송 가능 권역은 동탄/오산/세교입니다. 주소를 다시 확인해 주세요.");
+          return;
+        }
+        selectedRegion = supportedRegionKey;
         const homeInput = document.getElementById("addressInput");
         if (homeInput) homeInput.value = address;
         syncOrderAddress(address);
@@ -7857,6 +7871,45 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         renderAddressSuggestions("home");
         if (source === "order") renderAddressSuggestions("order");
         setSyncStatus("배송지가 적용됨 - " + address);
+      }
+
+      function loadPostcodeScript() {
+        if (window.daum && window.daum.Postcode) return Promise.resolve();
+        if (window.fitNowPostcodePromise) return window.fitNowPostcodePromise;
+        window.fitNowPostcodePromise = new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
+          script.async = true;
+          script.onload = () => resolve();
+          script.onerror = () => reject(new Error("postcode script failed"));
+          document.head.appendChild(script);
+        });
+        return window.fitNowPostcodePromise;
+      }
+
+      async function openPostcodeSearch(source = "home") {
+        try {
+          await loadPostcodeScript();
+        } catch (error) {
+          setSyncStatus("주소 검색을 불러오지 못했습니다. 주소를 직접 입력해 주세요.");
+          return;
+        }
+        if (!window.daum || !window.daum.Postcode) {
+          setSyncStatus("주소 검색을 사용할 수 없습니다. 주소를 직접 입력해 주세요.");
+          return;
+        }
+        new window.daum.Postcode({
+          oncomplete(data) {
+            const address = data.roadAddress || data.jibunAddress || data.autoRoadAddress || data.autoJibunAddress || "";
+            const config = addressSearchConfig(source);
+            const input = document.getElementById(config.inputId);
+            if (input) input.value = address;
+            applyTypedAddress(source);
+          },
+          onclose(state) {
+            if (state === "FORCE_CLOSE") setSyncStatus("주소 검색을 닫았습니다. 직접 입력도 가능합니다.");
+          },
+        }).open({ popupTitle: "FitNow 배송 주소 검색" });
       }
 
       function setupFilters() {
@@ -11371,6 +11424,12 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           setSyncStatus("고객명, 휴대폰, 배송 주소를 확인해 주세요");
           return;
         }
+        if (!isDeliveryAddressSupported(deliveryInfo.address)) {
+          setSyncStatus("배송 가능 권역 밖 주소입니다. 동탄/오산/세교 주소로 다시 입력해 주세요.");
+          updateAddressStatus(deliveryInfo.address, "배송 불가 또는 확인 필요");
+          renderAddressSuggestions("order");
+          return;
+        }
         currentCustomer = {
           ...currentCustomer,
           name: deliveryInfo.name,
@@ -11585,6 +11644,7 @@ Object.assign(window, {
   applyTypedAddress,
   downloadSettlementCsv,
   openSettlementStatement,
+  openPostcodeSearch,
   renderVendorOrders,
   closeSettlementPeriod,
 });
@@ -11793,6 +11853,7 @@ exposeHandlers({
   openOrders,
   openOrdersFromMy,
   openPhotoPreview,
+  openPostcodeSearch,
   openRecentDetail,
   openSettlementDetail,
   openSettlementFlowCheckReport,

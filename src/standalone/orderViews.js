@@ -110,7 +110,12 @@ export function deliveryFormMarkup({ customerName, phone, address }) {
         </div>
         <label>배송 주소
           <div class="address-search compact">
-            <input id="orderAddress" type="search" value="${address}" placeholder="동탄역, 오산역, 세교 등 주소 검색" oninput="updateOrderAddressSearch()" autocomplete="street-address" required />
+            <input id="orderAddress" type="search" value="${address}" placeholder="실제 배송 주소를 입력해 주세요" oninput="updateOrderAddressSearch()" autocomplete="street-address" required />
+            <div class="address-confirm-row">
+              <button class="address-search-button" type="button" onclick="openPostcodeSearch('order')">주소 검색</button>
+              <button class="address-apply-button" type="button" onclick="applyTypedAddress('order')">주소 적용</button>
+              <span>배송 가능 권역인지 먼저 확인합니다.</span>
+            </div>
             <div class="address-suggestions" id="orderAddressSuggestions"></div>
           </div>
         </label>
