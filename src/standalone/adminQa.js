@@ -58,6 +58,7 @@ export function adminQaChecklistSections() {
       items: [
         { id: "delivery-order", label: "배송 테스트 주문 생성" },
         { id: "delivery-proof", label: "픽업/도착 인증 흐름 확인" },
+        { id: "delivery-photo-proof", label: "배송 인증사진 픽업/도착 노출 확인" },
         { id: "delivery-coverage", label: "배송권역 주소 키워드와 오픈콜 노출 자동 점검" },
         { id: "return-refund-visible", label: "반품/환불 표시 점검 4/4 통과" },
         { id: "vendor-refund-action", label: "입점업체 승인/거절 버튼 확인" },
@@ -286,6 +287,7 @@ export function qaScenarioActionLabel(action) {
   const labels = {
     deliveryOrder: "배송 테스트 주문 생성",
     deliveryFlow: "배송 플로우 자동 점검",
+    deliveryPhotoProof: "배송 인증사진 자동 점검",
     deliveryCoverage: "배송권역/오픈콜 자동 점검",
     settlementFlow: "정산 플로우 점검",
     returnOrders: "반품/환불 테스트 4건 생성",
@@ -324,6 +326,10 @@ export function qaScenarioActionSuccessUpdates(action) {
   } else if (action === "deliveryFlow") {
     updates[adminQaChecklistItemKey("final-scenario", "delivery-order")] = true;
     updates[adminQaChecklistItemKey("final-scenario", "delivery-proof")] = true;
+  } else if (action === "deliveryPhotoProof") {
+    updates[adminQaChecklistItemKey("final-scenario", "delivery-order")] = true;
+    updates[adminQaChecklistItemKey("final-scenario", "delivery-proof")] = true;
+    updates[adminQaChecklistItemKey("final-scenario", "delivery-photo-proof")] = true;
   } else if (action === "deliveryCoverage") {
     updates[adminQaChecklistItemKey("final-scenario", "delivery-order")] = true;
     updates[adminQaChecklistItemKey("final-scenario", "delivery-coverage")] = true;

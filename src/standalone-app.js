@@ -4154,14 +4154,15 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
                     <div class="admin-qa-scenario-actions">
                       ${scenarioButton(1, "deliveryOrder", "배송 테스트 주문 생성", "delivery-order")}
                       ${scenarioButton(2, "deliveryFlow", "배송 플로우 자동 점검", "delivery-proof")}
-                      ${scenarioButton(3, "deliveryCoverage", "배송권역/오픈콜 자동 점검", "delivery-coverage")}
-                      ${scenarioButton(4, "returnOrders", "반품/환불 테스트 4건 생성")}
-                      ${scenarioButton(5, "returnVisibility", "반품/환불 표시 점검", "return-refund-visible")}
-                      ${scenarioButton(6, "settlementFlow", "정산 플로우 점검")}
-                      ${scenarioButton(7, "cleanup", "테스트 데이터 정리", "", "danger")}
-                      ${scenarioButton(8, "cleanupState", "정리 상태 점검", "cleanup-zero", "primary")}
-                      ${scenarioButton(9, "excelDemo", "엑셀 테스트 6건 생성", "", "")}
-                      ${scenarioButton(10, "dbCleanup", "DB 삭제권한 점검", "", "")}
+                      ${scenarioButton(3, "deliveryPhotoProof", "배송 인증사진 자동 점검", "delivery-photo-proof")}
+                      ${scenarioButton(4, "deliveryCoverage", "배송권역/오픈콜 자동 점검", "delivery-coverage")}
+                      ${scenarioButton(5, "returnOrders", "반품/환불 테스트 4건 생성")}
+                      ${scenarioButton(6, "returnVisibility", "반품/환불 표시 점검", "return-refund-visible")}
+                      ${scenarioButton(7, "settlementFlow", "정산 플로우 점검")}
+                      ${scenarioButton(8, "cleanup", "테스트 데이터 정리", "", "danger")}
+                      ${scenarioButton(9, "cleanupState", "정리 상태 점검", "cleanup-zero", "primary")}
+                      ${scenarioButton(10, "excelDemo", "엑셀 테스트 6건 생성", "", "")}
+                      ${scenarioButton(11, "dbCleanup", "DB 삭제권한 점검", "", "")}
                     </div>
                     <div class="admin-utility-status" data-qa-scenario-action-status aria-live="polite">QA 시나리오 버튼 실행 결과가 여기에 표시됩니다.</div>
                     <div class="admin-utility-status" data-return-refund-visibility-status aria-live="polite">반품/환불 표시 점검 결과가 여기에 표시됩니다.</div>
@@ -4441,6 +4442,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         try {
           if (action === "deliveryOrder") await createDeliveryFlowTestOrder();
           else if (action === "deliveryFlow") await runDeliveryFlowAutoCheck();
+          else if (action === "deliveryPhotoProof") await runDeliveryPhotoProofAutoCheck();
           else if (action === "deliveryCoverage") await runDeliveryCoverageAutoCheck();
           else if (action === "settlementFlow") await runSettlementFlowAutoCheck();
           else if (action === "returnOrders") await createReturnRefundTestOrders();
@@ -5286,6 +5288,59 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           renderSettlementExportActions();
           renderAdminReleaseReadiness(adminRenderedOrders.length ? adminRenderedOrders : orderHistory);
           setSyncStatus("배송 플로우 자동 점검 확인 필요 - " + order.id);
+        }
+      }
+
+      function createQaDeliveryProofPhoto(type) {
+        const dataUrl = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////2wBDAf//////////////////////////////////////////////////////////////////////////////////////wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAX/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIQAxAAAAH/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oACAEBAAEFAqf/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oACAEDAQE/ASP/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oACAECAQE/ASP/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oACAEBAAY/Ar//xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oACAEBAAE/IV//2gAMAwEAAgADAAAAEP/EABQRAQAAAAAAAAAAAAAAAAAAABD/2gAIAQMBAT8QH//EABQRAQAAAAAAAAAAAAAAAAAAABD/2gAIAQIBAT8QH//EABQQAQAAAAAAAAAAAAAAAAAAABD/2gAIAQEAAT8QH//Z";
+        return {
+          dataUrl,
+          name: type === "pickup" ? "qa-pickup-proof.jpg" : "qa-arrival-proof.jpg",
+          mimeType: "image/jpeg",
+          size: dataUrl.length,
+          capturedAt: new Date().toISOString(),
+        };
+      }
+
+      function orderHasDeliveryProofPhoto(order, type) {
+        return !!deliveryProofPhotoSrc(deliveryProofPhoto(order, type));
+      }
+
+      async function runDeliveryPhotoProofAutoCheck() {
+        if (!currentAdmin || currentAdmin.role !== "total") {
+          setSyncStatus("배송 인증사진 자동 점검은 총관리자만 가능합니다");
+          return;
+        }
+        const partner = deliveryPartners.find((item) => item.name === "지금배송 동탄센터") || deliveryPartners[0];
+        const rider = riderNicknamesForPartner(partner)[0] || (partner.riders && partner.riders[0]) || "지금배송 라이더";
+        const order = await createDeliveryFlowTestOrder();
+        if (!order) return;
+        await adminAssignDelivery(order.id, partner.name, rider);
+        await confirmDeliveryProof(order.id, "pickup", { photo: createQaDeliveryProofPhoto("pickup") });
+        await adminAdvanceOrder(order.id, 3);
+        await confirmDeliveryProof(order.id, "arrival", { photo: createQaDeliveryProofPhoto("arrival") });
+        await adminAdvanceOrder(order.id, 4);
+        const checkedOrder = await findAdminOrder(order.id);
+        const pickupPhoto = orderHasDeliveryProofPhoto(checkedOrder, "pickup");
+        const arrivalPhoto = orderHasDeliveryProofPhoto(checkedOrder, "arrival");
+        const completed = checkedOrder && (checkedOrder.progressStep || 0) >= 4 && hasDeliveryProof(checkedOrder, "pickup") && hasDeliveryProof(checkedOrder, "arrival");
+        if (completed && pickupPhoto && arrivalPhoto) {
+          markAdminQaChecklistItems({
+            [adminQaChecklistItemKey("final-scenario", "delivery-order")]: true,
+            [adminQaChecklistItemKey("final-scenario", "delivery-proof")]: true,
+            [adminQaChecklistItemKey("final-scenario", "delivery-photo-proof")]: true,
+          }, { render: false });
+          lastOrder = checkedOrder;
+          renderTracking();
+          saveTestToolMeta({ lastCheckAt: new Date().toISOString(), lastCheckType: "delivery_photo_proof" });
+          renderSettlementExportActions();
+          renderAdminReleaseReadiness(adminRenderedOrders.length ? adminRenderedOrders : orderHistory);
+          setSyncStatus("배송 인증사진 자동 점검 완료 - " + order.id + " · 픽업/도착 사진 포함");
+        } else {
+          saveTestToolMeta({ lastCheckAt: new Date().toISOString(), lastCheckType: "delivery_photo_proof_check_needed" });
+          renderSettlementExportActions();
+          renderAdminReleaseReadiness(adminRenderedOrders.length ? adminRenderedOrders : orderHistory);
+          setSyncStatus("배송 인증사진 자동 점검 확인 필요 - " + order.id + " · 픽업사진 " + (pickupPhoto ? "확인" : "누락") + " · 도착사진 " + (arrivalPhoto ? "확인" : "누락"));
         }
       }
 
@@ -11829,6 +11884,7 @@ Object.assign(window, {
   runQaScenarioAction,
   runSettlementConfirmAction,
   runDeliveryCoverageAutoCheck,
+  runDeliveryPhotoProofAutoCheck,
   runSettlementFlowAutoCheck,
   runReturnRefundVisibilityCheck,
   clearSettlementFlowCheckLogs,
@@ -12147,6 +12203,7 @@ exposeHandlers({
   runQaScenarioAction,
   runSettlementConfirmAction,
   runDeliveryCoverageAutoCheck,
+  runDeliveryPhotoProofAutoCheck,
   runSettlementFlowAutoCheck,
   runReturnRefundVisibilityCheck,
   clearSettlementFlowCheckLogs,
