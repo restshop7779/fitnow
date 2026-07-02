@@ -1,0 +1,860 @@
+﻿<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FitNow</title>
+    <meta name="description" content="동탄, 오산 쇼룸 재고를 보고 오늘 바로 받을 수 있는 패션 배송 앱" />
+    <meta name="theme-color" content="#111111" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="FitNow" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./icons/fitnow-icon-192.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="./icons/fitnow-icon-192.png" />
+    <script type="module" crossorigin src="./assets/index.react-6lnz9jD3.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-DCaIE-6O.css">
+  </head>
+  <body>
+<main class="app-shell">
+      <section class="phone-frame">
+        <header class="top-bar">
+          <button class="icon-button" type="button" onclick="document.getElementById('search').focus()" aria-label="검색으로 이동">검색</button>
+          <button class="brand" type="button" onclick="goHome()" aria-label="홈으로 이동">FITNOW<small>오산, 동탄 지금배송</small></button>
+          <button class="icon-button" type="button" onclick="openMyPage()" aria-label="마이페이지 열기">마이</button>
+        </header>
+
+        <p class="status admin-only" id="syncStatus">FITNOW_STANDALONE_OK - Supabase 연결 준비 중</p>
+        <section class="sync-check admin-only">
+          <button type="button" onclick="checkSupabaseSetup()">DB 연결 확인</button>
+          <p id="setupCheckResult">SQL 실행 후 이 버튼을 누르면 테이블과 이미지 저장소를 확인합니다.</p>
+        </section>
+
+        <section class="shopping-hero">
+          <div>
+            <p class="eyebrow">FITNOW SHOPPING</p>
+            <h1>하나만 사도<br />오늘 바로 무료배송</h1>
+            <span>동탄·오산 쇼룸 재고를 한 번에 보고 지금 받을 수 있는 패션 아이템만 모았어요.</span>
+          </div>
+          <button class="primary" type="button" onclick="addSet()">오늘 추천 담기</button>
+        </section>
+
+        <section class="quick-category-strip" aria-label="쇼핑 카테고리">
+          <button type="button" onclick="setCategory('전체')"><strong>전체</strong><span>신상 모아보기</span></button>
+          <button type="button" onclick="setCategory('상의')"><strong>상의</strong><span>티셔츠·니트</span></button>
+          <button type="button" onclick="setCategory('하의')"><strong>하의</strong><span>데님·팬츠</span></button>
+          <button type="button" onclick="setCategory('잡화')"><strong>잡화</strong><span>가방·액세서리</span></button>
+        </section>
+
+        <section class="promo-rail">
+          <button class="promo-card primary-promo" type="button" onclick="toggleFast()">
+            <span>바로도착</span>
+            <strong>45분 이내 상품</strong>
+            <small>근처 쇼룸 재고만 빠르게 보기</small>
+          </button>
+          <button class="promo-card" type="button" onclick="setPriceRange('under50000')">
+            <span>무료배송</span>
+            <strong>5만원 이하 추천</strong>
+            <small>하나만 사도 부담 없이</small>
+          </button>
+        </section>
+
+        <section class="panel dark shopping-status">
+          <div>
+            <p class="eyebrow">TODAY DELIVERY</p>
+            <h2>근처 쇼룸 재고와 빠른 도착 상품을 먼저 보여드려요.</h2>
+          </div>
+          <button class="primary" type="button" onclick="addSet()">추천 담기</button>
+        </section>
+
+        <section class="panel location-panel">
+          <div>
+            <p class="eyebrow">DELIVERY AREA</p>
+            <h2 id="areaTitle">동탄2 신도시로 받을게요</h2>
+          </div>
+          <div class="address-search">
+            <input id="addressInput" type="search" value="동탄역 센트럴 상권 근처" placeholder="실제 배송 주소를 입력해 주세요" oninput="updateAddress()" autocomplete="street-address" />
+            <div class="address-confirm-row">
+              <button class="address-search-button" type="button" onclick="openPostcodeSearch('home')">주소 검색</button>
+              <button class="address-apply-button" type="button" onclick="applyTypedAddress('home')">주소 적용</button>
+              <span>동/건물명 또는 상세주소까지 입력 후 적용하세요.</span>
+            </div>
+            <div class="address-status" id="addressStatus">
+              <strong>현재 배송지</strong>
+              <span>동탄역 센트럴 상권 근처</span>
+            </div>
+            <div class="address-suggestions" id="addressSuggestions"></div>
+          </div>
+          <div class="region-grid" id="regionGrid"></div>
+          <div class="delivery-status"><i></i><p id="areaCopy">동탄2 기준 쇼룸 픽업과 라이더 동선을 계산 중입니다.</p></div>
+        </section>
+
+        <section class="hero">
+          <img src="./assets/fashion-delivery-hero-CjacCGvZ.png" alt="Fashion delivery preview" />
+          <div class="hero-copy">
+            <p class="eyebrow">NEW DROP</p>
+            <h1>오늘 입을 신상만<br />빠르게 골라보세요.</h1>
+            <span>에이블리처럼 가볍게 둘러보고, FitNow는 근처 재고를 바로 배송합니다.</span>
+            <button class="primary" type="button" onclick="setSort('fastest')">빠른배송 보기</button>
+          </div>
+        </section>
+
+        <section class="moments">
+          <button class="moment active" type="button"><strong>퇴근 후 약속</strong><span>18:30 전 도착</span></button>
+          <button class="moment" type="button"><strong>주말 데이트</strong><span>부드러운 미니멀 룩</span></button>
+          <button class="moment" type="button"><strong>비 오는 날</strong><span>방수 소재 추천</span></button>
+        </section>
+
+        <section class="store-card">
+          <div class="store-head">
+            <div><p class="eyebrow">FASTEST SHOWROOM</p><h2 id="fastestShowroom">어반클로젯 동탄</h2></div>
+            <strong id="fastestMinutes">32 min</strong>
+          </div>
+          <div class="delivery-status"><i></i><p id="fastestCopy">재고 확인과 픽업 시간을 계산 중입니다.</p></div>
+        </section>
+
+        <section class="recommend-panel">
+          <div class="recommend-head">
+            <div>
+              <p class="eyebrow">FOR YOU</p>
+              <h2>지금 고객님께 맞는 추천</h2>
+            </div>
+            <span id="recommendReason">빠른배송 기준</span>
+          </div>
+          <div class="recommend-list" id="recommendList"></div>
+        </section>
+
+        <section class="section-head">
+          <div>
+            <p class="eyebrow">SHOP FEED</p>
+            <h2 id="feedTitle">지금 인기 있는 상품</h2>
+            <span id="feedSubtitle">찜, 평점, 빠른 도착 기준으로 먼저 보여드려요.</span>
+          </div>
+          <button class="chip" id="fastToggle" type="button" onclick="toggleFast()">45분 이내</button>
+        </section>
+
+        <section class="feed-tabs" id="feedTabs" aria-label="상품 피드">
+          <button class="active-control" data-feed-tab="popular" type="button" onclick="setFeedTab('popular')">인기</button>
+          <button data-feed-tab="new" type="button" onclick="setFeedTab('new')">신상</button>
+          <button data-feed-tab="free" type="button" onclick="setFeedTab('free')">무료배송</button>
+          <button data-feed-tab="sale" type="button" onclick="setFeedTab('sale')">세일</button>
+          <button data-feed-tab="fast" type="button" onclick="setFeedTab('fast')">빠른도착</button>
+        </section>
+
+        <section class="catalog-controls">
+          <label class="search"><input id="search" type="search" placeholder="상품, 쇼룸, 소재 검색" oninput="renderProducts()" /></label>
+          <div class="search-suggestions" id="searchSuggestions" aria-label="추천 검색어"></div>
+          <div class="filter-toolbar">
+            <button class="filter-toggle" id="filterToggle" type="button" onclick="toggleFilterPanel()">필터 열기</button>
+            <div class="active-filter-summary" id="activeFilterSummary"></div>
+          </div>
+          <div class="filter-panel collapsed" id="filterPanel">
+            <div class="filter-group"><span>매장</span><div class="chips" id="showroomFilters"></div></div>
+            <div class="filter-group"><span>카테고리</span><div class="chips" id="categoryFilters"></div></div>
+            <div class="filter-group"><span>사이즈</span><div class="chips" id="sizeFilters"></div></div>
+            <div class="filter-group"><span>가격</span><div class="chips" id="priceFilters"></div></div>
+            <div class="filter-group"><span>정렬</span><div class="sorts">
+              <button class="sort active-control" data-sort="fastest" type="button" onclick="setSort('fastest')">빠른 도착</button>
+              <button class="sort" data-sort="match" type="button" onclick="setSort('match')">매칭률</button>
+              <button class="sort" data-sort="stock" type="button" onclick="setSort('stock')">재고순</button>
+              <button class="sort" data-sort="rating" type="button" onclick="setSort('rating')">평점순</button>
+              <button class="sort" data-sort="review" type="button" onclick="setSort('review')">리뷰 많은순</button>
+            </div></div>
+          </div>
+          <div class="result-summary"><span id="resultCount">0개 아이템</span><button class="chip" type="button" onclick="resetControls()">초기화</button></div>
+        </section>
+
+        <section class="product-grid" id="productGrid"></section>
+
+        <aside class="cart-bar" role="button" tabindex="0" onclick="openCartDetail()" onkeydown="if(event.key === 'Enter') openCartDetail()">
+          <div class="cart-summary">
+            <span class="cart-icon">B</span>
+            <div>
+              <p id="cartCount">0개 선택됨</p>
+              <strong id="cartTotal">KRW 0</strong>
+              <small id="cartHint">상품을 담으면 무료배송 예약이 열립니다</small>
+            </div>
+          </div>
+          <div class="cart-action">
+            <span id="cartEta">무료배송</span>
+            <button id="cartCheckoutButton" type="button" onclick="event.stopPropagation(); checkoutFromCart()" disabled>예약</button>
+          </div>
+        </aside>
+
+        <nav class="bottom-tabs">
+          <button class="active" type="button" data-bottom-tab="home" onclick="goHome()">홈</button>
+          <button type="button" data-bottom-tab="looks" onclick="openLooks()">룩</button>
+          <button type="button" data-bottom-tab="management" onclick="openManagement()">관리</button>
+          <button type="button" data-bottom-tab="my" onclick="openMyPage()">마이</button>
+        </nav>
+      </section>
+    </main>
+
+    <section class="modal" id="orderModal" aria-hidden="true">
+      <div class="receipt">
+        <div class="receipt-head">
+          <div>
+            <p class="eyebrow">ORDER TRACKING</p>
+            <h2>배송 예약 완료</h2>
+          </div>
+          <button class="close" type="button" onclick="closeModal()">X</button>
+        </div>
+        <p id="receiptCopy">지금배송 흐름이 준비되었습니다.</p>
+        <div id="deliveryFormWrap"></div>
+        <div class="order-summary" id="orderSummary"></div>
+        <div class="timeline" id="timeline"></div>
+      </div>
+    </section>
+
+    <section class="modal" id="cartModal" aria-hidden="true">
+      <div class="receipt">
+        <div class="receipt-head">
+          <div>
+            <p class="eyebrow">CART CHECK</p>
+            <h2>장바구니 상세</h2>
+          </div>
+          <button class="close" type="button" onclick="closeCartDetail()">X</button>
+        </div>
+        <div id="cartDetailBody"></div>
+      </div>
+    </section>
+
+    <section class="modal" id="detailModal" aria-hidden="true">
+      <div class="receipt">
+        <div class="receipt-head">
+          <div>
+            <p class="eyebrow">ITEM DETAIL</p>
+            <h2 id="detailName">상품 상세</h2>
+          </div>
+          <button class="close" type="button" onclick="closeDetail()">X</button>
+        </div>
+        <div id="detailBody"></div>
+      </div>
+    </section>
+
+    <section class="modal" id="lookModal" aria-hidden="true">
+      <div class="receipt">
+        <div class="receipt-head">
+          <div>
+            <p class="eyebrow">STYLE SETS</p>
+            <h2>바로 입는 룩</h2>
+          </div>
+          <button class="close" type="button" onclick="closeLooks()">X</button>
+        </div>
+        <div class="vendor-session">입점업체가 직접 선택한 상품 세트입니다. 세트마다 원하는 상품 사이즈를 고를 수 있어요.</div>
+        <div class="look-list" id="lookList"></div>
+      </div>
+    </section>
+
+    <section class="modal" id="vendorModal" aria-hidden="true">
+      <div class="receipt">
+        <div class="receipt-head">
+          <div>
+            <p class="eyebrow">PARTNER STUDIO</p>
+            <h2>업체 상품등록</h2>
+          </div>
+          <button class="close" type="button" onclick="closeVendor()">X</button>
+        </div>
+        <div class="vendor-session" id="vendorSession">로그인한 업체만 이 화면을 관리할 수 있습니다.</div>
+        <div class="role-strip" id="vendorRoleStrip">
+          <div class="role-pill">
+            <strong>상품 권한</strong>
+            <span>로그인한 매장의 상품만 등록, 수정, 삭제</span>
+          </div>
+          <div class="role-pill">
+            <strong>주문 권한</strong>
+            <span>재고 확인과 픽업 준비까지만 처리</span>
+          </div>
+        </div>
+        <section class="vendor-home-board" id="vendorHomeBoard"></section>
+        <details class="summary-card vendor-collapsible" id="vendorProductFormSection" open style="margin-top: 12px;">
+          <summary>상품 등록</summary>
+          <form class="vendor-form" onsubmit="submitVendorProduct(event)">
+            <section class="vendor-form-section">
+              <h3>기본 정보</h3>
+            <div class="form-grid">
+              <label>입점 매장
+                <select id="vendorStore"></select>
+              </label>
+              <label>카테고리
+                <select id="vendorCategory" onchange="syncVendorVisualWithCategory()" required>
+                  <option value="상의">상의</option>
+                  <option value="하의">하의</option>
+                  <option value="신발">신발</option>
+                  <option value="잡화">잡화</option>
+                </select>
+              </label>
+            </div>
+            <label>3D 의상 타입
+              <select id="vendorVisual" required>
+                <option value="tshirt">반팔 티셔츠</option>
+                <option value="shirt">셔츠/블라우스</option>
+                <option value="hoodie">후드/맨투맨</option>
+                <option value="jacket">자켓/아우터</option>
+                <option value="wide-pants">와이드/조거 팬츠</option>
+                <option value="shorts">쇼츠/반바지</option>
+                <option value="shoes">신발</option>
+                <option value="bag">가방/잡화</option>
+              </select>
+            </label>
+            <label>상품명
+              <input id="vendorName" type="text" value="크롭 니트 베스트" required />
+            </label>
+          </section>
+
+          <section class="vendor-form-section">
+            <h3>가격 · 사이즈 재고</h3>
+            <div class="form-grid">
+              <label>정상가
+                <input id="vendorPrice" type="number" min="1000" step="1000" value="69000" required />
+              </label>
+              <label>할인율
+                <input id="vendorDiscount" type="number" min="0" max="90" value="10" required />
+              </label>
+            </div>
+            <div class="form-grid">
+              <label>사이즈
+                <input id="vendorSize" type="text" value="Free / 44-66" oninput="renderVendorSizeStockInputs()" required />
+              </label>
+              <label>총재고
+                <input id="vendorStock" type="number" min="0" value="3" readonly required />
+              </label>
+            </div>
+            <p class="section-hint">사이즈를 바꾸면 아래 재고칸이 자동으로 바뀝니다.</p>
+            <div class="size-stock-grid" id="vendorSizeStockGrid"></div>
+          </section>
+
+          <details class="vendor-form-section">
+            <summary>이미지 · 배송 · 상세설명</summary>
+            <label>상품 이미지
+              <div class="image-upload">
+                <div class="image-preview" id="vendorImagePreview">이미지 미리보기</div>
+                <input id="vendorImage" type="file" accept="image/*" onchange="previewVendorImage()" />
+              </div>
+            </label>
+            <div class="form-grid">
+              <label>도착 기준
+                <input id="vendorMinutes" type="number" min="15" value="36" required />
+              </label>
+              <label>매칭률
+                <input id="vendorMatch" type="number" min="50" max="99" value="86" required />
+              </label>
+            </div>
+            <label>소재
+              <input id="vendorMaterial" type="text" value="코튼 니트" required />
+            </label>
+            <details class="vendor-form-section">
+              <summary>상품 실측 정보</summary>
+              <div class="form-grid">
+                <label>총기장 cm
+                  <input id="vendorGarmentLength" type="number" min="0" step="0.5" value="54" />
+                </label>
+                <label>어깨 cm
+                  <input id="vendorShoulderWidth" type="number" min="0" step="0.5" value="42" />
+                </label>
+              </div>
+              <div class="form-grid">
+                <label>가슴단면 cm
+                  <input id="vendorChestWidth" type="number" min="0" step="0.5" value="48" />
+                </label>
+                <label>허리단면 cm
+                  <input id="vendorWaistWidth" type="number" min="0" step="0.5" value="44" />
+                </label>
+              </div>
+              <div class="form-grid">
+                <label>모델 키 cm
+                  <input id="vendorModelHeight" type="number" min="0" step="1" value="168" />
+                </label>
+                <label>모델 몸무게 kg
+                  <input id="vendorModelWeight" type="number" min="0" step="1" value="55" />
+                </label>
+              </div>
+              <p class="section-hint">입력값은 상세페이지의 사이즈 안내와 상품 추천 정확도에 사용됩니다.</p>
+            </details>
+            <label>상품 설명
+              <textarea id="vendorNote" required>동탄, 오산 퇴근길에 바로 받기 좋은 레이어드 아이템이에요.</textarea>
+            </label>
+          </details>
+            <button class="primary" id="vendorSubmitButton" type="submit">상품 등록</button>
+          </form>
+        </details>
+        <details class="summary-card vendor-collapsible" style="margin-top: 12px;">
+          <summary>룩 세트 구성</summary>
+          <form class="vendor-form" onsubmit="submitVendorLook(event)">
+            <label>세트 이름
+              <input id="vendorLookTitle" type="text" value="오늘 바로 입는 세트" required />
+            </label>
+            <label>세트 설명
+              <textarea id="vendorLookNote" required>입점 매장이 직접 고른 지금배송 세트입니다.</textarea>
+            </label>
+            <label>세트 할인율
+              <input id="vendorLookDiscount" type="number" min="0" max="90" value="5" required />
+            </label>
+            <div class="vendor-preview-list" id="vendorLookProductPicker"></div>
+            <button class="primary" id="vendorLookSubmitButton" type="submit">선택 상품으로 세트 등록</button>
+            <p class="hint">한 개 이상 선택하면 세트로 등록됩니다. 같은 매장 상품만 선택할 수 있어요.</p>
+          </form>
+        </details>
+        <details class="summary-card vendor-collapsible" style="margin-top: 12px;">
+          <summary>등록된 룩 세트</summary>
+          <div class="vendor-preview-list" id="vendorLookList"></div>
+        </details>
+        <details class="summary-card vendor-collapsible" style="margin-top: 12px;">
+          <summary>최근 리뷰</summary>
+          <div class="vendor-preview-list" id="vendorReviewList"></div>
+        </details>
+        <details class="summary-card vendor-collapsible" id="vendorOrderSection" open style="margin-top: 12px;">
+          <summary>들어온 주문</summary>
+          <div class="chips" id="vendorOrderFilters" style="margin-bottom: 10px;"></div>
+          <div class="vendor-preview-list" id="vendorOrderList"></div>
+        </details>
+        <details class="summary-card vendor-collapsible" id="vendorProductManageSection" open style="margin-top: 12px;">
+          <summary>등록된 업체 상품</summary>
+          <div class="vendor-preview-list" id="vendorProductList"></div>
+        </details>
+        <details class="summary-card vendor-collapsible" style="margin-top: 12px;">
+          <summary id="partnerStoreTitle">내 매장 운영 설정</summary>
+          <div class="store-list" id="partnerStoreList"></div>
+        </details>
+        <details class="summary-card vendor-collapsible" style="margin-top: 12px;">
+          <summary>정산 요약</summary>
+          <div id="vendorSettlementSummary"></div>
+          <div class="vendor-preview-list" id="vendorSettlementList" style="margin-top: 10px;"></div>
+        </details>
+      </div>
+    </section>
+
+    <section class="modal" id="vendorLoginModal" aria-hidden="true">
+      <div class="receipt">
+        <div class="receipt-head">
+          <div>
+            <p class="eyebrow">PARTNER LOGIN</p>
+            <h2>업체 로그인</h2>
+          </div>
+          <button class="close" type="button" onclick="closeVendorLogin()">X</button>
+        </div>
+        <form class="vendor-form" onsubmit="loginVendor(event)">
+          <label>입점 매장
+            <select id="loginStore"></select>
+          </label>
+          <label>관리 PIN
+            <input id="loginPin" type="password" inputmode="numeric" />
+          </label>
+          <button class="primary" type="submit">로그인</button>
+          <p class="status" id="loginHint">입점 매장에 발급된 관리 PIN을 입력해 주세요.</p>
+        </form>
+      </div>
+    </section>
+
+    <section class="modal" id="vendorOrderDetailModal" aria-hidden="true">
+      <div class="receipt">
+        <div class="receipt-head">
+          <div>
+            <p class="eyebrow">PARTNER ORDER</p>
+            <h2 id="vendorOrderDetailTitle">주문 상세</h2>
+          </div>
+          <button class="close" type="button" onclick="closeVendorOrderDetail()">X</button>
+        </div>
+        <div id="vendorOrderDetailBody"></div>
+      </div>
+    </section>
+
+    <section class="modal" id="vendorProductDetailModal" aria-hidden="true">
+      <div class="receipt">
+        <div class="receipt-head">
+          <div>
+            <p class="eyebrow">PARTNER ITEM</p>
+            <h2 id="vendorProductDetailTitle">상품 상세</h2>
+          </div>
+          <button class="close" type="button" onclick="closeVendorProductDetail()">X</button>
+        </div>
+        <div id="vendorProductDetailBody"></div>
+      </div>
+    </section>
+
+    <section class="modal" id="managementModal" aria-hidden="true">
+      <div class="receipt">
+        <div class="receipt-head">
+          <div>
+            <p class="eyebrow">FITNOW MANAGER</p>
+            <h2>관리 센터</h2>
+          </div>
+          <button class="close" type="button" onclick="closeManagement()">X</button>
+        </div>
+        <div class="vendor-session" id="managementSession">입점업체, 배송, 총관리자 권한을 나눠 관리합니다.</div>
+        <div class="role-strip">
+          <div class="role-pill">
+            <strong>입점업체관리</strong>
+            <span id="managementVendorState">업체 로그인 필요</span>
+          </div>
+          <div class="role-pill">
+            <strong>배송 관리</strong>
+            <span id="managementAdminState">배송사 로그인 필요</span>
+          </div>
+          <div class="role-pill">
+            <strong>총관리자</strong>
+            <span id="managementOwnerState">운영자 로그인 필요</span>
+          </div>
+        </div>
+        <section class="summary-card">
+          <h3>관리 메뉴</h3>
+          <div class="vendor-preview-list">
+            <div class="vendor-product-row">
+              <div>
+                <strong>입점업체관리</strong>
+                <span>상품 등록, 사이즈별 재고, 업체 주문, 업체 정산</span>
+              </div>
+              <div class="mini-actions">
+                <button type="button" onclick="openVendorFromManagement()">열기</button>
+              </div>
+            </div>
+            <div class="vendor-product-row">
+              <div>
+                <strong>배송관리</strong>
+                <span>협력 배송업체용 총배송건수, 총배송비, 배송 현황 대시보드</span>
+              </div>
+              <div class="mini-actions">
+                <button type="button" onclick="openAdminFromManagement()">열기</button>
+              </div>
+            </div>
+            <div class="vendor-product-row">
+              <div>
+                <strong>총관리자</strong>
+                <span>앱 전체 주문, 배송, 정산, 취소/환불 권한</span>
+              </div>
+              <div class="mini-actions">
+                <button type="button" onclick="openTotalAdminFromManagement()">열기</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section class="modal" id="trackingModal" aria-hidden="true">
+      <div class="receipt">
+        <div class="receipt-head">
+          <div>
+            <p class="eyebrow">LIVE DELIVERY</p>
+            <h2>배송 추적</h2>
+          </div>
+          <button class="close" type="button" onclick="closeTracking()">X</button>
+        </div>
+        <div class="track-hero">
+          <div>
+            <p class="eyebrow">OSAN DONGTAN ROUTE</p>
+            <h2 id="trackTitle">아직 예약된 배송이 없습니다</h2>
+          </div>
+          <div class="route-map">
+            <span class="route-pin start">매장</span>
+            <span class="route-pin rider" id="riderPin">배송</span>
+            <span class="route-pin end">도착</span>
+          </div>
+        </div>
+        <div class="order-list" id="trackingOrderList"></div>
+        <div class="order-summary" id="trackingSummary"></div>
+        <div class="timeline" id="trackingTimeline"></div>
+        <div class="track-actions" id="trackingActions"></div>
+      </div>
+    </section>
+
+    <section class="modal" id="ordersModal" aria-hidden="true">
+      <div class="receipt">
+        <div class="receipt-head">
+          <div>
+            <p class="eyebrow">ORDER HISTORY</p>
+            <h2>내 주문</h2>
+          </div>
+          <button class="close" type="button" onclick="closeOrders()">X</button>
+        </div>
+        <div class="order-list" id="orderList"></div>
+      </div>
+    </section>
+
+    <section class="modal photo-preview-modal" id="photoPreviewModal" aria-hidden="true">
+      <div class="photo-preview-panel">
+        <div class="receipt-head photo-preview-head">
+          <div>
+            <p class="eyebrow">PHOTO PROOF</p>
+            <h2 id="photoPreviewTitle">사진 보기</h2>
+          </div>
+          <button class="close" type="button" onclick="closePhotoPreview()">X</button>
+        </div>
+        <div class="photo-preview-stage">
+          <img id="photoPreviewImage" alt="사진 보기" />
+        </div>
+      </div>
+    </section>
+
+    <section class="modal" id="adminLoginModal" aria-hidden="true">
+      <div class="receipt">
+        <div class="receipt-head">
+          <div>
+            <p class="eyebrow">OPERATOR LOGIN</p>
+            <h2 id="adminLoginTitle">운영자 로그인</h2>
+          </div>
+          <button class="close" type="button" onclick="closeAdminLogin()">X</button>
+        </div>
+        <form class="vendor-form" onsubmit="loginAdmin(event)">
+          <label><span id="adminPinLabel">운영 PIN</span>
+            <input id="adminPin" type="password" inputmode="numeric" required />
+          </label>
+          <button class="primary" type="submit" id="adminLoginButton">운영 관리 열기</button>
+          <p class="hint" id="adminLoginHint">운영 권한에 발급된 PIN을 입력해 주세요.</p>
+        </form>
+      </div>
+    </section>
+
+    <section class="modal" id="adminModal" aria-hidden="true">
+      <div class="receipt">
+        <div class="receipt-head">
+          <div>
+            <p class="eyebrow" id="adminEyebrow">FITNOW CONTROL</p>
+            <h2 id="adminTitle">배송관리</h2>
+          </div>
+          <button class="close" type="button" onclick="closeAdmin()">X</button>
+        </div>
+        <div class="vendor-session" id="adminSession">운영자 로그인 후 배송을 관리할 수 있습니다.</div>
+        <details class="summary-card vendor-collapsible admin-only" id="adminAccountManagementSection" style="margin-top: 12px;">
+          <summary>입점업체/배송사 계정 관리</summary>
+          <div id="adminAccountManagement"></div>
+        </details>
+        <div id="adminModeBanner"></div>
+        <div id="adminReleaseReadiness"></div>
+        <div id="adminDeliveryWorkShortcuts"></div>
+        <details class="admin-home-board" id="adminHomeBoard">
+          <summary>총관리자 운영 홈</summary>
+          <div id="adminHomeBoardBody"></div>
+        </details>
+        <div class="role-strip">
+          <div class="role-pill" id="adminPermissionDelivery">
+            <strong>배송 권한</strong>
+            <span>협력 배송업체용 배송 현황 대시보드</span>
+          </div>
+          <div class="role-pill" id="adminPermissionTotal">
+            <strong>총관리 권한</strong>
+            <span>앱 전체 주문, 정산, 환불, 배송 현황 관리</span>
+          </div>
+        </div>
+        <details class="summary-card vendor-collapsible" id="adminDeliveryDashboardSection">
+          <summary>배송 대시보드</summary>
+          <div class="line-item" id="adminDeliveryScope"><span>담당 범위</span><strong>전체 배송권역</strong></div>
+          <details class="admin-store-group" id="adminDeliveryWarningSection" open style="margin-top: 10px;">
+            <summary>지금배송 주의 주문 <span id="adminDeliveryWarningCount">0건</span></summary>
+            <div id="adminDeliveryWarningTodoFocus"></div>
+            <div class="admin-store-orders" id="adminDeliveryWarningList"></div>
+          </details>
+          <div class="line-item"><span>전체 주문</span><strong id="adminTotalOrders">0건</strong></div>
+          <div class="line-item"><span>총배송건수</span><strong id="adminDeliveryOrders">0건</strong></div>
+          <div class="line-item"><span>총배송비</span><strong id="adminDeliveryFees">KRW 0</strong></div>
+          <div class="line-item"><span>오픈콜 대기</span><strong id="adminClaimableOrders">0건</strong></div>
+          <div class="line-item"><span>픽업 준비</span><strong id="adminPickupOrders">0건</strong></div>
+          <div class="line-item"><span>배송 중</span><strong id="adminActiveOrders">0건</strong></div>
+          <details class="admin-store-group admin-priority-section" id="adminClaimableDeliverySection" open style="margin-top: 10px;">
+            <summary>오픈콜 대기 주문 <span id="adminClaimableDeliveryCount">0건</span></summary>
+            <div class="admin-store-orders" id="adminClaimableDeliveryList"></div>
+          </details>
+          <details class="admin-store-group" id="adminPickupDeliverySection" open style="margin-top: 10px;">
+            <summary>배정 완료 픽업 주문 <span id="adminPickupDeliveryCount">0건</span></summary>
+            <div class="admin-store-orders" id="adminPickupDeliveryList"></div>
+          </details>
+          <details class="admin-store-group" id="adminActiveDeliverySection" open style="margin-top: 10px;">
+            <summary>배송중 주문 <span id="adminActiveDeliveryCount">0건</span></summary>
+            <div class="admin-store-orders" id="adminActiveDeliveryList"></div>
+          </details>
+          <details class="admin-store-group" id="adminDoneDeliverySection" style="margin-top: 10px;">
+            <summary>오늘 배송완료 주문 <span id="adminDoneDeliveryCount">0건</span></summary>
+            <div class="admin-store-orders" id="adminDoneDeliveryList"></div>
+          </details>
+          <details class="admin-store-group" id="adminOpenSettlementSection" open style="margin-top: 10px;">
+            <summary>지금배송 정산 요약 <span id="adminDeliverySettlementCount">0건</span></summary>
+            <div id="adminSettlementTodoFocus"></div>
+            <div class="chips" id="adminSettlementPartnerFilters" style="margin-top: 9px;"></div>
+            <div class="chips" id="adminSettlementPeriodFilters" style="margin-top: 9px;"></div>
+            <div class="mini-actions settlement-export-actions" id="adminSettlementExportActions" style="margin-top: 9px;"></div>
+            <details class="settlement-test-tools" id="adminSettlementTestToolsSection">
+              <summary>관리자 테스트 도구 <span>점검/정리</span></summary>
+              <div class="mini-actions settlement-test-actions" id="adminSettlementTestActions"></div>
+            </details>
+            <div class="settlement-view-tabs" id="adminSettlementViewTabs"></div>
+            <div id="adminSettlementResultSummary"></div>
+            <div id="adminSettlementFlowCheckLogs"></div>
+            <div class="admin-store-orders" id="adminDeliverySettlementList"></div>
+          </details>
+          <details class="admin-store-group" id="adminPaidSettlementSection" style="margin-top: 10px;">
+            <summary>지금배송 정산 완료 내역 <span id="adminPaidSettlementCount">0건</span></summary>
+            <div class="admin-store-orders" id="adminPaidSettlementList"></div>
+          </details>
+          <details class="admin-store-group" id="adminHeldSettlementSection" style="margin-top: 10px;">
+            <summary>지금배송 정산 보류 내역 <span id="adminHeldSettlementCount">0건</span></summary>
+            <div class="admin-store-orders" id="adminHeldSettlementList"></div>
+          </details>
+          <details class="admin-store-group" id="adminSettlementRateSection" style="margin-top: 10px;">
+            <summary>정산율 설정 <span>기본/예외</span></summary>
+            <div class="admin-store-orders" id="adminSettlementRateList"></div>
+          </details>
+          <details class="admin-store-group" id="adminRiderWorkSection" style="margin-top: 10px;">
+            <summary>기사별 업무판 <span id="adminRiderWorkCount">0명</span></summary>
+            <div class="admin-store-orders" id="adminRiderWorkBoard"></div>
+          </details>
+          <details class="admin-store-group" id="adminRiderNicknameSection" style="margin-top: 10px;">
+            <summary>기사 닉네임 관리 <span>배송사별 1~10번</span></summary>
+            <div class="admin-store-orders" id="adminRiderNicknameList"></div>
+          </details>
+        </details>
+        <details class="summary-card vendor-collapsible" id="adminSettlementSection" style="margin-top: 12px;">
+          <summary>운영 매출/정산 대시보드</summary>
+          <div id="adminSettlementSummary"></div>
+          <div class="vendor-preview-list" id="adminSettlementList" style="margin-top: 10px;"></div>
+        </details>
+        <section class="summary-card" id="adminReviewModerationSection" style="margin-top: 12px;">
+          <h3>리뷰 관리</h3>
+          <div id="adminReviewModerationSummary"></div>
+          <div class="vendor-preview-list" id="adminReviewModerationList" style="margin-top: 10px;"></div>
+        </section>
+        <section class="summary-card" id="adminOrderControlSection" style="margin-top: 12px;">
+          <h3>전체 주문 처리</h3>
+          <div id="adminOrderTodoFocus"></div>
+          <div class="search" style="margin-bottom: 10px;">
+            <input id="adminOrderSearch" type="search" placeholder="주문번호, 업체명, 주소, 배송담당, 결제수단 검색" oninput="setAdminOrderSearch(this.value)" />
+          </div>
+          <div class="chips" id="adminStatusFilters" style="margin-bottom: 10px;"></div>
+          <div class="vendor-preview-list" id="adminOrderList"></div>
+        </section>
+      </div>
+    </section>
+
+    <section class="modal" id="adminOrderDetailModal" aria-hidden="true">
+      <div class="receipt">
+        <div class="receipt-head">
+          <div>
+            <p class="eyebrow">ADMIN ORDER</p>
+            <h2 id="adminOrderDetailTitle">주문 상세</h2>
+          </div>
+          <button class="close" type="button" onclick="closeAdminOrderDetail()">X</button>
+        </div>
+        <div id="adminOrderDetailBody"></div>
+      </div>
+    </section>
+
+    <section class="modal" id="settlementConfirmModal" aria-hidden="true">
+      <div class="receipt settlement-confirm-receipt">
+        <div class="receipt-head">
+          <div>
+            <p class="eyebrow">SETTLEMENT CHECK</p>
+            <h2 id="settlementConfirmTitle">정산 처리 확인</h2>
+          </div>
+          <button class="close" type="button" onclick="closeSettlementConfirm()">X</button>
+        </div>
+        <div id="settlementConfirmBody"></div>
+        <div class="settlement-confirm-actions">
+          <button class="secondary" type="button" onclick="closeSettlementConfirm()">취소</button>
+          <button type="button" id="settlementConfirmButton" onclick="runSettlementConfirmAction()">확인하고 처리</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="modal" id="myModal" aria-hidden="true">
+      <div class="receipt">
+        <div class="receipt-head">
+          <div>
+            <p class="eyebrow">MY FITNOW</p>
+            <h2>마이페이지</h2>
+          </div>
+          <button class="close" type="button" onclick="closeMyPage()">X</button>
+        </div>
+        <div id="myContent"></div>
+      </div>
+    </section>
+
+    <section class="modal" id="reviewModal" aria-hidden="true">
+      <div class="receipt">
+        <div class="receipt-head">
+          <div>
+            <p class="eyebrow">REVIEW</p>
+            <h2>리뷰 작성</h2>
+          </div>
+          <button class="close" type="button" onclick="closeReviewModal()">X</button>
+        </div>
+        <form class="review-form" onsubmit="submitReviewForm(event)">
+          <div id="reviewFormBody"></div>
+          <div class="detail-actions">
+            <button class="secondary" type="button" onclick="closeReviewModal()">취소</button>
+            <button class="primary" type="submit">리뷰 저장</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section class="modal" id="customerLoginModal" aria-hidden="true">
+      <div class="receipt">
+        <div class="receipt-head">
+          <div>
+            <p class="eyebrow">CUSTOMER LOGIN</p>
+            <h2>고객 로그인</h2>
+          </div>
+          <button class="close" type="button" onclick="closeCustomerLogin()">X</button>
+        </div>
+        <div class="social-login-grid">
+          <button class="kakao-login" type="button" onclick="loginWithOAuth('kakao')">카카오 로그인</button>
+          <button class="naver-login" type="button" onclick="loginWithOAuth('custom:naver')">네이버 로그인</button>
+        </div>
+        <p class="oauth-note" id="oauthNote">카카오 설정: Supabase Kakao Provider에 REST API 키와 Kakao Login Client Secret을 넣고, 카카오 동의항목 설정값을 그대로 사용합니다.</p>
+        <form class="vendor-form" onsubmit="loginCustomer(event)">
+          <label>이름
+            <input id="customerName" type="text" value="김동탄" required />
+          </label>
+          <label>휴대폰 번호
+            <input id="customerPhone" type="tel" value="01012345678" required />
+          </label>
+          <button class="primary" type="submit">로그인</button>
+        </form>
+      </div>
+    </section>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          const isNativeHost = window.location.protocol === "https:" && window.location.hostname === "localhost";
+          if (isNativeHost) {
+            navigator.serviceWorker.getRegistrations()
+              .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
+              .catch(() => {});
+            if (window.caches) {
+              caches.keys()
+                .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+                .catch(() => {});
+            }
+            return;
+          }
+          navigator.serviceWorker.register("./sw.js").catch(() => {});
+        });
+      }
+      window.addEventListener("error", (event) => {
+        const node = document.getElementById("syncStatus");
+        if (node && !window.__fitnowAppReady) {
+          node.textContent = "앱 스크립트 로딩 오류 - 새 APK 재설치 또는 앱 데이터 삭제 필요";
+          node.style.display = "block";
+        }
+        console.error("[fitnow-runtime-error]", event.message);
+      });
+      window.__fitnowNativeTapBridgeReady = true;
+      document.addEventListener("touchend", (event) => {
+        const button = event.target && event.target.closest ? event.target.closest("button[data-bottom-tab]") : null;
+        if (!button) return;
+        const handlers = {
+          home: window.goHome,
+          looks: window.openLooks,
+          management: window.openManagement,
+          my: window.openMyPage,
+        };
+        const handler = handlers[button.dataset.bottomTab];
+        if (typeof handler === "function") {
+          event.preventDefault();
+          event.stopPropagation();
+          handler();
+        }
+      }, true);
+    </script>
+  </body>
+</html>
