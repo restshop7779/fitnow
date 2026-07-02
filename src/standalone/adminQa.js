@@ -66,6 +66,19 @@ export function adminQaChecklistSections() {
       ],
     },
     {
+      id: "mobile-app",
+      title: "설치형 앱 최종 점검",
+      items: [
+        { id: "bottom-tabs", label: "홈/룩/관리/마이 하단 탭 반응" },
+        { id: "cart-bar", label: "예약/장바구니 버튼이 하단에 고정 표시" },
+        { id: "checkout-entry", label: "고객 화면 결제하기 진입 가능" },
+        { id: "vendor-flow", label: "입점업체 재고확인/픽업준비 처리 확인" },
+        { id: "rider-open-call", label: "배송사 앱 오픈콜 노출 확인" },
+        { id: "supabase-status", label: "핸드폰 앱 DB 연결 확인 정상" },
+        { id: "cleanup-after-test", label: "모바일 테스트 후 테스트 데이터 정리 0건 확인" },
+      ],
+    },
+    {
       id: "regression",
       title: "회귀 확인",
       items: [
@@ -202,6 +215,24 @@ export function adminPreReleaseQuickActions(qaStore, diagnostic, testMeta, optio
 export function adminPreReleaseManualActions(qaStore) {
   const checked = qaStore.checked || {};
   const actions = [];
+  const mobileItems = [
+    ["bottom-tabs", "홈/룩/관리/마이 하단 탭 반응"],
+    ["cart-bar", "예약/장바구니 버튼 하단 고정"],
+    ["checkout-entry", "고객 결제하기 진입"],
+    ["vendor-flow", "입점업체 재고확인/픽업준비"],
+    ["rider-open-call", "배송사 오픈콜 노출"],
+    ["supabase-status", "핸드폰 앱 DB 연결 확인"],
+    ["cleanup-after-test", "모바일 테스트 후 정리 0건"],
+  ];
+  const remainingMobile = mobileItems.filter(([itemId]) => !checked[adminQaChecklistItemKey("mobile-app", itemId)]);
+  if (remainingMobile.length) {
+    actions.push({
+      itemId: "mobile-app",
+      label: "설치형 앱 최종 점검",
+      detail: remainingMobile.slice(0, 3).map(([, label]) => label).join(", ") + (remainingMobile.length > 3 ? " 외 " + (remainingMobile.length - 3) + "개" : ""),
+      actionLabel: "모바일 앱 QA 열기",
+    });
+  }
   if (!checked[adminQaChecklistItemKey("final-scenario", "vendor-refund-action")]) {
     actions.push({
       itemId: "vendor-refund-action",

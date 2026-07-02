@@ -3518,6 +3518,15 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
         }, options);
       }
 
+      function markAdminQaSectionItems(sectionId, options = {}) {
+        const section = adminQaChecklistSections().find((item) => item.id === sectionId);
+        if (!section) return;
+        markAdminQaChecklistItems(
+          Object.fromEntries(section.items.map((item) => [adminQaChecklistItemKey(section.id, item.id), true])),
+          options
+        );
+      }
+
       function clearAdminQaChecklist() {
         clearAdminQaChecklistStore();
         renderSettlementExportActions();
@@ -4113,7 +4122,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           <div class="admin-qa-checklist">
             <div class="order-detail-block">
               <strong>배포 전 관리자 점검</strong>
-              <span>정산 플로우, 리포트, 테스트 데이터 정리 기능을 같은 순서로 확인합니다.</span>
+              <span>정산 플로우, 테스트 데이터 정리, 설치형 앱 핵심 흐름을 같은 순서로 확인합니다.</span>
               <span>상세 문서: docs/admin-qa-checklist.md</span>
             </div>
             <div class="admin-qa-summary" id="adminQaChecklistSummary">
@@ -4158,6 +4167,16 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
                     <div class="admin-utility-status" data-return-refund-visibility-status aria-live="polite">반품/환불 표시 점검 결과가 여기에 표시됩니다.</div>
                     <div class="admin-utility-status" data-admin-cleanup-status aria-live="polite">정리/DB 권한 점검 결과가 여기에 표시됩니다.</div>
                   ` : ""}
+                  ${section.id === "mobile-app" ? `
+                    <div class="admin-qa-scenario-guide">
+                      <strong>핸드폰 설치 앱 확인 순서</strong>
+                      <ol>
+                        <li><b>1</b><span>하단 홈/룩/관리/마이 탭을 각각 눌러 반응 확인</span></li>
+                        <li><b>2</b><span>상품 상세와 장바구니에서 예약/결제 버튼이 하단에 붙는지 확인</span></li>
+                        <li><b>3</b><span>고객 주문 생성 후 입점업체 처리, 배송사 오픈콜, 테스트 정리까지 확인</span></li>
+                      </ol>
+                    </div>
+                  ` : ""}
                   <div class="admin-qa-items">
                     ${section.items.map((item) => {
                       const key = adminQaChecklistItemKey(section.id, item.id);
@@ -4197,6 +4216,11 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       function openAdminFinalQaScenario() {
         openAdminQaChecklist("final-scenario");
         setSyncStatus("최종 QA 시나리오 섹션으로 이동했습니다");
+      }
+
+      function openAdminMobileAppQa() {
+        openAdminQaChecklist("mobile-app");
+        setSyncStatus("설치형 앱 최종 점검 섹션으로 이동했습니다");
       }
 
       function adminPreReleaseReportData() {
@@ -4451,6 +4475,10 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       }
 
       async function openPreReleaseManualQa(itemId) {
+        if (itemId === "mobile-app") {
+          openAdminMobileAppQa();
+          return;
+        }
         if (itemId === "vendor-refund-action") {
           closeAdminOrderDetail();
           openVendor();
@@ -4472,6 +4500,14 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
       }
 
       function completePreReleaseManualQa(itemId) {
+        if (itemId === "mobile-app") {
+          markAdminQaSectionItems("mobile-app");
+          if (document.getElementById("adminOrderDetailModal").classList.contains("open")) {
+            openAdminPreReleaseCheck();
+          }
+          setSyncStatus("설치형 앱 최종 점검 항목을 확인 완료로 표시했습니다");
+          return;
+        }
         if (!["vendor-refund-action", "admin-refund-action"].includes(itemId)) {
           setSyncStatus("확인할 수동 QA 항목을 찾지 못했습니다");
           return;
@@ -4547,6 +4583,7 @@ import realFitModelImage from "../assets/fitnow-real-fit-model.png";
           </div>
           <button class="admin-tool-action" type="button" onclick="openAdminQaChecklist()">QA 체크리스트</button>
           <button class="admin-tool-action primary" type="button" onclick="openAdminFinalQaScenario()">QA 시나리오</button>
+          <button class="admin-tool-action primary" type="button" onclick="openAdminMobileAppQa()">모바일 앱 QA</button>
           <button class="admin-tool-action primary" type="button" onclick="createDeliveryFlowTestOrder()">배송 테스트 주문 생성</button>
           <button class="admin-tool-action primary" type="button" onclick="runDeliveryCoverageAutoCheck()">배송권역/오픈콜 점검</button>
           <button class="admin-tool-action" type="button" onclick="createReturnRefundTestOrders()">반품/환불 테스트 4건 생성</button>
@@ -11765,6 +11802,7 @@ Object.assign(window, {
   downloadSettlementFlowCheckReportCsv,
   openAdminQaChecklist,
   openAdminFinalQaScenario,
+  openAdminMobileAppQa: openAdminMobileAppQa,
   openAdminPreReleaseCheck,
   openPreReleaseManualQa,
   completePreReleaseManualQa,
@@ -12040,6 +12078,7 @@ exposeHandlers({
   downloadSettlementFlowCheckReportCsv,
   openAdminQaChecklist,
   openAdminFinalQaScenario,
+  openAdminMobileAppQa: openAdminMobileAppQa,
   openAdminPreReleaseCheck,
   openPreReleaseManualQa,
   completePreReleaseManualQa,

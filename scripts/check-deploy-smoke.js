@@ -94,6 +94,7 @@ const requiredWindowHandlers = [
   "applyTypedAddress",
   "openPostcodeSearch",
   "runDeliveryCoverageAutoCheck",
+  "openAdminMobileAppQa",
 ];
 requiredWindowHandlers.forEach((handler) => {
   const exposedPattern = new RegExp(handler + "\\s*:");
